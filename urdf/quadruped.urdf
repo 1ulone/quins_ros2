@@ -1,0 +1,539 @@
+<?xml version="1.0"?>
+<robot name="mjbots_quad" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ============================================================
+       Receive the controller config path from the launch file.
+       This avoids using $(find ...) which can silently fail on
+       minimal server setups and cause GazeboSimSystem::initSim
+       to segfault when it receives an unresolved/invalid path.
+       ============================================================ -->
+  <xacro:arg name="controller_config" default=""/>
+
+  <!-- selfCollide is intentionally REMOVED from all leg links.
+       Enabling selfCollide on connected links (e.g. shoulder+thigh)
+       overrides Gazebo's joint-adjacency collision filter, causing
+       constant internal collision forces that destabilize the robot.
+       The body collision against the ground is handled automatically;
+       selfCollide is only needed for detecting foot-on-body contact,
+       so it is kept only on the base_link if needed later. -->
+
+  <link name="dummy"/>
+  <joint name="dummy_joint" type="fixed">
+    <parent link="dummy"/>
+    <child link="base_link"/>
+  </joint>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BODY.stl" scale="0.1 0.1 0.1"/> 
+      </geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BODY_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="5.0"/>
+      <inertia ixx="1.920" ixy="0" ixz="0" iyy="3.204" iyz="0" izz="3.921"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== BACK LEFT LEG ==================== -->
+
+  <joint name="bl_shoulder_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="bl_shoulder_link"/>
+    <origin xyz="-0.66731 -1.2 -0.03" rpy="0 0 0"/> 
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="bl_shoulder_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BL_SHOULDER.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BL_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.6"/>
+      <inertia ixx="0.182" ixy="0" ixz="0" iyy="0.187" iyz="0" izz="0.248"/>
+    </inertial>
+  </link>
+
+  <joint name="bl_thigh_joint" type="revolute">
+    <parent link="bl_shoulder_link"/>
+    <child link="bl_thigh_link"/>
+    <origin xyz="-1.120 -0.6203 0.022 " rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="bl_thigh_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BL_THIGH.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BL_THIGH_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.8"/>
+      <inertia ixx="0.386" ixy="0" ixz="0" iyy="0.263" iyz="0" izz="0.142"/>
+    </inertial>
+  </link>
+
+  <joint name="bl_leg_joint" type="revolute">
+    <parent link="bl_thigh_link"/>
+    <child link="bl_leg_link"/>
+    <origin xyz="0.1446 0.7442 -1.2971" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="bl_leg_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BL_LEG.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BL_LEG_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.4"/>
+      <inertia ixx="0.136" ixy="0" ixz="0" iyy="0.081" iyz="0" izz="0.065"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== BACK RIGHT LEG ==================== -->
+
+  <joint name="br_shoulder_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="br_shoulder_link"/>
+    <origin xyz="0.63527 -1.2 -0.03" rpy="0 0 0"/> 
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="br_shoulder_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BR_SHOULDER.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BR_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.6"/>
+      <inertia ixx="0.182" ixy="0" ixz="0" iyy="0.187" iyz="0" izz="0.248"/>
+    </inertial>
+  </link>
+
+  <joint name="br_thigh_joint" type="revolute">
+    <parent link="br_shoulder_link"/>
+    <child link="br_thigh_link"/>
+    <origin xyz="1.12423 -0.6152 0.001" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="br_thigh_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BR_THIGH.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BR_THIGH_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.8"/>
+      <inertia ixx="0.386" ixy="0" ixz="0" iyy="0.263" iyz="0" izz="0.142"/>
+    </inertial>
+  </link>
+
+  <joint name="br_leg_joint" type="revolute">
+    <parent link="br_thigh_link"/>
+    <child link="br_leg_link"/>
+    <origin xyz="-0.1303 0.7467 -1.2935" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="br_leg_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BR_LEG.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_BR_LEG_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.4"/>
+      <inertia ixx="0.136" ixy="0" ixz="0" iyy="0.081" iyz="0" izz="0.065"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== FRONT LEFT LEG ==================== -->
+
+  <joint name="tl_shoulder_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="tl_shoulder_link"/>
+    <origin xyz="-0.6667 1.1462 -0.0414" rpy="0 0 0"/> 
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="tl_shoulder_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TL_SHOULDER.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TL_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.6"/>
+      <inertia ixx="0.182" ixy="0" ixz="0" iyy="0.187" iyz="0" izz="0.248"/>
+    </inertial>
+  </link>
+
+  <joint name="tl_thigh_joint" type="revolute">
+    <parent link="tl_shoulder_link"/>
+    <child link="tl_thigh_link"/>
+    <origin xyz="-1.1059 0.639 -0.0012" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="tl_thigh_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TL_THIGH.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TL_THIGH_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.8"/>
+      <inertia ixx="0.386" ixy="0" ixz="0" iyy="0.263" iyz="0" izz="0.142"/>
+    </inertial>
+  </link>
+
+  <joint name="tl_leg_joint" type="revolute">
+    <parent link="tl_thigh_link"/>
+    <child link="tl_leg_link"/>
+    <origin xyz="0.1283 0.7444 -1.2941" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="tl_leg_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TL_LEG.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TL_LEG_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.4"/>
+      <inertia ixx="0.136" ixy="0" ixz="0" iyy="0.081" iyz="0" izz="0.065"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== FRONT RIGHT LEG ==================== -->
+
+  <joint name="tr_shoulder_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="tr_shoulder_link"/>
+    <origin xyz="0.63315 1.1646 -0.0414" rpy="0 0 0"/> 
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="tr_shoulder_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TR_SHOULDER.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TR_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.6"/>
+      <inertia ixx="0.182" ixy="0" ixz="0" iyy="0.187" iyz="0" izz="0.248"/>
+    </inertial>
+  </link>
+
+  <joint name="tr_thigh_joint" type="revolute">
+    <parent link="tr_shoulder_link"/>
+    <child link="tr_thigh_link"/>
+    <origin xyz="1.13265 0.6225 -0.0006" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="tr_thigh_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TR_THIGH.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TR_THIGH_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.8"/>
+      <inertia ixx="0.386" ixy="0" ixz="0" iyy="0.263" iyz="0" izz="0.142"/>
+    </inertial>
+  </link>
+
+  <joint name="tr_leg_joint" type="revolute">
+    <parent link="tr_thigh_link"/>
+    <child link="tr_leg_link"/>
+    <origin xyz="-0.1256 0.7477 -1.295" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.57" upper="1.57" effort="1000" velocity="10"/>
+    <dynamics damping="10.0" friction="1.0"/>
+  </joint>
+
+  <link name="tr_leg_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TR_LEG.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://quins/meshes/QUAD_TR_LEG_C.stl" scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.4"/>
+      <inertia ixx="0.136" ixy="0" ixz="0" iyy="0.081" iyz="0" izz="0.065"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== ros2_control ==================== -->
+
+  <ros2_control name="GazeboSimSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+
+    <joint name="bl_shoulder_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="bl_thigh_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="bl_leg_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="br_shoulder_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="br_thigh_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="br_leg_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="tl_shoulder_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="tl_thigh_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="tl_leg_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="tr_shoulder_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="tr_thigh_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="tr_leg_joint">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </ros2_control>
+
+  <!-- ==================== Gazebo plugin ==================== -->
+
+  <!-- FIXED: The path is now injected from gazebo.launch.py via xacro arg.
+       This replaces the old $(find quins) substitution which is resolved
+       unreliably by rospkg on minimal server setups, causing a segfault
+       inside GazeboSimSystem::initSim when the path is invalid. -->
+  <gazebo>
+    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <parameters>$(arg controller_config)</parameters>
+      <robot_param>robot_description</robot_param>
+      <robot_param_node>robot_state_publisher</robot_param_node>
+    </plugin>
+  </gazebo>
+
+  <!-- Foot friction (ground contact only — selfCollide removed from legs) -->
+  <gazebo reference="bl_leg_link">
+    <mu1>1.5</mu1>
+    <mu2>1.5</mu2>
+  </gazebo>
+  <gazebo reference="br_leg_link">
+    <mu1>1.5</mu1>
+    <mu2>1.5</mu2>
+  </gazebo>
+  <gazebo reference="tl_leg_link">
+    <mu1>1.5</mu1>
+    <mu2>1.5</mu2>
+  </gazebo>
+  <gazebo reference="tr_leg_link">
+    <mu1>1.5</mu1>
+    <mu2>1.5</mu2>
+  </gazebo>
+
+</robot>

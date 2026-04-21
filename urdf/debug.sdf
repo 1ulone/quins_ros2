@@ -1,0 +1,733 @@
+<sdf version='1.11'>
+  <model name='mjbots_quad'>
+    <link name='dummy'>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>5</mass>
+        <inertia>
+          <ixx>1.9199999999999999</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>3.2040000000000002</iyy>
+          <iyz>0</iyz>
+          <izz>3.9209999999999998</izz>
+        </inertia>
+      </inertial>
+      <collision name='dummy_fixed_joint_lump__base_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BODY_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='dummy_fixed_joint_lump__base_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BODY.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.625 0.625 0.625 1</diffuse>
+          <ambient>0.625 0.625 0.625 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='bl_shoulder_joint' type='revolute'>
+      <pose relative_to='dummy'>-0.66730999999999996 -1.2 -0.029999999999999999 0 0 0</pose>
+      <parent>dummy</parent>
+      <child>bl_shoulder_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='bl_shoulder_link'>
+      <pose relative_to='bl_shoulder_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.59999999999999998</mass>
+        <inertia>
+          <ixx>0.182</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.187</iyy>
+          <iyz>0</iyz>
+          <izz>0.248</izz>
+        </inertia>
+      </inertial>
+      <collision name='bl_shoulder_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BL_SHOULDER_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='bl_shoulder_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BL_SHOULDER.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 0.25 1</diffuse>
+          <ambient>0.25 0.25 0.25 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='bl_thigh_joint' type='revolute'>
+      <pose relative_to='bl_shoulder_link'>-1.1200000000000001 -0.62029999999999996 0.021999999999999999 0 0 0</pose>
+      <parent>bl_shoulder_link</parent>
+      <child>bl_thigh_link</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='bl_thigh_link'>
+      <pose relative_to='bl_thigh_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.80000000000000004</mass>
+        <inertia>
+          <ixx>0.38600000000000001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.26300000000000001</iyy>
+          <iyz>0</iyz>
+          <izz>0.14199999999999999</izz>
+        </inertia>
+      </inertial>
+      <collision name='bl_thigh_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BL_THIGH_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='bl_thigh_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BL_THIGH.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.625 0.625 0.625 1</diffuse>
+          <ambient>0.625 0.625 0.625 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='bl_leg_joint' type='revolute'>
+      <pose relative_to='bl_thigh_link'>0.14460000000000001 0.74419999999999997 -1.2970999999999999 0 0 0</pose>
+      <parent>bl_thigh_link</parent>
+      <child>bl_leg_link</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='bl_leg_link'>
+      <pose relative_to='bl_leg_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.40000000000000002</mass>
+        <inertia>
+          <ixx>0.13600000000000001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.081000000000000003</iyy>
+          <iyz>0</iyz>
+          <izz>0.065000000000000002</izz>
+        </inertia>
+      </inertial>
+      <collision name='bl_leg_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BL_LEG_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='bl_leg_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BL_LEG.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 0.25 1</diffuse>
+          <ambient>0.25 0.25 0.25 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='br_shoulder_joint' type='revolute'>
+      <pose relative_to='dummy'>0.63527 -1.2 -0.029999999999999999 0 0 0</pose>
+      <parent>dummy</parent>
+      <child>br_shoulder_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='br_shoulder_link'>
+      <pose relative_to='br_shoulder_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.59999999999999998</mass>
+        <inertia>
+          <ixx>0.182</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.187</iyy>
+          <iyz>0</iyz>
+          <izz>0.248</izz>
+        </inertia>
+      </inertial>
+      <collision name='br_shoulder_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BR_SHOULDER_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='br_shoulder_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BR_SHOULDER.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 0.25 1</diffuse>
+          <ambient>0.25 0.25 0.25 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='br_thigh_joint' type='revolute'>
+      <pose relative_to='br_shoulder_link'>1.1242300000000001 -0.61519999999999997 0.001 0 0 0</pose>
+      <parent>br_shoulder_link</parent>
+      <child>br_thigh_link</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='br_thigh_link'>
+      <pose relative_to='br_thigh_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.80000000000000004</mass>
+        <inertia>
+          <ixx>0.38600000000000001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.26300000000000001</iyy>
+          <iyz>0</iyz>
+          <izz>0.14199999999999999</izz>
+        </inertia>
+      </inertial>
+      <collision name='br_thigh_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BR_THIGH_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='br_thigh_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BR_THIGH.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.625 0.625 0.625 1</diffuse>
+          <ambient>0.625 0.625 0.625 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='br_leg_joint' type='revolute'>
+      <pose relative_to='br_thigh_link'>-0.1303 0.74670000000000003 -1.2935000000000001 0 0 0</pose>
+      <parent>br_thigh_link</parent>
+      <child>br_leg_link</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='br_leg_link'>
+      <pose relative_to='br_leg_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.40000000000000002</mass>
+        <inertia>
+          <ixx>0.13600000000000001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.081000000000000003</iyy>
+          <iyz>0</iyz>
+          <izz>0.065000000000000002</izz>
+        </inertia>
+      </inertial>
+      <collision name='br_leg_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BR_LEG_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='br_leg_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_BR_LEG.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 0.25 1</diffuse>
+          <ambient>0.25 0.25 0.25 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='tl_shoulder_joint' type='revolute'>
+      <pose relative_to='dummy'>-0.66669999999999996 1.1462000000000001 -0.041399999999999999 0 0 0</pose>
+      <parent>dummy</parent>
+      <child>tl_shoulder_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='tl_shoulder_link'>
+      <pose relative_to='tl_shoulder_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.59999999999999998</mass>
+        <inertia>
+          <ixx>0.182</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.187</iyy>
+          <iyz>0</iyz>
+          <izz>0.248</izz>
+        </inertia>
+      </inertial>
+      <collision name='tl_shoulder_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TL_SHOULDER_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='tl_shoulder_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TL_SHOULDER.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 0.25 1</diffuse>
+          <ambient>0.25 0.25 0.25 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='tl_thigh_joint' type='revolute'>
+      <pose relative_to='tl_shoulder_link'>-1.1059000000000001 0.63900000000000001 -0.0011999999999999999 0 0 0</pose>
+      <parent>tl_shoulder_link</parent>
+      <child>tl_thigh_link</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='tl_thigh_link'>
+      <pose relative_to='tl_thigh_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.80000000000000004</mass>
+        <inertia>
+          <ixx>0.38600000000000001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.26300000000000001</iyy>
+          <iyz>0</iyz>
+          <izz>0.14199999999999999</izz>
+        </inertia>
+      </inertial>
+      <collision name='tl_thigh_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TL_THIGH_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='tl_thigh_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TL_THIGH.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.625 0.625 0.625 1</diffuse>
+          <ambient>0.625 0.625 0.625 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='tl_leg_joint' type='revolute'>
+      <pose relative_to='tl_thigh_link'>0.1283 0.74439999999999995 -1.2941 0 0 0</pose>
+      <parent>tl_thigh_link</parent>
+      <child>tl_leg_link</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='tl_leg_link'>
+      <pose relative_to='tl_leg_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.40000000000000002</mass>
+        <inertia>
+          <ixx>0.13600000000000001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.081000000000000003</iyy>
+          <iyz>0</iyz>
+          <izz>0.065000000000000002</izz>
+        </inertia>
+      </inertial>
+      <collision name='tl_leg_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TL_LEG_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='tl_leg_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TL_LEG.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 0.25 1</diffuse>
+          <ambient>0.25 0.25 0.25 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='tr_shoulder_joint' type='revolute'>
+      <pose relative_to='dummy'>0.63314999999999999 1.1646000000000001 -0.041399999999999999 0 0 0</pose>
+      <parent>dummy</parent>
+      <child>tr_shoulder_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='tr_shoulder_link'>
+      <pose relative_to='tr_shoulder_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.59999999999999998</mass>
+        <inertia>
+          <ixx>0.182</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.187</iyy>
+          <iyz>0</iyz>
+          <izz>0.248</izz>
+        </inertia>
+      </inertial>
+      <collision name='tr_shoulder_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TR_SHOULDER_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='tr_shoulder_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TR_SHOULDER.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 0.25 1</diffuse>
+          <ambient>0.25 0.25 0.25 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='tr_thigh_joint' type='revolute'>
+      <pose relative_to='tr_shoulder_link'>1.1326499999999999 0.62250000000000005 -0.00059999999999999995 0 0 0</pose>
+      <parent>tr_shoulder_link</parent>
+      <child>tr_thigh_link</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='tr_thigh_link'>
+      <pose relative_to='tr_thigh_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.80000000000000004</mass>
+        <inertia>
+          <ixx>0.38600000000000001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.26300000000000001</iyy>
+          <iyz>0</iyz>
+          <izz>0.14199999999999999</izz>
+        </inertia>
+      </inertial>
+      <collision name='tr_thigh_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TR_THIGH_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='tr_thigh_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TR_THIGH.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.625 0.625 0.625 1</diffuse>
+          <ambient>0.625 0.625 0.625 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='tr_leg_joint' type='revolute'>
+      <pose relative_to='tr_thigh_link'>-0.12559999999999999 0.74770000000000003 -1.2949999999999999 0 0 0</pose>
+      <parent>tr_thigh_link</parent>
+      <child>tr_leg_link</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-3.1400000000000001</lower>
+          <upper>3.1400000000000001</upper>
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.20000000000000001</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='tr_leg_link'>
+      <pose relative_to='tr_leg_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.40000000000000002</mass>
+        <inertia>
+          <ixx>0.13600000000000001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.081000000000000003</iyy>
+          <iyz>0</iyz>
+          <izz>0.065000000000000002</izz>
+        </inertia>
+      </inertial>
+      <collision name='tr_leg_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TR_LEG_C.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='tr_leg_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.10000000000000001 0.10000000000000001 0.10000000000000001</scale>
+            <uri>model://quins/meshes/QUAD_TR_LEG.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 0.25 1</diffuse>
+          <ambient>0.25 0.25 0.25 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <plugin name='gz_ros2_control::GazeboSimROS2ControlPlugin' filename='gz_ros2_control-system'>
+      <parameters>$(find quins)/config/controllers.yaml</parameters>
+    </plugin>
+    <frame name='dummy_joint' attached_to='dummy'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='base_link' attached_to='dummy_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+  </model>
+</sdf>
