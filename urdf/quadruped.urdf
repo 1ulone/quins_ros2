@@ -1,21 +1,7 @@
 <?xml version="1.0"?>
 <robot name="mjbots_quad" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- ============================================================
-       Receive the controller config path from the launch file.
-       This avoids using $(find ...) which can silently fail on
-       minimal server setups and cause GazeboSimSystem::initSim
-       to segfault when it receives an unresolved/invalid path.
-       ============================================================ -->
   <xacro:arg name="controller_config" default=""/>
-
-  <!-- selfCollide is intentionally REMOVED from all leg links.
-       Enabling selfCollide on connected links (e.g. shoulder+thigh)
-       overrides Gazebo's joint-adjacency collision filter, causing
-       constant internal collision forces that destabilize the robot.
-       The body collision against the ground is handled automatically;
-       selfCollide is only needed for detecting foot-on-body contact,
-       so it is kept only on the base_link if needed later. -->
 
   <link name="dummy"/>
   <joint name="dummy_joint" type="fixed">
@@ -132,6 +118,13 @@
     </inertial>
   </link>
 
+  <link name="bl_tip_link"/>
+  <joint name="bl_leg_to_tip" type="fixed">
+    <parent link="bl_leg_link"/>
+    <child link="bl_tip_link"/>
+    <origin xyz="0 -0.99207 -1.1797" rpy="0 0 0"/> 
+  </joint>
+
   <!-- ==================== BACK RIGHT LEG ==================== -->
 
   <joint name="br_shoulder_joint" type="revolute">
@@ -220,6 +213,13 @@
       <inertia ixx="0.136" ixy="0" ixz="0" iyy="0.081" iyz="0" izz="0.065"/>
     </inertial>
   </link>
+
+  <link name="br_tip_link"/>
+  <joint name="br_leg_to_tip" type="fixed">
+    <parent link="br_leg_link"/>
+    <child link="br_tip_link"/>
+    <origin xyz="0 -0.99207 -1.1797" rpy="0 0 0"/> 
+  </joint>
 
   <!-- ==================== FRONT LEFT LEG ==================== -->
 
@@ -310,6 +310,13 @@
     </inertial>
   </link>
 
+  <link name="tl_tip_link"/>
+  <joint name="tl_leg_to_tip" type="fixed">
+    <parent link="tl_leg_link"/>
+    <child link="tl_tip_link"/>
+    <origin xyz="0 -0.99207 -1.1797" rpy="0 0 0"/> 
+  </joint>
+
   <!-- ==================== FRONT RIGHT LEG ==================== -->
 
   <joint name="tr_shoulder_joint" type="revolute">
@@ -398,6 +405,13 @@
       <inertia ixx="0.136" ixy="0" ixz="0" iyy="0.081" iyz="0" izz="0.065"/>
     </inertial>
   </link>
+
+  <link name="tr_tip_link"/>
+  <joint name="tr_leg_to_tip" type="fixed">
+    <parent link="tr_leg_link"/>
+    <child link="tr_tip_link"/>
+    <origin xyz="0 -0.99207 -1.1797" rpy="0 0 0"/> 
+  </joint>
 
   <!-- ==================== ros2_control ==================== -->
 
@@ -515,6 +529,15 @@
       <parameters>$(arg controller_config)</parameters>
       <robot_param>robot_description</robot_param>
       <robot_param_node>robot_state_publisher</robot_param_node>
+    </plugin>
+  </gazebo>
+
+  <gazebo>
+    <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
+      <odom_frame>world</odom_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+      <odom_publish_frequency>50</odom_publish_frequency>
+      <publish_tf>true</publish_tf>
     </plugin>
   </gazebo>
 

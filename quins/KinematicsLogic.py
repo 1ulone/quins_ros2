@@ -8,9 +8,21 @@ class KinematicsLogic(Node):
     def __init__(self):
         super().__init__('KinematicsLogic')
 
-        self.l1 = 53.0
-        self.l2 = 149.35
-        self.l3 = 114.0
+        # self.l1 = 0.053
+        # self.l2 = 1.4935
+        # self.l3 = 1.14
+
+        # l1: Distance from tr_shoulder_joint to tr_thigh_joint
+        # URDF origin: xyz="1.13265 0.6225 -0.0006"
+        self.l1 = 1.2925  
+
+        # l2: Distance from tr_thigh_joint to tr_leg_joint
+        # URDF origin: xyz="-0.1256 0.7477 -1.295"
+        self.l2 = 1.5005  
+
+        # l3: Distance from tr_leg_joint to tr_tip_link
+        # URDF origin: xyz="0 -9.9207 -11.797"
+        self.l3 = 15.4138
 
         self.a1 = 0
         self.a2 = 90

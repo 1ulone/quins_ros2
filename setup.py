@@ -30,7 +30,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'tuner = quins.Tuner:main'
+            'tuner = quins.Tuner:main',
+            'nametag = quins.NametagPublisher:main',
         ],
     },
 )
