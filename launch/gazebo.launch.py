@@ -52,7 +52,7 @@ def generate_launch_description():
         arguments=[
             '-string', robot_desc,
             '-name', 'quadruped',
-            '-z', '0.6',
+            '-z', '5.0',
         ],
         output='screen'
     )

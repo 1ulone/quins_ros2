@@ -20,7 +20,6 @@ class KinematicsLogic(Node):
 
         self.ee_io = np.zeros((4, 4, 4), dtype=float) # NOTE: initial end effector position or sumshit
         self.jvso = np.zeros((4, 3, 6)) # NOTE: jvso grid array for better / cleaner data readability (for me atleast)
-        self.robot_world = np.array([0, 0, 0])
 
         # NOTE: the jvso equation, Eq. (9) 
         #  transforming (S) Screw axis into a (V) screw velocity
@@ -69,7 +68,8 @@ class KinematicsLogic(Node):
         theta2 = m.radians(theta2)
         theta3 = m.radians(theta3)
 
-        # self.get_logger().info(f"input are : {round(theta1, 4)}, {round(theta2, 4)}, {round(theta3, 4)}")
+        self.get_logger().info(f"input are : {round(theta1, 4)}, {round(theta2, 4)}, {round(theta3, 4)}")
+
 
         def P(jvso, theta):
             v = jvso[0:3]
@@ -94,15 +94,12 @@ class KinematicsLogic(Node):
         # NOTE: below are the equation to get the end effector position, Eq. (10)
         ji = P(self.jvso[n][0], theta1) @ P(self.jvso[n][1], theta2) @ P(self.jvso[n][2], theta3) @ self.ee_io[n]
 
-        # self.get_logger().info(f"Results : \n{ji.round(4)}")
+        self.get_logger().info(f"Results : \n{ji.round(4)}")
         return ji
 
-    def ik(self, leg_id, x_r, y_r, z_r, knee_dir=-1):
-        x = x_r
-        y = y_r
-        z = z_r
+    def ik(self, leg_id, x, y, z, knee_dir=1):
 
-        # self.get_logger().info(f"Input are : {round(x, 4)}, {round(y, 4)}, {round(z, 4)}")
+        self.get_logger().info(f"Input are : {round(x, 4)}, {round(y, 4)}, {round(z, 4)}")
 
         x = x + self.h_bl if 'B' in leg_id else x - self.h_bl
         z = z - self.h_bw if 'L' in leg_id else z + self.h_bw
@@ -150,37 +147,17 @@ class KinematicsLogic(Node):
         # NOTE: yeah f readability. something something one line code
         theta2 = (m.pi/2 if x_a > 0 else (-m.pi/2)) + (-varphi if theta3 > 0 else varphi) + (-phi if x_a > 0 else phi)
 
-        # self.get_logger().info(f"Results are : {round(theta1, 4)}, {round(theta2, 4)}, {round(theta3, 4)}")
+        self.get_logger().info(f"Results are : {round(theta1, 4)}, {round(theta2, 4)}, {round(theta3, 4)}")
         return theta1, theta2, theta3 
-    
-    def get_init_pos(self, leg_id):
-        n = 0
-        match leg_id:
-            case 'FR': n=0
-            case 'BR': n=1
-            case 'BL': n=2
-            case 'FL': n=3
 
-        return self.ee_io[n][0, 3], self.ee_io[n][1, 3], self.ee_io[n][2, 3]
 
-    def calculate_step(self, leg_id, tx, ty, tz):
-        body_x = tx - self.robot_world[0]
-        body_y = ty - self.robot_world[1]
-        body_z = tz - self.robot_world[2]
-
-        lx = body_x - self.h_bl if 'F' in leg_id else body_x + self.h_bl
-        ly = body_y
-        lz = body_z - self.h_bw if 'R' in leg_id else body_z + self.h_bw
-
-        theta1, theta2, theta3 = self.ik(leg_id, lx, ly, lz)
-        return theta1, theta2, theta3
 
 def main():
     rclpy.init()
     node = KinematicsLogic()
 
     leg_id = 'BR'
-    fk = node.fk(leg_id, 180.0, 10.0, -100.0)
+    fk = node.fk(leg_id, 0.0, 0.0, 0.0)
     x = fk[0, 3]
     y = fk[1, 3]
     z = fk[2, 3]

@@ -46,12 +46,12 @@ class Tuner(Node):
         )
 
         self.current_yaw = 0.0
-        # self.odometry_subs = self.create_subscription(
-        #     Odometry,
-        #     '/model/quadruped/odometry',
-        #     self.odometry_callback,
-        #     10
-        # )
+        self.odometry_subs = self.create_subscription(
+            Odometry,
+            '/model/quadruped/odometry',
+            self.odometry_callback,
+            10
+        )
 
         self.phi = {
             "tr_leg": {
@@ -79,10 +79,10 @@ class Tuner(Node):
         self.mqtt = MqttLogic()
         self.timer = self.create_timer(2.0, self.send_mqtt)
 
-        self.gait_freq = 2.5
-        self.x_off = 0.25
-        self.z_off = 2.7
-        self.step_len = 2.0
+        self.gait_freq = 4.0
+        self.x_off = 1.2925
+        self.z_off = -2.7
+        self.step_len = 2.5
         self.step_h = 0.75
         self.sc_yaw = 1.25
 
@@ -122,24 +122,15 @@ class Tuner(Node):
         msg.points.append(point) # type: ignore
         self.publisher.publish(msg)
 
+
     def send_mqtt(self):
         self.mqtt.client.publish(self.mqtt.main_topic, json.dumps(self.phi))
 
-    def trajectory_controller(self, phase):
-        z = 0.0
-
-        if phase < m.pi:
-            # STANCE
-            fraction = phase / m.pi
-            x = -(self.step_len / 2.0) + (fraction * self.step_len)
-            y = 0.0
-        else:
-            # SWING
-            fraction = (phase - m.pi) / m.pi
-            x = (self.step_len / 2.0) - (fraction * self.step_len)
-            y = self.step_h * m.sin(fraction * m.pi)
-
-        return x, y, z
+    def seconds_to_duration(self, sec: float) -> Duration:
+        d = Duration()
+        d.sec     = int(sec)
+        d.nanosec = int((sec - int(sec)) * 1e9)
+        return d
 
     def walk_process(self, k: KinematicsLogic):
         omega = 2.0 * m.pi * self.gait_freq
@@ -155,6 +146,12 @@ class Tuner(Node):
         lookahead_steps = 5
         points = []
 
+        ramp_duration = 1.0
+        ramp_factor = min(self.t / ramp_duration, 1.0)
+        base_step_len = self.step_len * ramp_factor
+
+        yaw_error = self.target_yaw - self.current_yaw
+
         for i in range(lookahead_steps):
             t_ahead = self.t + i * self.dt
             phase_now = (omega * t_ahead) % (2.0 * m.pi)
@@ -163,19 +160,22 @@ class Tuner(Node):
             for leg in LEG_NAMES:
                 leg_phase = (phase_now + PHASE_OFFSETS[leg]) % (2.0 * m.pi)
 
-                xl, yl, zl = self.trajectory_controller(leg_phase)
-                ix, iy, iz = k.get_init_pos(leg)
+                active_step_len = base_step_len
 
-                tx = ix + xl + self.x_off
-                ty = self.z_off - yl
-                tz = iz + zl
+                if leg in ['FL', 'BL']:
+                    active_step_len += (yaw_error * self.sc_yaw) * ramp_factor
+                elif leg in ['FR', 'BR']:
+                    active_step_len -= (yaw_error * self.sc_yaw) * ramp_factor
 
-                theta1, theta2, theta3 = k.ik(leg, tx, ty, tz)
-                
+                #get the cartesian xyz
+                tx, ty, tz = k.gait_trajectory(leg_phase, self.x_off, self.z_off, active_step_len, self.step_h)
+
+                theta1, theta2, theta3 = k.ik(tx, ty, tz)
+
                 # theta1, theta2, theta3 = k.gait_angles(leg_phase, self.theta2_center, self.theta2_amplitude, self.theta3_lift, self.theta3_stance)
 
                 if i == 0:
-                    T = k.fk(leg, m.degrees(theta1),  m.degrees(theta2), m.degrees(theta3))
+                    T = k.fk(theta1, theta2, theta3)
                     self.get_logger().info(
                         f"[{leg}] {'SWING ' if leg_phase < m.pi else 'STANCE'} | "
                         f"θ=({theta1:.1f}, {theta2:.1f}, {theta3:.1f}) | "
@@ -184,11 +184,11 @@ class Tuner(Node):
 
                     # for sending to MQTT 
                     phi_key = LEG_TO_PHI[leg]
-                    self.phi[phi_key]["shoulder"] = theta1
-                    self.phi[phi_key]["thigh"] = theta2
-                    self.phi[phi_key]["leg"] = theta3
+                    self.phi[phi_key]["shoulder"] = m.radians(theta1)
+                    self.phi[phi_key]["thigh"] = m.radians(theta2)
+                    self.phi[phi_key]["leg"] = m.radians(theta3)
 
-                all_pos += [theta1, theta2, theta3]
+                all_pos += [m.radians(theta1), m.radians(theta2), m.radians(theta3)]
 
             point = JointTrajectoryPoint()
             point.positions = all_pos
@@ -214,7 +214,7 @@ def main(args=None):
     def logic_process(s, t, k):
         node.send_theta(s, t, k)
 
-        t04 = kinematics.fk('FL', m.degrees(s), m.degrees(t), m.degrees(k))
+        t04 = kinematics.fk(m.degrees(s), m.degrees(t), m.degrees(k))
         x = t04[0, 3]
         y = t04[1, 3]
         z = t04[2, 3]
