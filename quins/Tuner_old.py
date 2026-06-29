@@ -150,12 +150,13 @@ class Tuner(Node):
         ramp_factor = min(self.t / ramp_duration, 1.0)
         base_step_len = self.step_len * ramp_factor
 
-        yaw_error = self.target_yaw - self.current_yaw
 
         for i in range(lookahead_steps):
             t_ahead = self.t + i * self.dt
             phase_now = (omega * t_ahead) % (2.0 * m.pi)
             all_pos = []
+
+            yaw_error = self.target_yaw - self.current_yaw
 
             for leg in LEG_NAMES:
                 leg_phase = (phase_now + PHASE_OFFSETS[leg]) % (2.0 * m.pi)

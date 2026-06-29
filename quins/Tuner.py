@@ -7,20 +7,15 @@ import threading
 import time
 import math as m 
 import tkinter as tk
+import numpy as np
 from builtin_interfaces.msg import Duration
 from quins.KinematicsLogic import KinematicsLogic
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from quins.MqttLogic import MqttLogic
+# from quins.MqttLogic import MqttLogic
 from nav_msgs.msg import Odometry
 
 LEG_NAMES = ['FL', 'FR', 'BL', 'BR']
 
-PHASE_OFFSETS = {
-    'FL': 0.0,
-    'BR': 0.0,
-    'FR': m.pi,
-    'BL': m.pi,
-}
 
 JOINT_NAMES = {
     'FL': ['tl_shoulder_joint', 'tl_thigh_joint', 'tl_leg_joint'],
@@ -46,12 +41,12 @@ class Tuner(Node):
         )
 
         self.current_yaw = 0.0
-        # self.odometry_subs = self.create_subscription(
-        #     Odometry,
-        #     '/model/quadruped/odometry',
-        #     self.odometry_callback,
-        #     10
-        # )
+        self.odometry_subs = self.create_subscription(
+            Odometry,
+            '/model/quadruped/odometry',
+            self.odometry_callback,
+            10
+        )
 
         self.phi = {
             "tr_leg": {
@@ -76,7 +71,14 @@ class Tuner(Node):
             },       
         }
 
-        self.mqtt = MqttLogic()
+        self.phase_offsets = {
+            'FL': 0.0,
+            'BR': m.pi / 2.0,
+            'FR': m.pi,
+            'BL': 3.0 * m.pi / 2.0,
+        }
+
+        # self.mqtt = MqttLogic()
         self.timer = self.create_timer(2.0, self.send_mqtt)
 
         self.gait_freq = 2.5
@@ -84,15 +86,9 @@ class Tuner(Node):
         self.z_off = 2.7
         self.step_len = 2.0
         self.step_h = 0.75
-        self.sc_yaw = 1.25
+        self.sc_yaw = 0.9
 
         self.target_yaw = 0.0
-
-        # self.theta2_center    = 5.0  # deg
-        # self.theta2_amplitude = 10.0  # deg
-        # self.theta3_stance    = 20.0  # deg
-        # self.theta3_lift      = 25.0  # deg
-
         self.control_rate = 50.0
         self.dt = 1.0 / self.control_rate
         self.t = 0.0
@@ -125,21 +121,126 @@ class Tuner(Node):
     def send_mqtt(self):
         self.mqtt.client.publish(self.mqtt.main_topic, json.dumps(self.phi))
 
-    def trajectory_controller(self, phase):
+    def trajectory_controller(self, phase, step_len):
         z = 0.0
 
         if phase < m.pi:
             # STANCE
             fraction = phase / m.pi
-            x = -(self.step_len / 2.0) + (fraction * self.step_len)
+            x = -(self.step_len / 2.0) + (fraction * step_len)
             y = 0.0
         else:
             # SWING
             fraction = (phase - m.pi) / m.pi
-            x = (self.step_len / 2.0) - (fraction * self.step_len)
+            x = (self.step_len / 2.0) - (fraction * step_len)
             y = self.step_h * m.sin(fraction * m.pi)
 
         return x, y, z
+
+    # NOTE: -----INVERSE DYNAMIC--------
+    def id(self, theta, theta_v, theta_a, p_matrices, init_inertia, init_constraints, prev_constraint, ext_f, dt):
+        # NOTE: 
+        # theta -> array of joint angles 
+        # theta_v -> array of joint velocities
+        # theta_a -> array of joint acceleration
+        # p_matrices -> list of 14 (4x4) homog transformation matrices from FK
+        # init_inertia -> list of 14 (6x6) spatial inertia matrices at the center of mass
+        # init_constraints -> array representing global matrix at init position
+        # prev_constraint -> array of the previous global matrix
+        # f_ext -> external force
+
+
+        def get_spatial_transform(P):
+            # NOTE: the function main purpose is to convert a
+            # 4x4 homog transformation matrix into a 6x6 spatial
+            # transformation matrix
+            
+            r = P[:3, :3]
+            p = P[:3,  3]
+
+            # NOTE: the above code p extract the rightmost value
+            # then insert into the 3x3 matrix below
+            p_skew = np.array([
+                [0, -p[2], p[1]],
+                [p[2], 0, -p[0]],
+                [-p[1], p[0], 0]
+            ])
+    
+            # NOTE: then we assemble the 6x6 matrix. with 
+            # top-left = rotation, 
+            # top-right = 0 
+            # bottom-left = translation-rotation,
+            # bottom-right = linear rotation
+            # and each section is a 3x3 matrices.
+            t_m = np.block([
+                [r, np.zeros((3, 3))],
+                [p_skew @ r, r]
+            ])
+
+            return t_m
+
+        links_count = len(p_matrices)
+        joints_count = len(theta)
+        constraints_count = init_constraints[1]
+
+        global_inert = np.zeros((links_count * 6, links_count * 6))
+        constraints = np.zeros_like(init_constraints)
+
+        for i in range(links_count):
+            t_m = get_spatial_transform(p_matrices[i])
+            # NOTE: setting up Constraints Matrix , Eq. (13)
+            constraints[i*6:(i+1)*6, :] = t_m @ init_constraints[i*6:(i+1)*6, :]
+            # NOTE: setting up Global Inertia , Eq. (14)
+            global_inert[i*6:(i+1)*6, i*6:(i+1)*6] = t_m @ init_inertia[i] @ t_m.T
+
+        # NOTE: Calculating spatial Velocity, Eq. (16)
+        spa_vel = np.concatenate((np.zeros(constraints_count - joints_count), theta_v))
+        v = np.linalg.lstsq(constraints.T, spa_vel, rcond=None)[0]
+
+        # NOTE: bias Force (fp) and Acceleration constraints (ca)
+        gravity_wrench = np.array([0, -9.81, 0, 0, 0, 0])
+        gravity_vector = np.tile(gravity_wrench, links_count)
+
+        v_cross_matrix = np.zeros((links_count * 6, links_count * 6))
+        for i in range(joints_count):
+            v_i = v[i*6:(i+1)*6]
+            
+            # NOTE: cross product of something idk
+            v_cross_matrix[i*6:(i+1)*6, i*6:(i+1)*6] = np.array([
+                [0, -v_i[2], v_i[1], 0, 0, 0],
+                [v_i[2], 0, -v_i[0], 0, 0, 0],
+                [-v_i[1], v_i[0], 0, 0, 0, 0],
+                [0, -v_i[5], v_i[4], 0, -v_i[2], v_i[1]],
+                [v_i[5], 0, -v_i[3], v_i[2], 0, -v_i[0]],
+                [-v_i[4], v_i[3], 0, -v_i[1], v_i[0], 0]
+            ])
+        # NOTE: Getting Spatial Acceleration Constraints, Eq (17)
+        spa_acc = np.concatenate((np.zeros(constraints_count - joints_count), theta_a))
+        # NOTE: Link force equilibrium, Eq. (18)
+        fp = -ext_f - (global_inert @ gravity_vector) + (v_cross_matrix @ (global_inert @ v))
+
+        if prev_constraint is None:
+            dc_t = np.zeros_like(constraints.T)
+        else:
+            dc_t = (constraints.T - prev_constraint.T) / dt
+        
+        ca = spa_acc - (dc_t @ v)
+
+        # NOTE: matrix for joint torques, Eq. (19)
+        top_block = np.hstack((-global_inert, constraints))
+        bottom_block = np.hstack((constraints.T, np.zeros(constraints.shape[1], constraints.shape[1])))
+
+        m_block = np.vstack((top_block, bottom_block))
+        spa_block = np.concatenate(((fp, ca)))
+
+        solution = np.linalg.lstsq(m_block, spa_block, rcond=None)[0]
+
+        lambdas = solution[joints_count * 6:]
+        active_torques = lambdas[-joints_count:]
+
+        return active_torques, constraints
+
+
 
     def walk_process(self, k: KinematicsLogic):
         omega = 2.0 * m.pi * self.gait_freq
@@ -150,20 +251,33 @@ class Tuner(Node):
         for leg in LEG_NAMES:
             msg.joint_names += JOINT_NAMES[leg]
 
-        # make the Controller to look ahead of what steps to follow
+        # NOTE: make the Controller to look ahead of what steps to follow
         # instead of a single fixed target
         lookahead_steps = 5
         points = []
+
+        ramp_duration = 1.0
+        ramp_factor = min(self.t / ramp_duration, 1.0)
+        base_step_len = self.step_len * ramp_factor
 
         for i in range(lookahead_steps):
             t_ahead = self.t + i * self.dt
             phase_now = (omega * t_ahead) % (2.0 * m.pi)
             all_pos = []
 
-            for leg in LEG_NAMES:
-                leg_phase = (phase_now + PHASE_OFFSETS[leg]) % (2.0 * m.pi)
+            yaw_error = self.target_yaw - self.current_yaw
 
-                xl, yl, zl = self.trajectory_controller(leg_phase)
+            for leg in LEG_NAMES:
+                leg_phase = (phase_now + self.phase_offsets[leg]) % (2.0 * m.pi)
+
+                active_step_len = base_step_len
+
+                if leg in ['FL', 'BL']:
+                    active_step_len += (yaw_error * self.sc_yaw) * ramp_factor
+                elif leg in ['FR', 'BR']:
+                    active_step_len -= (yaw_error * self.sc_yaw) * ramp_factor
+
+                xl, yl, zl = self.trajectory_controller(leg_phase, self.step_len)
                 ix, iy, iz = k.get_init_pos(leg)
 
                 tx = ix + xl + self.x_off
@@ -387,6 +501,50 @@ def main(args=None):
         command=update_state,
     )
     walkBtn.pack()
+
+    phase_s = tk.StringVar(value="CROSS")
+    phase_state_label = tk.Label(root, text=f"Change Phase Type {phase_s.get()}", font=font_style)
+    phase_state_label.pack()
+
+    def update_phase():
+        phase_state_label.config(text=f"Change State {phase_s.get()}")
+
+        # match state.get():
+        #     case "CROSS":
+        #         # node.phase_offsets = {
+        #         #     'FL': 0.0,
+        #         #     'BR': 0.0,
+        #         #     'FR': m.pi,
+        #         #     'BL': m.pi,
+        #         # }
+        #     case "4BEAT":
+        #         node.phase_offsets = {
+        #             'FL': 0.0,
+        #             'BR': m.pi / 2.0,
+        #             'FR': m.pi,
+        #             'BL': 3.0 * m.pi / 2.0,
+        #         }
+
+
+    cross = tk.Radiobutton(
+        root,
+        text="Cross Pair",
+        value="CROSS",
+        variable=phase_s,
+        font=font_style,
+        command=update_phase,
+    )
+    cross.pack()
+
+    creep = tk.Radiobutton(
+        root,
+        text="4-beat cycle",
+        value="4BEAT",
+        variable=phase_s,
+        font=font_style,
+        command=update_phase,
+    )
+    creep.pack()
 
     # NOTE: 
     # ----- WALK TUNING ------

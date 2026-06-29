@@ -18,8 +18,11 @@ class KinematicsLogic(Node):
         self.h_bw = BODY_WIDTH / 2.0
         self.h_bl = BODY_LENGTH / 2.0
 
-        self.ee_io = np.zeros((4, 4, 4), dtype=float) # NOTE: initial end effector position or sumshit
-        self.jvso = np.zeros((4, 3, 6)) # NOTE: jvso grid array for better / cleaner data readability (for me atleast)
+        # NOTE: initial end effector position or sumshit
+        self.ee_io = np.zeros((4, 4, 4), dtype=float) 
+
+        # NOTE: jvso grid array for better / cleaner data readability (for me atleast)
+        self.jvso = np.zeros((4, 3, 6)) 
         self.robot_world = np.array([0, 0, 0])
 
         # NOTE: the jvso equation, Eq. (9) 
@@ -60,14 +63,26 @@ class KinematicsLogic(Node):
                 bs_ni = screw_joint(i+1, hbl, hbw, dir)
                 self.jvso[n][i] = jvso_equation(bs_ni)
 
+    def phase_to_index(self, leg_id):
+        match leg_id:
+            case 'FR': return 0
+            case 'BR': return 1
+            case 'BL': return 2
+            case 'FL': return 3
 
-    # NOTE: harcoded to always need input from a degrees.
-    # easier for me to input degrees. the code will always use radians tho
+    def get_init_pos(self, leg_id):
+        n = self.phase_to_index(leg_id)
+        return self.ee_io[n][0, 3], self.ee_io[n][1, 3], self.ee_io[n][2, 3]
+
+    # NOTE: -----FORWARD KINEMATIC--------
     def fk(self, leg_id, theta1, theta2, theta3):
 
+        # NOTE: harcoded to always need input from a degrees.
+        # easier for me to input degrees. the code will always use radians tho
         theta1 = m.radians(theta1)
         theta2 = m.radians(theta2)
         theta3 = m.radians(theta3)
+        n = self.phase_to_index(leg_id)
 
         # self.get_logger().info(f"input are : {round(theta1, 4)}, {round(theta2, 4)}, {round(theta3, 4)}")
 
@@ -84,12 +99,6 @@ class KinematicsLogic(Node):
 
             return expm(matrix * theta)
 
-        n = 0
-        match leg_id:
-            case 'FR': n=0
-            case 'BR': n=1
-            case 'BL': n=2
-            case 'FL': n=3
 
         # NOTE: below are the equation to get the end effector position, Eq. (10)
         ji = P(self.jvso[n][0], theta1) @ P(self.jvso[n][1], theta2) @ P(self.jvso[n][2], theta3) @ self.ee_io[n]
@@ -97,6 +106,7 @@ class KinematicsLogic(Node):
         # self.get_logger().info(f"Results : \n{ji.round(4)}")
         return ji
 
+    # NOTE: -----INVERSE KINEMATIC--------
     def ik(self, leg_id, x_r, y_r, z_r, knee_dir=-1):
         x = x_r
         y = y_r
@@ -152,17 +162,8 @@ class KinematicsLogic(Node):
 
         # self.get_logger().info(f"Results are : {round(theta1, 4)}, {round(theta2, 4)}, {round(theta3, 4)}")
         return theta1, theta2, theta3 
-    
-    def get_init_pos(self, leg_id):
-        n = 0
-        match leg_id:
-            case 'FR': n=0
-            case 'BR': n=1
-            case 'BL': n=2
-            case 'FL': n=3
 
-        return self.ee_io[n][0, 3], self.ee_io[n][1, 3], self.ee_io[n][2, 3]
-
+    # NOTE: getting end effector position relative to the body frame
     def calculate_step(self, leg_id, tx, ty, tz):
         body_x = tx - self.robot_world[0]
         body_y = ty - self.robot_world[1]
