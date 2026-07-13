@@ -79,7 +79,7 @@ class Tuner(Node):
         }
 
         # self.mqtt = MqttLogic()
-        self.timer = self.create_timer(2.0, self.send_mqtt)
+        # self.timer = self.create_timer(2.0, self.send_mqtt)
 
         self.gait_freq = 2.5
         self.x_off = 0.25
@@ -118,8 +118,8 @@ class Tuner(Node):
         msg.points.append(point) # type: ignore
         self.publisher.publish(msg)
 
-    def send_mqtt(self):
-        self.mqtt.client.publish(self.mqtt.main_topic, json.dumps(self.phi))
+    # def send_mqtt(self):
+    #     self.mqtt.client.publish(self.mqtt.main_topic, json.dumps(self.phi))
 
     def trajectory_controller(self, phase, step_len):
         z = 0.0
