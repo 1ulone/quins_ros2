@@ -1,15 +1,16 @@
-import rclpy
+# import rclpy
 import numpy as np
 import math as m
 from scipy.linalg import expm
-from rclpy.node import Node
+# from rclpy.node import Node
 
 BODY_WIDTH = 2.5
 BODY_LENGTH = 2.5
 
-class KinematicsLogic(Node):
+# class KinematicsLogic(Node):
+class KinematicsLogic():
     def __init__(self):
-        super().__init__('KinematicsLogic')
+        # super().__init__('KinematicsLogic')
 
         self.l1 = 1.2925  
         self.l2 = 1.5005  
@@ -118,7 +119,22 @@ class KinematicsLogic(Node):
         z = z - self.h_bw if 'L' in leg_id else z + self.h_bw
 
         x_a = x
-        y_a = -(m.sqrt(y**2 + z**2 - self.l1**2))
+        # y_a = -(m.sqrt(y**2 + z**2 - self.l1**2))
+        y_a = -(m.sqrt(max(0.0, y**2 + z**2 - self.l1**2)))
+
+        # NOTE: Better actual clamping value
+        margin = 0.02
+        max_reach = (self.l2 + self.l3) - margin
+        min_reach = abs(self.l2 - self.l3) + margin
+        dist = m.sqrt(x_a**2 + y_a**2)
+        if dist > max_reach:
+            scale = max_reach / dist
+            x_a *= scale
+            y_a *= scale
+        elif dist < min_reach and dist > 1e-9:
+            scale = min_reach / dist
+            x_a *= scale
+            y_a *= scale
 
         alpha_beta_denum = m.sqrt(y**2 + z**2)
 
@@ -176,19 +192,36 @@ class KinematicsLogic(Node):
         theta1, theta2, theta3 = self.ik(leg_id, lx, ly, lz)
         return theta1, theta2, theta3
 
-def main():
-    rclpy.init()
-    node = KinematicsLogic()
+    def get_spatial_inertia(self, model, data, body_id):
+        mass = model.body_mass[body_id]
+        
+        I_local_diag = model.body_inertia[body_id]
+        I_local = np.diag(I_local_diag)
+        
+        R = data.xmat[body_id].reshape(3, 3)
+        
+        I_world = R @ I_local @ R.T
+        
+        spatial_I = np.zeros((6, 6))
+        spatial_I[0:3, 0:3] = np.eye(3) * mass
+        spatial_I[3:6, 3:6] = I_world
+        
+        return spatial_I
 
-    leg_id = 'BR'
-    fk = node.fk(leg_id, 180.0, 10.0, -100.0)
-    x = fk[0, 3]
-    y = fk[1, 3]
-    z = fk[2, 3]
-    node.ik(leg_id, x, y, z)
+#
+# def main():
+#     rclpy.init()
+#     node = KinematicsLogic()
+#
+#     leg_id = 'BR'
+#     fk = node.fk(leg_id, 180.0, 10.0, -100.0)
+#     x = fk[0, 3]
+#     y = fk[1, 3]
+#     z = fk[2, 3]
+#     node.ik(leg_id, x, y, z)
+#
+#     rclpy.shutdown()
 
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
+#
+# if __name__ == '__main__':
+#     main()

@@ -118,7 +118,15 @@
     </inertial>
   </link>
 
-  <link name="bl_tip_link"/>
+  <link name="bl_tip_link">
+    <!-- <collision> -->
+    <!--   <origin xyz="0 0 0" rpy="0 0 0"/> -->
+    <!--   <geometry> -->
+    <!--     <sphere radius="0.04"/> -->
+    <!--   </geometry> -->
+    <!-- </collision> -->
+  </link>
+
   <joint name="bl_leg_to_tip" type="fixed">
     <parent link="bl_leg_link"/>
     <child link="bl_tip_link"/>
@@ -214,7 +222,15 @@
     </inertial>
   </link>
 
-  <link name="br_tip_link"/>
+  <link name="br_tip_link">
+    <!-- <collision> -->
+    <!--   <origin xyz="0 0 0" rpy="0 0 0"/> -->
+    <!--   <geometry> -->
+    <!--     <sphere radius="0.04"/> -->
+    <!--   </geometry> -->
+    <!-- </collision> -->
+  </link>
+
   <joint name="br_leg_to_tip" type="fixed">
     <parent link="br_leg_link"/>
     <child link="br_tip_link"/>
@@ -310,12 +326,21 @@
     </inertial>
   </link>
 
-  <link name="tl_tip_link"/>
+  <link name="tl_tip_link">
+    <!-- <collision> -->
+    <!--   <origin xyz="0 0 0" rpy="0 0 0"/> -->
+    <!--   <geometry> -->
+    <!--     <sphere radius="0.04"/> -->
+    <!--   </geometry> -->
+    <!-- </collision> -->
+  </link>
+
   <joint name="tl_leg_to_tip" type="fixed">
     <parent link="tl_leg_link"/>
     <child link="tl_tip_link"/>
     <origin xyz="0 -0.99207 -1.1797" rpy="0 0 0"/> 
   </joint>
+
 
   <!-- ==================== FRONT RIGHT LEG ==================== -->
 
@@ -406,7 +431,15 @@
     </inertial>
   </link>
 
-  <link name="tr_tip_link"/>
+  <link name="tr_tip_link">
+    <!-- <collision> -->
+    <!--   <origin xyz="0 0 0" rpy="0 0 0"/> -->
+    <!--   <geometry> -->
+    <!--     <sphere radius="0.04"/> -->
+    <!--   </geometry> -->
+    <!-- </collision> -->
+  </link>
+
   <joint name="tr_leg_to_tip" type="fixed">
     <parent link="tr_leg_link"/>
     <child link="tr_tip_link"/>
