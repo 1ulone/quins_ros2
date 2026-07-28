@@ -346,6 +346,9 @@ def main():
                         data.ctrl[act_id] = np.clip(computed_torque, -100, 100)
 
             mujoco.mj_step(model, data)
+            if step_counter % 40 == 0:
+                print(f"MujocoSim Step {step_counter}: base_z={data.qpos[2]:.3f}")
+
             for leg, joints in JOINT_NAMES.items():
                 for joint in joints:
                     jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, joint)

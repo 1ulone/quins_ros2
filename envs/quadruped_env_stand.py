@@ -110,13 +110,22 @@ class QuadrupedEnv(gym.Env):
 
         for body in worldbody.findall('body'):
             if body.find('joint') is None:
-                body.set('pos', '0 0 1.5')
+                body.set('pos', '0 0 2.15')
                 ET.SubElement(body, 'freejoint', name='root_floating_base')
                 break
 
         mjcf_xml = ET.tostring(root_xml, encoding='unicode')
 
         model = mujoco.MjModel.from_xml_string(mjcf_xml)
+        
+        # Collision filters matching MujocoSim.py
+        model.geom_contype[:] = 1
+        model.geom_conaffinity[:] = 0
+        floor_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
+        if floor_id != -1:
+            model.geom_contype[floor_id] = 0
+            model.geom_conaffinity[floor_id] = 1
+
         data = mujoco.MjData(model)
 
         return model, data
@@ -147,20 +156,66 @@ class QuadrupedEnv(gym.Env):
 
     def step(self, action):
         self.last_action = action
-        torques = action * self.ctrl_range
-        self.data.ctrl[self.actuator_ids] = torques
+        kp = 100.0
+        kd = 20.0
+
+        # Set floating base acceleration targets to zero
+        self.data.qacc[0:6] = 0.0
+
+        cartesian_targets = action.reshape(4, 3) * 0.15
+        actual_z = self.data.qpos[2]
+        kz = 0.6
+        x_off = 0.20
+        z_off = 1.25
+        z_err = kz * (z_off - actual_z)
+        
+        target_qpos = []
+        for i, leg in enumerate(['FL', 'FR', 'BL', 'BR']):
+            ix, iy, iz = self.kinematics.get_init_pos(leg)
+            
+            # 0.30 x_off + 2.15 ride height
+            tx = ix + x_off + cartesian_targets[i][0]
+            ty = z_off + z_err + cartesian_targets[i][1]
+            tz = iz + cartesian_targets[i][2]
+            
+            theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
+            target_qpos.extend([theta1, theta2, theta3])
+
+        for i, actuator_id in enumerate(self.actuator_ids):
+            qpos_adr = self.joint_qpos_adr[i]
+            qvel_adr = self.joint_qvel_adr[i]
+
+            q = self.data.qpos[qpos_adr]
+            qd = self.data.qvel[qvel_adr]
+
+            pos_ref = target_qpos[i]
+            vel_ref = 0.0
+
+            desired_acc = kp * (pos_ref - q) + kd * (vel_ref - qd)
+            self.data.qacc[qvel_adr] = desired_acc
+
+        mujoco.mj_inverse(self.model, self.data)
+
+        for i, actuator_id in enumerate(self.actuator_ids):
+            dof_adr = self.joint_qvel_adr[i]
+            computed_torque = self.data.qfrc_inverse[dof_adr]
+            self.data.ctrl[actuator_id] = np.clip(computed_torque, -self.ctrl_range, self.ctrl_range)
+
         mujoco.mj_step(self.model, self.data)
 
         self.step_count += 1
         obs = self.get_obs()
         reward, dist = self.get_reward()
-        terminated = bool(self.data.qpos[2] < 0.15)
+        
+        terminated = bool(self.data.qpos[2] < -2.35) 
         truncated = self.step_count >= self.max_episode_steps
         info = {"distance": dist}
+        
         return obs, reward, terminated, truncated, info
 
-    def _reset(self, seed=None):
+    def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
+        self.step_count = 0
         mujoco.mj_resetData(self.model, self.data)
         
         self.target_pos = np.array([
@@ -169,21 +224,22 @@ class QuadrupedEnv(gym.Env):
             0.3
         ], dtype=np.float32)
 
+        self.data.qpos[2] = 2.15
+
         leg_map = {'FL': 'tl', 'FR': 'tr', 'BL': 'bl', 'BR': 'br'}
         for leg in ['FL', 'FR', 'BL', 'BR']:
-            prefix = leg_map[leg]
             ix, iy, iz = self.kinematics.get_init_pos(leg)
-            tx, ty, tz = ix, iy + 1.5, iz
-            theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
             
+            # Initial target generation aligned perfectly with step() baseline
+            theta1, theta2, theta3 = self.kinematics.ik(leg, ix + 0.30, 2.15, iz)
+            
+            prefix = leg_map[leg]
             for i, joint_name in enumerate([f'{prefix}_shoulder_joint', f'{prefix}_thigh_joint', f'{prefix}_leg_joint']):
                 if joint_name in self.JOINT_NAMES:
                     idx = self.JOINT_NAMES.index(joint_name)
-                    self.data.qpos[self.joint_qpos_adr[idx]] = theta1 if i == 0 else (theta2 if i == 1 else theta3)
+                    self.data.qpos[self.joint_qpos_adr[idx]] = [theta1, theta2, theta3][i]
 
         mujoco.mj_forward(self.model, self.data)
-        self.step_count = 0
-        self.last_action = np.zeros(12, dtype=np.float32)
         return self.get_obs(), {}
 
     def render(self):
