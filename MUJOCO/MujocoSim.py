@@ -8,7 +8,7 @@ import re
 import tempfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
-from KinematicsLogic import KinematicsLogic
+from LOGIC.KinematicsLogic import KinematicsLogic
 
 BODY_WIDTH = 1.3334   
 BODY_LENGTH = 2.2924  

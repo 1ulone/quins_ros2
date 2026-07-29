@@ -1,6 +1,6 @@
 import numpy as np
 import math as m
-from scipy.linalg import block_diag, expm
+from scipy.linalg import expm
 
 BODY_WIDTH = 2.5
 BODY_LENGTH = 2.5

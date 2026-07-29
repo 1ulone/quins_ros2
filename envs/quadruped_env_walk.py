@@ -14,7 +14,7 @@ import numpy as np
 import tempfile
 import re
 import xml.etree.ElementTree as ET
-from quins.KinematicsLogic import KinematicsLogic
+from LOGIC.KinematicsLogic import KinematicsLogic
 
 class QuadrupedEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 50}

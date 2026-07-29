@@ -9,7 +9,7 @@ from typing import Optional
 from tkinter.font import Font
 from rclpy.node import Node
 from builtin_interfaces.msg import Duration
-from quins.KinematicsLogic import KinematicsLogic
+from LOGIC.KinematicsLogic import KinematicsLogic
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from nav_msgs.msg import Odometry 
 from sensor_msgs.msg import JointState

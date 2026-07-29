@@ -30,9 +30,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'tuner = quins.Tuner:main',
-            'nametag = quins.NametagPublisher:main',
-            'mujocosim = quins.MujocoSim:main',
+            'tuner = ROS.Tuner:main',
         ],
     },
 )

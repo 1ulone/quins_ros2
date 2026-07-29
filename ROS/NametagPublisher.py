@@ -1,11 +1,11 @@
 import rclpy
-from rclpy.node import Node
 import numpy as np
 import math as m
+from rclpy.node import Node
 from visualization_msgs.msg import Marker, MarkerArray
 from sensor_msgs.msg import JointState
 from rclpy.time import Time
-from quins.KinematicsLogic import KinematicsLogic
+from LOGIC.KinematicsLogic import KinematicsLogic
 
 class NametagPublisher(Node):
     def __init__(self):
