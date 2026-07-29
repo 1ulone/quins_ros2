@@ -29,6 +29,7 @@ joint_trajectory_controller:
       - tr_leg_joint
     command_interfaces:
       - position
+      - effort
     state_interfaces:
       - position
       - velocity

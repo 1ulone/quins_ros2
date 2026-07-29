@@ -1,21 +1,20 @@
-from tkinter.font import Font
-from rclpy.node import Node
-from typing import Optional
 import rclpy
-import json
 import threading
 import time
 import math as m 
-import tkinter as tk
 import numpy as np
+import tkinter as tk
+import pinocchio as pin
+from typing import Optional
+from tkinter.font import Font
+from rclpy.node import Node
 from builtin_interfaces.msg import Duration
 from quins.KinematicsLogic import KinematicsLogic
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-# from quins.MqttLogic import MqttLogic
-from nav_msgs.msg import Odometry
+from nav_msgs.msg import Odometry 
+from sensor_msgs.msg import JointState
 
 LEG_NAMES = ['FL', 'FR', 'BL', 'BR']
-
 
 JOINT_NAMES = {
     'FL': ['tl_shoulder_joint', 'tl_thigh_joint', 'tl_leg_joint'],
@@ -45,6 +44,16 @@ class Tuner(Node):
             Odometry,
             '/model/quadruped/odometry',
             self.odometry_callback,
+            10
+        )
+
+        self.current_q = np.zeros(12)
+        self.current_q_dot = np.zeros(12)
+
+        self.joint_state_subs = self.create_subscription(
+            JointState,
+            "/joint_states",
+            self.joint_state_callback,
             10
         )
 
@@ -95,6 +104,25 @@ class Tuner(Node):
         self.walking = False
         self.walk_thread: Optional[threading.Thread] = None
 
+        self.pin_model = pin.buildModelsFromUrdf("/home/ulone/ros2_ws/src/quins/urdf/quadruped.urdf")[0]
+        self.pin_data = self.pin_model.createData()
+        self.robot_mass = 10.0
+
+    def joint_state_callback(self, msg: JointState):
+        expected_order = [
+            'tl_shoulder_joint', 'tl_thigh_joint', 'tl_leg_joint',
+            'tr_shoulder_joint', 'tr_thigh_joint', 'tr_leg_joint',
+            'bl_shoulder_joint', 'bl_thigh_joint', 'bl_leg_joint',
+            'br_shoulder_joint', 'br_thigh_joint', 'br_leg_joint',
+        ]
+
+        name_to_idx = {name: i for i, name in enumerate(msg.name)}
+        for i, joint_name in enumerate(expected_order):
+            if joint_name in name_to_idx:
+                idx = name_to_idx[joint_name]
+                self.current_q[i] = msg.position[idx]
+                self.current_q_dot[i] = msg.velocity[idx]
+
     def odometry_callback(self, msg: Odometry):
         q = msg.pose.pose.orientation
 
@@ -121,6 +149,42 @@ class Tuner(Node):
     # def send_mqtt(self):
     #     self.mqtt.client.publish(self.mqtt.main_topic, json.dumps(self.phi))
 
+    def inverse_dynamics(self, q, q_dot, q_ddot_cmd, foot_forces, is_stance_array):
+        # NOTE: skipped eq 12 through 14, just a tad bit different in some equation
+        # but nonetheless same result of the constraint matrix.
+        m = pin.crba(self.pin_model, self.pin_data, q)
+        bias_forces = pin.rnea(self.pin_model, self.pin_data, q, q_dot, np.zeros_like(q_dot))
+
+        # NOTE: uses the main equation of dynamics.
+        # Torque = M(q)qdot + C(q,qdot) + G(q) - JcFc
+        torque = (m @ q_ddot_cmd) + bias_forces
+        foot_frame_names = ['bl_tip_link', 'br_tip_link', 'tl_tip_link', 'tr_tip_link']
+
+        for i,frame_name in enumerate(foot_frame_names):
+            if is_stance_array[i]:
+                frame_id = self.pin_model.getFrameId(frame_name)
+
+                # NOTE: result in Spatial Contact Jacobian Matrix 6x12 
+                #  6x12 matrix but really a nothing burger since only 6 values is 
+                #  needed/used, the top 3 (linear velocity) and the bottom 
+                #  (angular velocity).
+                J_full = pin.computeFrameJacobian(
+                    self.pin_model, 
+                    self.pin_data, 
+                    q, 
+                    frame_id, 
+                    pin.ReferenceFrame.LOCAL_WORLD_ALIGNED
+                )
+                
+                # NOTE: Extract linear XYZ translation Jacobian (first 3 rows)
+                # foot point on making contact only uses 'linear' pushing forces
+                J_linear = J_full[:3, :]
+                
+                # NOTE: The Error of J^Tc.Fc
+                torque -= (J_linear.T @ foot_forces[i])
+
+        return torque 
+
     def trajectory_controller(self, phase, step_len):
         z = 0.0
 
@@ -136,111 +200,6 @@ class Tuner(Node):
             y = self.step_h * m.sin(fraction * m.pi)
 
         return x, y, z
-
-    # NOTE: -----INVERSE DYNAMIC--------
-    def id(self, theta, theta_v, theta_a, p_matrices, init_inertia, init_constraints, prev_constraint, ext_f, dt):
-        # NOTE: 
-        # theta -> array of joint angles 
-        # theta_v -> array of joint velocities
-        # theta_a -> array of joint acceleration
-        # p_matrices -> list of 14 (4x4) homog transformation matrices from FK
-        # init_inertia -> list of 14 (6x6) spatial inertia matrices at the center of mass
-        # init_constraints -> array representing global matrix at init position
-        # prev_constraint -> array of the previous global matrix
-        # f_ext -> external force
-
-
-        def get_spatial_transform(P):
-            # NOTE: the function main purpose is to convert a
-            # 4x4 homog transformation matrix into a 6x6 spatial
-            # transformation matrix
-            
-            r = P[:3, :3]
-            p = P[:3,  3]
-
-            # NOTE: the above code p extract the rightmost value
-            # then insert into the 3x3 matrix below
-            p_skew = np.array([
-                [0, -p[2], p[1]],
-                [p[2], 0, -p[0]],
-                [-p[1], p[0], 0]
-            ])
-    
-            # NOTE: then we assemble the 6x6 matrix. with 
-            # top-left = rotation, 
-            # top-right = 0 
-            # bottom-left = translation-rotation,
-            # bottom-right = linear rotation
-            # and each section is a 3x3 matrices.
-            t_m = np.block([
-                [r, np.zeros((3, 3))],
-                [p_skew @ r, r]
-            ])
-
-            return t_m
-
-        links_count = len(p_matrices)
-        joints_count = len(theta)
-        constraints_count = init_constraints[1]
-
-        global_inert = np.zeros((links_count * 6, links_count * 6))
-        constraints = np.zeros_like(init_constraints)
-
-        for i in range(links_count):
-            t_m = get_spatial_transform(p_matrices[i])
-            # NOTE: setting up Constraints Matrix , Eq. (13)
-            constraints[i*6:(i+1)*6, :] = t_m @ init_constraints[i*6:(i+1)*6, :]
-            # NOTE: setting up Global Inertia , Eq. (14)
-            global_inert[i*6:(i+1)*6, i*6:(i+1)*6] = t_m @ init_inertia[i] @ t_m.T
-
-        # NOTE: Calculating spatial Velocity, Eq. (16)
-        spa_vel = np.concatenate((np.zeros(constraints_count - joints_count), theta_v))
-        v = np.linalg.lstsq(constraints.T, spa_vel, rcond=None)[0]
-
-        # NOTE: bias Force (fp) and Acceleration constraints (ca)
-        gravity_wrench = np.array([0, -9.81, 0, 0, 0, 0])
-        gravity_vector = np.tile(gravity_wrench, links_count)
-
-        v_cross_matrix = np.zeros((links_count * 6, links_count * 6))
-        for i in range(joints_count):
-            v_i = v[i*6:(i+1)*6]
-            
-            # NOTE: cross product of something idk
-            v_cross_matrix[i*6:(i+1)*6, i*6:(i+1)*6] = np.array([
-                [0, -v_i[2], v_i[1], 0, 0, 0],
-                [v_i[2], 0, -v_i[0], 0, 0, 0],
-                [-v_i[1], v_i[0], 0, 0, 0, 0],
-                [0, -v_i[5], v_i[4], 0, -v_i[2], v_i[1]],
-                [v_i[5], 0, -v_i[3], v_i[2], 0, -v_i[0]],
-                [-v_i[4], v_i[3], 0, -v_i[1], v_i[0], 0]
-            ])
-        # NOTE: Getting Spatial Acceleration Constraints, Eq (17)
-        spa_acc = np.concatenate((np.zeros(constraints_count - joints_count), theta_a))
-        # NOTE: Link force equilibrium, Eq. (18)
-        fp = -ext_f - (global_inert @ gravity_vector) + (v_cross_matrix @ (global_inert @ v))
-
-        if prev_constraint is None:
-            dc_t = np.zeros_like(constraints.T)
-        else:
-            dc_t = (constraints.T - prev_constraint.T) / dt
-        
-        ca = spa_acc - (dc_t @ v)
-
-        # NOTE: matrix for joint torques, Eq. (19)
-        top_block = np.hstack((-global_inert, constraints))
-        bottom_block = np.hstack((constraints.T, np.zeros(constraints.shape[1], constraints.shape[1])))
-
-        m_block = np.vstack((top_block, bottom_block))
-        spa_block = np.concatenate(((fp, ca)))
-
-        solution = np.linalg.lstsq(m_block, spa_block, rcond=None)[0]
-
-        lambdas = solution[joints_count * 6:]
-        active_torques = lambdas[-joints_count:]
-
-        return active_torques, constraints
-
-
 
     def walk_process(self, k: KinematicsLogic):
         omega = 2.0 * m.pi * self.gait_freq
@@ -264,12 +223,16 @@ class Tuner(Node):
             t_ahead = self.t + i * self.dt
             phase_now = (omega * t_ahead) % (2.0 * m.pi)
             all_pos = []
+            q_desired = []
+            is_stance_list = []
 
             yaw_error = self.target_yaw - self.current_yaw
 
             for leg in LEG_NAMES:
                 leg_phase = (phase_now + self.phase_offsets[leg]) % (2.0 * m.pi)
 
+                is_stance = (leg_phase >= m.pi)
+                is_stance_list.append(is_stance)
                 active_step_len = base_step_len
 
                 if leg in ['FL', 'BL']:
@@ -285,9 +248,9 @@ class Tuner(Node):
                 tz = iz + zl
 
                 theta1, theta2, theta3 = k.ik(leg, tx, ty, tz)
-                
-                # theta1, theta2, theta3 = k.gait_angles(leg_phase, self.theta2_center, self.theta2_amplitude, self.theta3_lift, self.theta3_stance)
 
+                q_desired.extend([theta1, theta2, theta3])
+                
                 if i == 0:
                     T = k.fk(leg, m.degrees(theta1),  m.degrees(theta2), m.degrees(theta3))
                     self.get_logger().info(
@@ -304,8 +267,30 @@ class Tuner(Node):
 
                 all_pos += [theta1, theta2, theta3]
 
+            q_d = np.array(q_desired)
+            q_curr = self.current_q 
+            q_dot_curr = self.current_q_dot
+
+            kp = 100.0
+            kd = 10.0
+
+            q_ddot_cmd = kp * (q_d - q_curr) + kd * (0.0 - q_dot_curr)
+
+            foot_forces = np.zeros((4, 3))
+            stance_count = sum(is_stance_list)
+            if stance_count > 0:
+                weight_per_foot = (self.robot_mass * 9.81) / stance_count
+                for leg_idx, in_stance in enumerate(is_stance_list):
+                    if in_stance:
+                        foot_forces[leg_idx, 2] = weight_per_foot
+
+            torque = self.inverse_dynamics(q_curr, q_dot_curr, q_ddot_cmd, foot_forces, is_stance_list)
+
             point = JointTrajectoryPoint()
             point.positions = all_pos
+            
+            point.effort = torque.tolist()
+
             point.time_from_start = Duration(
                 sec=0,
                 nanosec=int((i + 1) * self.dt * 1e9)

@@ -455,6 +455,7 @@
 
     <joint name="bl_shoulder_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
@@ -463,6 +464,7 @@
     </joint>
     <joint name="bl_thigh_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
@@ -471,6 +473,7 @@
     </joint>
     <joint name="bl_leg_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
@@ -479,6 +482,7 @@
     </joint>
     <joint name="br_shoulder_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
@@ -487,6 +491,7 @@
     </joint>
     <joint name="br_thigh_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
@@ -495,6 +500,7 @@
     </joint>
     <joint name="br_leg_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
@@ -503,6 +509,7 @@
     </joint>
     <joint name="tl_shoulder_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
@@ -511,6 +518,7 @@
     </joint>
     <joint name="tl_thigh_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
@@ -519,6 +527,7 @@
     </joint>
     <joint name="tl_leg_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
@@ -527,6 +536,7 @@
     </joint>
     <joint name="tr_shoulder_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
@@ -535,6 +545,7 @@
     </joint>
     <joint name="tr_thigh_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
@@ -543,6 +554,7 @@
     </joint>
     <joint name="tr_leg_joint">
       <command_interface name="position"/>
+      <command_interface name="effort"/>
       <state_interface name="position">
         <param name="initial_value">0.0</param>
       </state_interface>
