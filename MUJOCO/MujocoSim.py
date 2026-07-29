@@ -1,32 +1,62 @@
+import re
+import time
 import mujoco
-import mujoco.viewer
+import tempfile
 import threading
+import mujoco.viewer
 import math as m
 import numpy as np
-import time
-import re
-import tempfile
-import xml.etree.ElementTree as ET
 import tkinter as tk
+import xml.etree.ElementTree as ET
 from LOGIC.KinematicsLogic import KinematicsLogic
 
 BODY_WIDTH = 1.3334   
 BODY_LENGTH = 2.2924  
 
+LEG_NAMES = [
+    'FL',
+    'FR',
+    'BL',
+    'BR'
+]
+
+FOOT_BODY_NAMES = [
+    'bl_tip_link',
+    'br_tip_link',
+    'tl_tip_link',
+    'tr_tip_link',
+]
+
+JOINT_NAMES = {
+    'FL': ['tl_shoulder_joint', 'tl_thigh_joint', 'tl_leg_joint'],
+    'FR': ['tr_shoulder_joint', 'tr_thigh_joint', 'tr_leg_joint'],
+    'BL': ['bl_shoulder_joint', 'bl_thigh_joint', 'bl_leg_joint'],
+    'BR': ['br_shoulder_joint', 'br_thigh_joint', 'br_leg_joint'],
+}
+
+PHASE_OFFSETS = {
+    'FL': 0.0,
+    'BR': m.pi / 2.0,
+    'FR': m.pi,
+    'BL': 3.0 * m.pi / 2.0,
+}
+
+STARTUP_DELAY = 10.0
+
 class GaitParams:
     def __init__(self):
         self.gait_freq = 2.00
         self.x_off = 0.30
-        self.z_off = 2.15
-        self.step_len = 2.80
-        self.step_h = 1.50
-        self.kp = 100.0
+        self.z_off = 2.70
+        self.step_len = 2.00
+        self.step_h = 0.75
+        self.kp = 500.0
         self.kd = 20.0
-        self.kz = 0.6
-        self.k_roll = 0.5
-        self.k_pitch = 1.5
+        self.kz = 0.05
+        self.k_roll = 0.0
+        self.k_pitch = 0.50
         self.k_yaw = 0.0
-        self.kd_roll = 0.15
+        self.kd_roll = 0.0
         self.kd_pitch = 0.10
 
 def start_tuner_ui(gait: GaitParams):
@@ -120,22 +150,6 @@ def get_jacobian_constraint(model, data, leg_names):
     return C, C_T
 
 def main():
-    LEG_NAMES = ['FL', 'FR', 'BL', 'BR']
-
-    phase_offsets = {
-        'FL': 0.0,
-        'BR': m.pi / 2.0,
-        'FR': m.pi,
-        'BL': 3.0 * m.pi / 2.0,
-    }
-
-    JOINT_NAMES = {
-        'FL': ['tl_shoulder_joint', 'tl_thigh_joint', 'tl_leg_joint'],
-        'FR': ['tr_shoulder_joint', 'tr_thigh_joint', 'tr_leg_joint'],
-        'BL': ['bl_shoulder_joint', 'bl_thigh_joint', 'bl_leg_joint'],
-        'BR': ['br_shoulder_joint', 'br_thigh_joint', 'br_leg_joint'],
-    }
-
     urdf_path = '/home/ulone/ros2_ws/src/quins/urdf/quadruped.urdf'
     absolute_pkg_path = '/home/ulone/ros2_ws/src/quins/'
 
@@ -200,6 +214,8 @@ def main():
     model.geom_contype[:] = 1
     model.geom_conaffinity[:] = 0
 
+    FOOT_BODY_IDS = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name) for name in FOOT_BODY_NAMES]
+
     floor_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
     if floor_id != -1:
         model.geom_contype[floor_id] = 0
@@ -233,13 +249,11 @@ def main():
         for joint in joints
     }
 
-    # 0. Initialize floating base position to exactly the ride height
     data.qpos[0] = 0.0
     data.qpos[1] = 0.0
     data.qpos[2] = gait.z_off
     data.qpos[3:7] = [1.0, 0.0, 0.0, 0.0] # Identity quaternion
 
-    # 1. Calculate the theoretical standing pose
     for leg in LEG_NAMES:
         ix, iy, iz = k.get_init_pos(leg)
         tx = ix + gait.x_off
@@ -254,7 +268,6 @@ def main():
             data.qpos[info['qpos_adr']] = targets[i]
             ref_state[joint_name]['pos'] = targets[i]
 
-    # 3. Propagate the new kinematics
     mujoco.mj_forward(model, data)
     
     telemetry_log = []
@@ -264,8 +277,12 @@ def main():
 
             if step_counter % decimation_steps == 0:
                 t = data.time
-                omega = 2.0 * m.pi * gait.gait_freq
-                phase_now = (omega * t) % (2.0 * m.pi)
+
+                if t < STARTUP_DELAY:
+                    phase_now = m.pi
+                else:
+                    omega = 2.0 * m.pi * gait.gait_freq
+                    phase_now = (omega * (t - STARTUP_DELAY)) % (2.0 * m.pi)
 
                 actual_z = data.qpos[2]
                 qw, qx, qy, qz = data.qpos[3:7]
@@ -295,8 +312,15 @@ def main():
 
                 data.qacc[0:6] = 0.0
 
-                for leg in LEG_NAMES:
-                    leg_phase = (phase_now + phase_offsets[leg]) % (2.0 * m.pi)
+                q_ddot_cmd = np.zeros(model.nv)
+                is_stance_list = []
+
+                for leg_idx, leg in enumerate(LEG_NAMES):
+                    leg_phase = (phase_now + PHASE_OFFSETS[leg]) % (2.0 * m.pi)
+
+                    is_stance = (leg_phase >= m.pi)
+                    is_stance_list.append(is_stance)
+
                     xl, yl, zl = trajectory_controller(leg_phase, gait.step_len, gait.step_h)
                     ix, iy, iz = k.get_init_pos(leg)
 
@@ -304,14 +328,12 @@ def main():
                     is_left = 1.0 if 'L' in leg else -1.0
 
                     leg_corr = z_err + (-is_left * roll_err * (BODY_WIDTH / 2.0)) + (is_front * pitch_err * (BODY_LENGTH / 2.0))
-
                     stride_corr = is_left * yaw_err
 
                     tx = ix + xl + gait.x_off + stride_corr
                     ty = gait.z_off - yl + leg_corr
                     tz = iz + zl
-                    
-                    # 1. Retrieve IK Targets
+
                     theta1, theta2, theta3 = k.ik(leg, tx, ty, tz)
                     if abs(theta1) > m.radians(45):
                         theta1 = np.sign(theta1) * m.radians(45)
@@ -320,34 +342,39 @@ def main():
 
                     for i, joint_name in enumerate(JOINT_NAMES[leg]):
                         info = joint_info[joint_name]
-                        ref = ref_state[joint_name]
-
                         pos_ref = targets[i]
                         vel_ref = 0.0
-
-                        ref['pos'] = pos_ref
-                        ref['vel'] = vel_ref
 
                         q = data.qpos[info['qpos_adr']]
                         qd = data.qvel[info['qvel_adr']]
 
+                        vel_ref = (pos_ref - q) * control_hz * 0.1
                         desired_acc = gait.kp * (pos_ref - q) + gait.kd * (vel_ref - qd)
-                        data.qacc[info['qvel_adr']] = desired_acc
+                        q_ddot_cmd[info['qvel_adr']] = desired_acc
 
-                mujoco.mj_inverse(model, data)
+                _m = np.zeros((model.nv, model.nv), dtype=np.float64)
+                mujoco.mj_solveM(model, data, _m, np.eye(model.nv, dtype=np.float64))
+                _m = np.linalg.inv(_m)
+
+                mujoco.mj_fwdPosition(model, data)
+                mujoco.mj_fwdVelocity(model, data)
+                bias_forces = data.qfrc_bias
+
+                torque_id = (_m @ q_ddot_cmd) + bias_forces
+                torque_id[6:] = (_m[6:, 6:] @ q_ddot_cmd[6:]) + bias_forces[6:]
 
                 for leg in LEG_NAMES:
                     for joint in JOINT_NAMES[leg]:
                         info = joint_info[joint]
                         act_id = info['actuator_id']
                         dof_adr = info['qvel_adr']
-                        
-                        computed_torque = data.qfrc_inverse[dof_adr]
-                        data.ctrl[act_id] = np.clip(computed_torque, -100, 100)
+
+                        c_torque = torque_id[dof_adr]
+                        data.ctrl[act_id] = np.clip(c_torque, -100.0, 100.0)
 
             mujoco.mj_step(model, data)
-            if step_counter % 40 == 0:
-                print(f"MujocoSim Step {step_counter}: base_z={data.qpos[2]:.3f}")
+            # if step_counter % 40 == 0:
+            #     print(f"MujocoSim Step {step_counter}: base_z={data.qpos[2]:.3f}")
 
             for leg, joints in JOINT_NAMES.items():
                 for joint in joints:
@@ -356,14 +383,14 @@ def main():
                     if body_id not in body_ids:
                         body_ids.append(body_id)
 
-            if step_counter < 30:
-                bl_joints = JOINT_NAMES['BL']
-                print(f"\n--- Frame {step_counter} (Time: {data.time:.4f}) ---")
-                print(f"qpos: {[float(data.qpos[joint_info[j]['qpos_adr']]) for j in bl_joints]}")
-                print(f"qvel: {[float(data.qvel[joint_info[j]['qvel_adr']]) for j in bl_joints]}")
-                print(f"qacc_target: {[float(data.qacc[joint_info[j]['qvel_adr']]) for j in bl_joints]}")
-                print(f"qfrc_inverse: {[float(data.qfrc_inverse[joint_info[j]['qvel_adr']]) for j in bl_joints]}")
-                print(f"ctrl_clamped: {[float(data.ctrl[joint_info[j]['actuator_id']]) for j in bl_joints]}")
+            # if step_counter < 30:
+            #     bl_joints = JOINT_NAMES['BL']
+            #     print(f"\n--- Frame {step_counter} (Time: {data.time:.4f}) ---")
+            #     print(f"qpos: {[float(data.qpos[joint_info[j]['qpos_adr']]) for j in bl_joints]}")
+            #     print(f"qvel: {[float(data.qvel[joint_info[j]['qvel_adr']]) for j in bl_joints]}")
+            #     print(f"qacc_target: {[float(data.qacc[joint_info[j]['qvel_adr']]) for j in bl_joints]}")
+            #     print(f"qfrc_inverse: {[float(data.qfrc_inverse[joint_info[j]['qvel_adr']]) for j in bl_joints]}")
+            #     print(f"ctrl_clamped: {[float(data.ctrl[joint_info[j]['actuator_id']]) for j in bl_joints]}")
 
             viewer.sync()
             step_counter += 1
