@@ -1,3 +1,4 @@
+import os
 import rclpy
 import threading
 import time
@@ -11,6 +12,7 @@ from rclpy.node import Node
 from builtin_interfaces.msg import Duration
 from LOGIC.KinematicsLogic import KinematicsLogic
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from ament_index_python.packages import get_package_share_directory
 from nav_msgs.msg import Odometry 
 from sensor_msgs.msg import JointState
 
@@ -30,6 +32,8 @@ LEG_TO_PHI = {
     'BR': 'br_leg'
 }
 
+
+
 class Tuner(Node):
     def __init__(self):
         super().__init__('quins_tuner')
@@ -42,7 +46,7 @@ class Tuner(Node):
         self.current_yaw = 0.0
         self.odometry_subs = self.create_subscription(
             Odometry,
-            '/model/quadruped/odometry',
+            '/odom',
             self.odometry_callback,
             10
         )
@@ -102,11 +106,21 @@ class Tuner(Node):
         self.dt = 1.0 / self.control_rate
         self.t = 0.0
         self.walking = False
-        self.walk_thread: Optional[threading.Thread] = None
+        self.walk_timer: Optional[rclpy.timer.Timer] = None
 
-        self.pin_model = pin.buildModelsFromUrdf("/home/ulone/ros2_ws/src/quins/urdf/quadruped.urdf")[0]
+        package_path = get_package_share_directory('quins')
+        urdf_path = os.path.join(package_path, 'urdf', 'quadruped.urdf')
+
+        self.pin_model = pin.buildModelsFromUrdf(urdf_path)[0]
         self.pin_data = self.pin_model.createData()
         self.robot_mass = 10.0
+
+        self.current_pos = np.zeros(3)
+        self.current_lin_vel = np.zeros(3)
+        self.current_ang_vel = np.zeros(3)
+        self.current_roll = 0.0
+        self.current_pitch = 0.0
+        self.current_yaw = 0.0
 
     def joint_state_callback(self, msg: JointState):
         expected_order = [
@@ -124,12 +138,37 @@ class Tuner(Node):
                 self.current_q_dot[i] = msg.velocity[idx]
 
     def odometry_callback(self, msg: Odometry):
+        self.current_pos = np.array([
+            msg.pose.pose.position.x,
+            msg.pose.pose.position.y,
+            msg.pose.pose.position.z
+        ])
+
+        self.current_lin_vel = np.array([
+            msg.twist.twist.linear.x,
+            msg.twist.twist.linear.y,
+            msg.twist.twist.linear.z
+        ])
+
         q = msg.pose.pose.orientation
+        qw, qx, qy, qz = q.w, q.x, q.y, q.z
 
-        sin_y_cos_pos = 2.0 * (q.w * q.z + q.x * q.y)
-        cos_y_cos_pos = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        sinr_cosp = 2.0 * (qw * qx + qy * qz)
+        cosr_cosp = 1.0 - 2.0 * (qx * qx + qy * qy)
+        self.current_roll = m.atan2(sinr_cosp, cosr_cosp)
 
-        self. current_yaw = m.atan2(sin_y_cos_pos, cos_y_cos_pos)
+        sinp = 2.0 * (qw * qy - qz * qx)
+        self.current_pitch = m.asin(np.clip(sinp, -1.0, 1.0))
+
+        siny_cosp = 2.0 * (qw * qz + qx * qy)
+        cosy_cosp = 1.0 - 2.0 * (qy * qy + qz * qz)
+        self.current_yaw = m.atan2(siny_cosp, cosy_cosp)
+
+        self.current_ang_vel = np.array([
+            msg.twist.twist.angular.x,
+            msg.twist.twist.angular.y,
+            msg.twist.twist.angular.z
+        ])
 
     def send_theta(self, coxa, femur, tibia):
         msg = JointTrajectory()
@@ -414,10 +453,13 @@ def main(args=None):
         state_label.config(text=f"Change State {state.get()}")
         node.walking = False
 
+        if hasattr(node, 'walk_timer') and node.walk_timer is not None:
+            node.walk_timer.cancel()
+            node.walk_timer = None
+
         match state.get():
             case "TUNING":
                 on_tuning(True)
-                # Sync sliders to current position so they don't snap
                 shoulder_slider.set(node.phi["tr_leg"]["shoulder"])
                 thigh_slider.set(node.phi["tr_leg"]["thigh"])
                 leg_slider.set(node.phi["tr_leg"]["leg"])
@@ -431,18 +473,14 @@ def main(args=None):
                 animate_transition(0, 0, 0, duration=1.0)
             case "WALK":
                 on_tuning(False)
-
                 node.target_yaw = node.current_yaw
                 node.t = 0.0
+                node.walking = True
 
-                def walk_loop():
-                    node.walking = True
-                    while node.walking:
-                        node.walk_process(kinematics)
-                        time.sleep(node.dt * 2)
-
-                node.walk_thread = threading.Thread(target=walk_loop, daemon=True)
-                node.walk_thread.start()
+                node.walk_timer = node.create_timer(
+                    node.dt, 
+                    lambda: node.walk_process(kinematics)
+                )
 
     # NOTE: 
     # ----- RADIO BUTTON ------
