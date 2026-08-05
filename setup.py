@@ -31,6 +31,7 @@ setup(
     entry_points={
         'console_scripts': [
             'tuner = ROS.Tuner:main',
+            'motor_tuner = ROS.MotorController:main',
         ],
     },
 )
