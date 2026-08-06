@@ -305,7 +305,7 @@ class Tuner(Node):
 
         # Pass 1: Compute target joint positions and stance states
         for i in range(lookahead_steps):
-            t_ahead = self.t + (i + 1) * self.dt
+            t_ahead = self.t + i * self.dt
             phase_now = (omega * t_ahead) % (2.0 * m.pi)
             q_desired = []
             is_stance_list = []
@@ -418,7 +418,7 @@ class Tuner(Node):
             stance_count = sum(is_stance_list)
             if stance_count > 0:
                 weight_per_foot = (self.robot_mass * 9.81) / stance_count
-                t_ahead = self.t + (i + 1) * self.dt
+                t_ahead = self.t + i * self.dt
                 phase_now = (omega * t_ahead) % (2.0 * m.pi)
 
                 for leg_idx, leg_name in enumerate(LEG_NAMES):
@@ -435,7 +435,7 @@ class Tuner(Node):
             point.effort = torque.tolist()
             point.time_from_start = Duration(
                 sec=0,
-                nanosec=int((i + 1) * self.dt * 1e9)
+                nanosec=int(i * self.dt * 1e9)
             )
             points.append(point)
 
