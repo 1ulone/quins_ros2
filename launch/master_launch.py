@@ -24,15 +24,23 @@ def generate_launch_description():
         output='screen'
     )
 
-    tuner_node = Node(
+    control_node = Node(
         package='quins',
-        executable='tuner',
+        executable='control',
         name='quins_tuner',
+        output='screen'
+    )
+
+    gui_node = Node(
+        package='quins',
+        executable='gui',
+        name='quins_tuner_gui',
         output='screen'
     )
 
     return LaunchDescription([
         gazebo_launch,
         bridge_node,
-        tuner_node
+        control_node, 
+        gui_node
     ])
