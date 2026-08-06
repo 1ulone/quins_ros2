@@ -10,6 +10,7 @@ from tkinter import ttk
 import pinocchio as pin
 
 from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
 from typing import Optional
 from collections import deque
 from tkinter.font import Font
@@ -107,6 +108,7 @@ class Tuner(Node):
         self.control_rate = 50.0
         self.dt = 1.0 / self.control_rate
         self.t = 0.0
+        self.walk_start_time = None
         self.walking = False
         self.walk_timer: Optional[rclpy.timer.Timer] = None
 
@@ -128,6 +130,9 @@ class Tuner(Node):
         self.desired_history = deque(maxlen=200)
         self.measured_history = deque(maxlen=200)
 
+        self.last_cycle_wall_time = None
+        self.last_join_state_stamp = None
+
     def joint_state_callback(self, msg: JointState):
         expected_order = [
             'tl_shoulder_joint', 'tl_thigh_joint', 'tl_leg_joint',
@@ -142,6 +147,8 @@ class Tuner(Node):
                 idx = name_to_idx[joint_name]
                 self.current_q[i] = msg.position[idx]
                 self.current_q_dot[i] = msg.velocity[idx]
+
+        self.last_join_state_stamp = self.get_clock().now()
 
     def odometry_callback(self, msg: Odometry):
         self.current_pos = np.array([
@@ -196,7 +203,7 @@ class Tuner(Node):
         bias_forces = pin.rnea(self.pin_model, self.pin_data, q, q_dot, np.zeros_like(q_dot))
 
         torque = (m_matrix @ q_ddot_cmd) + bias_forces
-        foot_frame_names = ['tl_tip_link', 'tr_tip_link', 'bl_tip_link', 'br_tip_link']
+        foot_frame_names = ['bl_tip_link', 'br_tip_link', 'tl_tip_link', 'tr_tip_link']
 
         for i, frame_name in enumerate(foot_frame_names):
             if is_stance_array[i]:
@@ -229,6 +236,8 @@ class Tuner(Node):
         return x, y, z
 
     def walk_process(self, k: KinematicsLogic):
+        # if self.walk_start_time is not None:
+        #     self.t = (self.get_clock().now() - self.walk_start_time).nanoseconds * 1e-9
         omega = 2.0 * m.pi * self.gait_freq
 
         msg = JointTrajectory()
@@ -248,7 +257,7 @@ class Tuner(Node):
 
         # Pass 1: Compute target joint positions and stance states
         for i in range(lookahead_steps):
-            t_ahead = self.t + i * self.dt
+            t_ahead = self.t + (i + 1) * self.dt
             phase_now = (omega * t_ahead) % (2.0 * m.pi)
             q_desired = []
             is_stance_list = []
@@ -257,7 +266,7 @@ class Tuner(Node):
 
             for leg in LEG_NAMES:
                 leg_phase = (phase_now + self.phase_offsets[leg]) % (2.0 * m.pi)
-                is_stance = (leg_phase < m.pi)
+                is_stance = (leg_phase >= m.pi)
                 is_stance_list.append(is_stance)
                 active_step_len = base_step_len
 
@@ -266,7 +275,7 @@ class Tuner(Node):
                 elif leg in ['FR', 'BR']:
                     active_step_len -= (yaw_error * self.sc_yaw) * ramp_factor
 
-                xl, yl, zl = self.trajectory_controller(leg_phase, active_step_len)
+                xl, yl, zl = self.trajectory_controller(leg_phase, self.step_len)
                 ix, iy, iz = k.get_init_pos(leg)
 
                 tx = ix + xl + self.x_off
@@ -309,36 +318,49 @@ class Tuner(Node):
             all_acc_history.append(q_ddot_d)
 
         # Pass 4: Compute inverse dynamics torques and construct active trajectory points
+        torque = np.zeros(14) 
         for i in range(lookahead_steps):
             q_d = all_pos_history[i]
             q_dot_d = all_vel_history[i]
             q_ddot_d = all_acc_history[i]
-            is_stance_list = is_stance_history[i]
 
             if i == 0:
+                is_stance_list = is_stance_history[0]
                 q_eval = self.current_q
                 q_dot_eval = self.current_q_dot
                 self.time_history.append(self.t)
                 self.desired_history.append(q_d[1])
                 self.measured_history.append(self.current_q[1])
 
+                now = self.get_clock().now()
+                if self.last_cycle_wall_time is not None:
+                    actual_dt = (now - self.last_cycle_wall_time).nanoseconds * 1e-9
+                    if abs(actual_dt - self.dt) > 0.2 * self.dt:
+                        self.get_logger().warn(
+                            f"fuckign jitter: expected {self.dt*1000:.1f} ms, "
+                            f"got {actual_dt*1000:.1f} ms"
+                        )
+                self.last_cycle_wall_time = now
+
+                if self.last_join_state_stamp is not None:
+                    staleness = (now - self.last_join_state_stamp).nanoseconds * 1e-9
+                    if staleness > 0.5 * self.dt:
+                        self.get_logger().warn(
+                            f"current_q is {staleness*1000:.1f} ms stale at consumption"
+                        )
+
                 kp = 100.0
                 kd = 10.0
                 q_ddot_cmd = q_ddot_d + kp * (q_d - q_eval) + kd * (q_dot_d - q_dot_eval)
-            else:
-                q_eval = q_d
-                q_dot_eval = q_dot_d
-                q_ddot_cmd = q_ddot_d
+                foot_forces = np.zeros((4, 3))
+                stance_count = sum(is_stance_list)
+                if stance_count > 0:
+                    weight_per_foot = (self.robot_mass * 9.81) / stance_count
+                    for leg_idx, in_stance in enumerate(is_stance_list):
+                        if in_stance:
+                            foot_forces[leg_idx, 2] = weight_per_foot
 
-            foot_forces = np.zeros((4, 3))
-            stance_count = sum(is_stance_list)
-            if stance_count > 0:
-                weight_per_foot = (self.robot_mass * 9.81) / stance_count
-                for leg_idx, in_stance in enumerate(is_stance_list):
-                    if in_stance:
-                        foot_forces[leg_idx, 2] = weight_per_foot
-
-            torque = self.inverse_dynamics(q_eval, q_dot_eval, q_ddot_cmd, foot_forces, is_stance_list)
+                torque = self.inverse_dynamics(q_eval, q_dot_eval, q_ddot_cmd, foot_forces, is_stance_list)
 
             point = JointTrajectoryPoint()
             point.positions = q_d.tolist()
@@ -347,7 +369,7 @@ class Tuner(Node):
             point.effort = torque.tolist()
             point.time_from_start = Duration(
                 sec=0,
-                nanosec=int(i * self.dt * 1e9)
+                nanosec=int((i + 1) * self.dt * 1e9)
             )
             points.append(point)
 
@@ -369,8 +391,11 @@ class Tuner(Node):
         self.t += self.dt
 
 
+# NOTE: MAIN DEF 
 def main(args=None):
     rclpy.init(args=args)
+    import gc
+    gc.disable()
     node = Tuner()
     kinematics = KinematicsLogic()
 
@@ -439,9 +464,9 @@ def main(args=None):
             
             canvas.draw()
             
-        root.after(100, refresh_plot)
+        root.after(500, refresh_plot)
 
-    root.after(100, refresh_plot)
+    root.after(500, refresh_plot)
 
     root.title("Quadruped Tuner")
     root.geometry("500x450") 
@@ -497,6 +522,7 @@ def main(args=None):
                 on_tuning(False)
                 node.target_yaw = node.current_yaw
                 node.t = 0.0
+                node.walk_start_time = node.get_clock().now()
                 node.walking = True
 
                 node.walk_timer = node.create_timer(
@@ -649,7 +675,10 @@ def main(args=None):
     leg_slider_label = tk.Label(root, text="Knee Angle", font=font_style)
     leg_slider = tk.Scale(root, from_=-3.14, to=3.14, resolution=0.01, orient="horizontal", length=300, command=tuning_process)
 
-    spin_thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
+    # spin_thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
+    spin_thread = threading.Thread(target=executor.spin, daemon=True)
     spin_thread.start()
 
     root.mainloop()

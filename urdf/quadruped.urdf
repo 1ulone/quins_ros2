@@ -564,16 +564,12 @@
   </ros2_control>
 
   <!-- ==================== Gazebo plugin ==================== -->
-
-  <!-- FIXED: The path is now injected from gazebo.launch.py via xacro arg.
-       This replaces the old $(find quins) substitution which is resolved
-       unreliably by rospkg on minimal server setups, causing a segfault
-       inside GazeboSimSystem::initSim when the path is invalid. -->
   <gazebo>
     <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
       <parameters>$(arg controller_config)</parameters>
       <robot_param>robot_description</robot_param>
       <robot_param_node>robot_state_publisher</robot_param_node>
+      <position_proportional_gain>0.3</position_proportional_gain>
     </plugin>
   </gazebo>
 
