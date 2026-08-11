@@ -1,3 +1,4 @@
+import enum
 import os
 import time
 import rclpy
@@ -14,7 +15,7 @@ from sensor_msgs.msg import JointState
 from builtin_interfaces.msg import Duration
 from LOGIC.KinematicsLogic import KinematicsLogic
 from rclpy.executors import MultiThreadedExecutor
-from std_msgs.msg import String, Float64MultiArray
+from std_msgs.msg import String, Float64MultiArray, Int8MultiArray
 from ament_index_python.packages import get_package_share_directory
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
@@ -51,6 +52,7 @@ class Tuner(Node):
         # NOTE: Publisher 
         self.joint_pub = self.create_publisher(JointTrajectory, '/joint_trajectory_controller/joint_trajectory', 10)
         self.graph_pub = self.create_publisher(Float64MultiArray, '/tuner/graph', 10)
+        self.contact_pub = self.create_publisher(Int8MultiArray, 'tuner/contacts', 10)
 
         # NOTE: Subcriber
         self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
@@ -58,6 +60,7 @@ class Tuner(Node):
         self.create_subscription(JointState, "/joint_states", self.joint_state_callback, 10)
         self.create_subscription(Float64MultiArray, '/tuner/raw', self.raw_tune_callback, 10)
         self.create_subscription(Float64MultiArray, '/tuner/params', self.params_callback, 10)
+        self.create_subscription(Float64MultiArray, '/tuner/jparams', self.jump_params_callback, 10)
         self.create_subscription(Float64MultiArray, '/tuner/phase_offsets', self.phase_callback, 10)
 
         # NOTE: Timer
@@ -88,6 +91,10 @@ class Tuner(Node):
         self.last_cycle_wall_time = None
         self.last_join_state_stamp = None
 
+        # NOTE: Jump Private Variable
+        self.jump_state = ""
+        self.jump_timer: Optional[rclpy.timer.Timer] = None
+
         # NOTE: Walk Tune Parameters
         self.gait_freq = 1.0
         self.x_off = 0.25
@@ -96,9 +103,24 @@ class Tuner(Node):
         self.step_h = 0.75
         self.sc_yaw = 0.9
 
+        # NOTE: Jump Tune Parameters
+        self.y_crouch = 1.0
+        self.y_thrust = 3.8
+        self.y_flight = 1.8
+        self.x_thrust = 0.5
+        self.x_flight =-1.5
+        self.x_catch = -1.5
+        self.prepare_time = 0.8
+        self.thrust_time = 0.15
+        self.flight_time = 0.05
+        self.landing_time = 0.5
+        self.catch_time = 0.1
+        self.graph_t = 0.0
+
         # NOTE: Inverse Dynamics Parameters (Velocity & Acceleration)
         self.current_q = np.zeros(12)
         self.current_q_dot = np.zeros(12)
+        self.filtered_fz = np.zeros(4)
 
         # NOTE: Phase Offsets
         # 3.14 -> 360 degree, radian to angle 
@@ -145,6 +167,10 @@ class Tuner(Node):
             self.walk_timer.cancel()
             self.walk_timer = None
 
+        if hasattr(self, 'jump_timer') and self.jump_timer is not None:
+            self.jump_timer.cancel()
+            self.jump_timer = None
+
         match msg.data:
             case "TUNING": 
                 # NOTE: handled on GUI
@@ -154,7 +180,7 @@ class Tuner(Node):
                 self.animate_transition(0.00, 1.30, -2.70)
             case "IDLE": 
                 # NOTE: just sends a target to lerp into
-                self.animate_transition(0.00, 0.45, 0.90)
+                self.animate_transition(0.00, 0.45, -0.90)
             case "WALK": 
                 # NOTE: create a timed process for a walk process
                 self.target_yaw = self.current_yaw
@@ -166,6 +192,15 @@ class Tuner(Node):
                     self.dt,
                     lambda: self.walk_process(self.kinematics)
                 )
+            case "JUMP":
+                # NOTE: create a timed process for the jump process
+                self.t = 0.0
+                self.jump_state = "PREPARE"
+                self.graph_t = 0.0
+                self.jump_timer = self.create_timer(
+                    self.dt,
+                    lambda:self.jump_process(self.kinematics)
+                )
 
     def params_callback(self, msg: Float64MultiArray):
         # NOTE: just sets the Walk Tune Param into a new Value from msg
@@ -175,6 +210,20 @@ class Tuner(Node):
         self.step_len = msg.data[3]
         self.step_h = msg.data[4]
         self.sc_yaw = msg.data[5]
+
+    def jump_params_callback(self, msg: Float64MultiArray):
+        # NOTE: just sets the Jump Tune Param into a new Value from msg
+        self.y_crouch = msg.data[0]
+        self.y_thrust = msg.data[1] 
+        self.y_flight = msg.data[2] 
+        self.x_thrust = msg.data[3]
+        self.x_flight = msg.data[4]
+        self.x_catch = msg.data[5]
+        self.prepare_time = msg.data[6] 
+        self.thrust_time = msg.data[7] 
+        self.flight_time = msg.data[8]
+        self.landing_time = msg.data[9]
+        self.catch_time = msg.data[10]
 
     def phase_callback(self, msg: Float64MultiArray):
         # NOTE: just sets the Phase Offsets into a new Value from msg
@@ -197,12 +246,30 @@ class Tuner(Node):
             'br_shoulder_joint', 'br_thigh_joint', 'br_leg_joint',
         ]
 
+        q_sorted = np.zeros(12)
+        q_dot_sorted = np.zeros(12)
+        tau_sorted = np.zeros(12)
+
         name_to_idx = {name: i for i, name in enumerate(msg.name)}
         for i, joint_name in enumerate(expected_order):
             if joint_name in name_to_idx:
                 idx = name_to_idx[joint_name]
-                self.current_q[i] = msg.position[idx]
-                self.current_q_dot[i] = msg.velocity[idx]
+                q_sorted[i] = msg.position[idx]
+                q_dot_sorted[i] = msg.velocity[idx]
+                tau_sorted[i] = msg.effort[idx]
+
+        self.current_q = q_sorted
+        self.current_q_dot = q_dot_sorted
+
+        contact_states, vertical_forces = self.estimate_grf_contact(
+            self.current_q,
+            self.current_q_dot,
+            tau_sorted
+        )
+
+        contacts = Int8MultiArray()
+        contacts.data = contact_states
+        self.contact_pub.publish(contacts)
 
         self.last_join_state_stamp = self.get_clock().now()
 
@@ -329,6 +396,41 @@ class Tuner(Node):
             y = self.step_h * m.sin(fraction * m.pi)
 
         return x, y, z
+
+    # NOTE: Check if foot touching the ground and get ground reaction forces
+    def estimate_grf_contact(self, q, q_dot, torque_measured, force_threshold=1.0):
+        torque_expected = pin.rnea(self.pin_model, self.pin_data, q, q_dot, np.zeros_like(q_dot))
+        torque_residual = torque_expected - torque_measured
+
+        foot_frame_names = ['tl_tip_link', 'tr_tip_link', 'bl_tip_link', 'br_tip_link']
+
+        contact_state = []
+        vertical_forces = []
+
+        alpha = 0.15
+
+        for i, frame_name in enumerate(foot_frame_names):
+            frame_id = self.pin_model.getFrameId(frame_name)
+
+            j_full = pin.computeFrameJacobian(
+                self.pin_model,
+                self.pin_data,
+                q,
+                frame_id,
+                pin.ReferenceFrame.LOCAL_WORLD_ALIGNED
+            )
+            j_linear = j_full[:3, :]
+            j_t_pinv = np.linalg.pinv(j_linear.T)
+            f_ext = j_t_pinv @ torque_residual
+
+            fz = f_ext[2]
+            self.filtered_fz[i] = (alpha * fz) + ((1.0 - alpha) * self.filtered_fz[i])
+            is_touching_ground = bool(self.filtered_fz[i] > force_threshold)
+
+            contact_state.append(is_touching_ground)
+            vertical_forces.append(fz)
+
+        return contact_state, vertical_forces 
 
     # NOTE: reason as to why inverse dynamics is not inside KinematicsLogic.py
     # is because only Gazebo / Ros uses Pinocchio. So not really modular-able
@@ -526,21 +628,21 @@ class Tuner(Node):
                 self.graph_pub.publish(graph_msg)
 
                 # NOTE: For debugging purpose
-                now = self.get_clock().now()
-                staleness = 0.0
-                if self.last_cycle_wall_time is not None:
-                    actual_dt = (now - self.last_cycle_wall_time).nanoseconds * 1e-9
-                    if abs(actual_dt - self.dt) > 1.5 * self.dt:
-                        self.get_logger().warn(
-                            f"its jittering: expected {self.dt*1000:.1f} ms, "
-                            f"got {actual_dt*1000:.1f} ms"
-                        )
-                self.last_cycle_wall_time = now
-
-                if self.last_join_state_stamp is not None:
-                    staleness = (now - self.last_join_state_stamp).nanoseconds * 1e-9
-                    if staleness > 2.5 * self.dt:
-                        self.get_logger().warn(f"current_q is {staleness*1000:.1f} ms stale at consumption")
+                # now = self.get_clock().now()
+                # staleness = 0.0
+                # if self.last_cycle_wall_time is not None:
+                #     actual_dt = (now - self.last_cycle_wall_time).nanoseconds * 1e-9
+                #     if abs(actual_dt - self.dt) > 1.5 * self.dt:
+                #         self.get_logger().warn(
+                #             f"its jittering: expected {self.dt*1000:.1f} ms, "
+                #             f"got {actual_dt*1000:.1f} ms"
+                #         )
+                # self.last_cycle_wall_time = now
+                #
+                # if self.last_join_state_stamp is not None:
+                #     staleness = (now - self.last_join_state_stamp).nanoseconds * 1e-9
+                #     if staleness > 2.5 * self.dt:
+                #         self.get_logger().warn(f"current_q is {staleness*1000:.1f} ms stale at consumption")
 
             # NOTE: Initialize the foot force matrix and Counts the active stance legs
             foot_forces = np.zeros((4, 3))
@@ -593,6 +695,116 @@ class Tuner(Node):
         msg.points = points
         self.joint_pub.publish(msg)
         self.t += self.dt # increment the time mod (t)
+
+    def jump_process(self, k: KinematicsLogic):
+        self.get_logger().warn(f"state : {self.jump_state}")
+        y_idle = self.z_off
+        y_crouch = self.y_crouch
+        y_thrust = self.y_thrust
+        y_flight = self.y_flight
+
+        x_idle = self.x_off
+        x_thrust = self.x_off + self.x_thrust 
+        x_flight = self.x_off + self.x_flight
+        x_catch = self.x_off + self.x_catch
+
+        current_y = y_idle
+        current_x = x_idle
+
+        avg_fz = np.mean(self.filtered_fz)
+        contact_threshold = 2.0
+
+        match self.jump_state:
+            case "PREPARE":
+                fraction = min(self.t / self.prepare_time, 1.0)
+                current_y = y_idle + fraction * (y_crouch - y_idle) 
+                current_x = x_idle + fraction * (x_thrust - x_idle)
+
+                t1 = m.degrees(self.current_q[0])
+                t2 = m.degrees(self.current_q[1])
+                t3 = m.degrees(self.current_q[2])
+                fk_matrix = k.fk('FL', t1, t2, t3) 
+                current_y_actual = abs(fk_matrix[1, 3])
+
+                if fraction >= 1.0 and abs(current_y_actual - y_crouch) < 0.1:
+                    self.jump_state = "THRUST"
+                    self.t = 0.0
+            case "THRUST":
+                fraction = min(self.t / self.thrust_time, 1.0)
+                current_y = y_crouch + fraction * (y_thrust - y_crouch)
+                current_x = x_thrust 
+
+                if fraction > 0.5 and avg_fz < contact_threshold:
+                    self.jump_state = "FLIGHT"
+                    self.t = 0.0
+                    
+            case "FLIGHT":
+                fraction = min(self.t / self.flight_time, 1.0)
+                current_y = y_thrust + fraction * (y_flight - y_thrust)
+                current_x = x_thrust + fraction * (x_flight - x_thrust)
+
+                if fraction >= 1.0:
+                    self.jump_state = "DESCENT"
+                    self.t = 0.0
+
+            case "DESCENT":
+                fraction = min(self.t / self.catch_time, 1.0)
+                current_y = y_flight 
+                current_x = x_flight + fraction * (x_catch - x_flight)
+
+                if self.t > 0.05 and avg_fz > contact_threshold:
+                    self.jump_state = "LANDING"
+                    self.t = 0.0
+
+            case "LANDING":
+                fraction = min(self.t / self.landing_time, 1.0)
+                current_y = y_flight + fraction * (y_idle - y_flight)
+                current_x = x_catch + fraction * (x_idle - x_catch)
+
+                if fraction >= 1.0:
+                    self.jump_state = ""
+                    self.jumping = False
+                    if self.jump_timer is not None:
+                        self.jump_timer.cancel()
+                        self.jump_timer = None
+                    return
+
+        msg = JointTrajectory()
+        msg.joint_names = []
+        for leg in LEG_NAMES:
+            msg.joint_names += JOINT_NAMES[leg]
+
+        q_desired = []
+        for leg in LEG_NAMES:
+            ix, iy, iz = k.get_init_pos(leg)
+            
+            tx = ix + current_x 
+            ty = current_y
+            tz = iz 
+            
+            theta1, theta2, theta3 = k.ik(leg, tx, ty, tz)
+            q_desired.extend([theta1, theta2, theta3])
+            
+        graph_msg = Float64MultiArray()
+        graph_msg.data = [
+            float(self.graph_t),
+            float(q_desired[1]),
+            float(self.current_q[1])
+        ]
+        self.graph_pub.publish(graph_msg)
+
+        point = JointTrajectoryPoint()
+        point.positions = q_desired
+        point.time_from_start = Duration(
+            sec=0, 
+            nanosec=int(self.dt * 1e9)
+        )
+        
+        msg.points = [point]
+        self.joint_pub.publish(msg)
+        
+        self.t += self.dt
+        self.graph_t += self.dt
 
 
 

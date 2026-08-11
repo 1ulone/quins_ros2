@@ -1,46 +1,52 @@
-from operator import ge
-import os
 import time
 import rclpy
 import threading
 
 import math as m 
-import numpy as np
 import tkinter as tk
 from tkinter import ttk
-import pinocchio as pin
 
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
-from typing import Optional
 from collections import deque
 from tkinter.font import Font
-from nav_msgs.msg import Odometry 
 from matplotlib.figure import Figure
-from sensor_msgs.msg import JointState
-from builtin_interfaces.msg import Duration
-from LOGIC.KinematicsLogic import KinematicsLogic
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from ament_index_python.packages import get_package_share_directory
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from std_msgs.msg import String, Float64MultiArray
+from std_msgs.msg import String, Float64MultiArray, Int8MultiArray
 
 class Gui(Node):
     def __init__(self):
         super().__init__('quins_tuner_gui')
         self.state_pub = self.create_publisher(String, '/tuner/state', 10)
         self.params_pub = self.create_publisher(Float64MultiArray, '/tuner/params', 10)
+        self.jparams_pub = self.create_publisher(Float64MultiArray, '/tuner/jparams', 10)
         self.phase_offsets_pub = self.create_publisher(Float64MultiArray, '/tuner/phase_offsets', 10)
         self.raw_pub = self.create_publisher(Float64MultiArray, '/tuner/raw', 10)
         self.create_subscription(Float64MultiArray, '/tuner/graph', self.graph_callback, 10)
+        self.create_subscription(Int8MultiArray, '/tuner/contacts', self.foot_contacts_callback, 10)
         self.time_history = deque(maxlen=200)
         self.desired_history = deque(maxlen=200)
         self.measured_history = deque(maxlen=200)
+
+        self.foot_contacts = {
+            'FL': False,
+            'BR': False,
+            'FR': False,
+            'BL': False,
+        }
 
     def graph_callback(self, msg: Float64MultiArray):
         self.time_history.append(msg.data[0])
         self.desired_history.append(msg.data[1])
         self.measured_history.append(msg.data[2])
+
+    def foot_contacts_callback(self, msg: Int8MultiArray):
+        self.foot_contacts = {
+            'FL': True if msg.data[0]==1 else False,
+            'BR': True if msg.data[1]==1 else False,
+            'FR': True if msg.data[2]==1 else False,
+            'BL': True if msg.data[3]==1 else False,
+        }
 
 def main(args=None):
     rclpy.init(args=args)
@@ -87,7 +93,7 @@ def main(args=None):
         step()
         
     root = tk.Tk()
-    fig = Figure(figsize=(7.5, 5.0), dpi=100)
+    fig = Figure(figsize=(5.0, 2.5), dpi=100)
     ax = fig.add_subplot(111)
     ax.set_title("Joint Position Tracking")
     ax.set_xlabel("Time (s)")
@@ -135,6 +141,7 @@ def main(args=None):
 
     def on_tuning(is_on):
         if is_on:
+            slider_group.grid(row=4, column=0)
             shoulder_slider.pack()
             shoulder_slider_label.pack()
             thigh_slider.pack()
@@ -142,6 +149,7 @@ def main(args=None):
             leg_slider.pack()
             leg_slider_label.pack()
         else:
+            slider_group.grid_forget()
             shoulder_slider.pack_forget()
             shoulder_slider_label.pack_forget()
             thigh_slider.pack_forget()
@@ -153,6 +161,11 @@ def main(args=None):
         state_msg = String()
         state_msg.data = state.get()
         node.state_pub.publish(state_msg)
+
+        if state.get() == "JUMP":
+            node.time_history.clear()
+            node.desired_history.clear()
+            node.measured_history.clear()
 
         if state.get() == "TUNING":
             on_tuning(True)
@@ -198,6 +211,16 @@ def main(args=None):
         command=update_state,
     )
     walkBtn.grid(column=1, row=1)
+
+    jumpBtn = tk.Radiobutton(
+        state_group,
+        text="JUMP",
+        value="JUMP",
+        variable=state,
+        font=font_style,
+        command=update_state,
+    )
+    jumpBtn.grid(column=0, row=2)
 
     phase_s = tk.StringVar(value="CROSS")
     phase_group = ttk.LabelFrame(grid_container, text=f"Change Phase Type {phase_s.get()}", padding=15)
@@ -317,14 +340,147 @@ def main(args=None):
     apply_btn = tk.Button(wt_group, text="Apply", command=apply_entry)
     apply_btn.grid(row=2, column=0, columnspan=3, sticky='nsew')
 
-    shoulder_slider_label = tk.Label(root, text="Shoulder Angle", font=font_style)
-    shoulder_slider = tk.Scale(root, from_=-3.14, to=3.14, resolution=0.01, orient="horizontal", length=300, command=tuning_process)
+    jt_group = ttk.LabelFrame(grid_container, text="JUMP TUNING PARAMS", padding=15)
+    jt_group.grid(row=3, column=0, columnspan=2)
 
-    thigh_slider_label = tk.Label(root, text="Thigh Angle", font=font_style)
-    thigh_slider = tk.Scale(root, from_=-3.14, to=3.14, resolution=0.01, orient="horizontal", length=300, command=tuning_process)
+    yc_frame = ttk.Frame(jt_group)
+    yc_frame.grid(row=0, column=0)
+    tk.Label(yc_frame, text="Y Crouch").pack()
+    yc = tk.StringVar(value=str(0.75))
+    tk.Entry(yc_frame, textvariable=yc).pack()
 
-    leg_slider_label = tk.Label(root, text="Knee Angle", font=font_style)
-    leg_slider = tk.Scale(root, from_=-3.14, to=3.14, resolution=0.01, orient="horizontal", length=300, command=tuning_process)
+    yt_frame = ttk.Frame(jt_group)
+    yt_frame.grid(row=0, column=1)
+    tk.Label(yt_frame, text="Y Thrust").pack()
+    yt = tk.StringVar(value=str(5.0))
+    tk.Entry(yt_frame, textvariable=yt).pack()
+
+    yf_frame = ttk.Frame(jt_group)
+    yf_frame.grid(row=0, column=2)
+    tk.Label(yf_frame, text="Y Flight").pack()
+    yf = tk.StringVar(value=str(1.0))
+    tk.Entry(yf_frame, textvariable=yf).pack()
+
+    xt_frame = ttk.Frame(jt_group)
+    xt_frame.grid(row=1, column=0)
+    tk.Label(xt_frame, text="X Thrust").pack()
+    xt = tk.StringVar(value=str(0.6))
+    tk.Entry(xt_frame, textvariable=xt).pack()
+
+    xf_frame = ttk.Frame(jt_group)
+    xf_frame.grid(row=1, column=1)
+    tk.Label(xf_frame, text="X Flight").pack()
+    xf = tk.StringVar(value=str(1.0))
+    tk.Entry(xf_frame, textvariable=xf).pack()
+
+    xc_frame = ttk.Frame(jt_group)
+    xc_frame.grid(row=1, column=2)
+    tk.Label(xc_frame, text="X Catch").pack()
+    xc = tk.StringVar(value=str(-1))
+    tk.Entry(xc_frame, textvariable=xc).pack()
+
+    pt_frame = ttk.Frame(jt_group)
+    pt_frame.grid(row=2, column=0)
+    tk.Label(pt_frame, text="Prepare Time").pack()
+    pt = tk.StringVar(value=str(1.5))
+    tk.Entry(pt_frame, textvariable=pt).pack()
+
+    tt_frame = ttk.Frame(jt_group)
+    tt_frame.grid(row=2, column=1)
+    tk.Label(tt_frame, text="Thrust Time").pack()
+    tt = tk.StringVar(value=str(0.5))
+    tk.Entry(tt_frame, textvariable=tt).pack()
+
+    ft_frame = ttk.Frame(jt_group)
+    ft_frame.grid(row=2, column=2)
+    tk.Label(ft_frame, text="Flight Time").pack()
+    ft = tk.StringVar(value=str(0.15))
+    tk.Entry(ft_frame, textvariable=ft).pack()
+
+    lt_frame = ttk.Frame(jt_group)
+    lt_frame.grid(row=3, column=0)
+    tk.Label(lt_frame, text="Landing Time").pack()
+    lt = tk.StringVar(value=str(0.5))
+    tk.Entry(lt_frame, textvariable=lt).pack()
+
+    ct_frame = ttk.Frame(jt_group)
+    ct_frame.grid(row=3, column=1)
+    tk.Label(ct_frame, text="Catch Time").pack()
+    ct = tk.StringVar(value=str(0.2))
+    tk.Entry(ct_frame, textvariable=ct).pack()
+
+    jparam_data = [
+        float(yc.get()),
+        float(yt.get()),
+        float(yf.get()),
+        float(xt.get()),
+        float(xf.get()),
+        float(xc.get()),
+        float(pt.get()),
+        float(tt.get()),
+        float(ft.get()),
+        float(lt.get()),
+        float(ct.get()),
+    ]
+    jparam_msg = Float64MultiArray()
+    jparam_msg.data = jparam_data
+    node.jparams_pub.publish(jparam_msg)
+
+    def apply_jump_entry(event=None):
+        try:
+            jparam_data = [
+                float(yc.get()),
+                float(yt.get()),
+                float(yf.get()),
+                float(xt.get()),
+                float(xf.get()),
+                float(xc.get()),
+                float(pt.get()),
+                float(tt.get()),
+                float(ft.get()),
+                float(lt.get()),
+                float(ct.get()),
+            ]
+            jparam_msg = Float64MultiArray()
+            jparam_msg.data = jparam_data
+            node.jparams_pub.publish(jparam_msg)
+        except ValueError:
+            pass
+
+    j_apply_btn = tk.Button(jt_group, text="Apply JP", command=apply_jump_entry)
+    j_apply_btn.grid(row=3, column=2)
+
+    contact_group = ttk.LabelFrame(grid_container, text="Contacts Foot Boolean", padding=15)
+    contact_group.grid(row=3, column=2)
+    contact_labels = {
+        'FL': tk.Label(contact_group, text=f"FL : {node.foot_contacts['FL']}"),
+        'FR': tk.Label(contact_group, text=f"FR : {node.foot_contacts['FR']}"),
+        'BL': tk.Label(contact_group, text=f"BL : {node.foot_contacts['BL']}"),
+        'BR': tk.Label(contact_group, text=f"BR : {node.foot_contacts['BR']}")
+    }
+
+    for label in contact_labels.values():
+        label.pack()
+
+    def refresh_contacts():
+        contact_labels['FL'].config(text=f"FL : {node.foot_contacts['FL']}")
+        contact_labels['FR'].config(text=f"FR : {node.foot_contacts['FR']}")
+        contact_labels['BL'].config(text=f"BL : {node.foot_contacts['BL']}")
+        contact_labels['BR'].config(text=f"BR : {node.foot_contacts['BR']}")
+        
+        root.after(100, refresh_contacts)
+
+    root.after(100, refresh_contacts)
+
+    slider_group = ttk.LabelFrame(grid_container, text="Slider", padding=0)
+    shoulder_slider_label = tk.Label(slider_group, text="Shoulder Angle", font=font_style)
+    shoulder_slider = tk.Scale(slider_group, from_=-3.14, to=3.14, resolution=0.01, orient="horizontal", length=300, command=tuning_process)
+
+    thigh_slider_label = tk.Label(slider_group, text="Thigh Angle", font=font_style)
+    thigh_slider = tk.Scale(slider_group, from_=-3.14, to=3.14, resolution=0.01, orient="horizontal", length=300, command=tuning_process)
+
+    leg_slider_label = tk.Label(slider_group, text="Knee Angle", font=font_style)
+    leg_slider = tk.Scale(slider_group, from_=-3.14, to=3.14, resolution=0.01, orient="horizontal", length=300, command=tuning_process)
 
     executor = MultiThreadedExecutor()
     executor.add_node(node)
