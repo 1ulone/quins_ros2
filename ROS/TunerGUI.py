@@ -346,7 +346,7 @@ def main(args=None):
     yc_frame = ttk.Frame(jt_group)
     yc_frame.grid(row=0, column=0)
     tk.Label(yc_frame, text="Y Crouch").pack()
-    yc = tk.StringVar(value=str(0.75))
+    yc = tk.StringVar(value=str(0.6))
     tk.Entry(yc_frame, textvariable=yc).pack()
 
     yt_frame = ttk.Frame(jt_group)
@@ -364,50 +364,68 @@ def main(args=None):
     xt_frame = ttk.Frame(jt_group)
     xt_frame.grid(row=1, column=0)
     tk.Label(xt_frame, text="X Thrust").pack()
-    xt = tk.StringVar(value=str(0.6))
+    xt = tk.StringVar(value=str(0.35))
     tk.Entry(xt_frame, textvariable=xt).pack()
 
     xf_frame = ttk.Frame(jt_group)
     xf_frame.grid(row=1, column=1)
     tk.Label(xf_frame, text="X Flight").pack()
-    xf = tk.StringVar(value=str(1.0))
+    xf = tk.StringVar(value=str(1.2))
     tk.Entry(xf_frame, textvariable=xf).pack()
 
     xc_frame = ttk.Frame(jt_group)
     xc_frame.grid(row=1, column=2)
     tk.Label(xc_frame, text="X Catch").pack()
-    xc = tk.StringVar(value=str(-1))
+    xc = tk.StringVar(value=str(-1.0))
     tk.Entry(xc_frame, textvariable=xc).pack()
 
     pt_frame = ttk.Frame(jt_group)
     pt_frame.grid(row=2, column=0)
     tk.Label(pt_frame, text="Prepare Time").pack()
-    pt = tk.StringVar(value=str(1.5))
+    pt = tk.StringVar(value=str(0.85))
     tk.Entry(pt_frame, textvariable=pt).pack()
 
-    tt_frame = ttk.Frame(jt_group)
-    tt_frame.grid(row=2, column=1)
-    tk.Label(tt_frame, text="Thrust Time").pack()
-    tt = tk.StringVar(value=str(0.5))
-    tk.Entry(tt_frame, textvariable=tt).pack()
+    ftt_frame = ttk.Frame(jt_group)
+    ftt_frame.grid(row=2, column=1)
+    tk.Label(ftt_frame, text="Front Thrust Time").pack()
+    ftt = tk.StringVar(value=str(0.96))
+    tk.Entry(ftt_frame, textvariable=ftt).pack()
+
+    btt_frame = ttk.Frame(jt_group)
+    btt_frame.grid(row=2, column=2)
+    tk.Label(btt_frame, text="Back Thrust Time").pack()
+    btt = tk.StringVar(value=str(0.4))
+    tk.Entry(btt_frame, textvariable=btt).pack()
 
     ft_frame = ttk.Frame(jt_group)
-    ft_frame.grid(row=2, column=2)
+    ft_frame.grid(row=3, column=0)
     tk.Label(ft_frame, text="Flight Time").pack()
     ft = tk.StringVar(value=str(0.15))
     tk.Entry(ft_frame, textvariable=ft).pack()
 
     lt_frame = ttk.Frame(jt_group)
-    lt_frame.grid(row=3, column=0)
+    lt_frame.grid(row=3, column=1)
     tk.Label(lt_frame, text="Landing Time").pack()
     lt = tk.StringVar(value=str(0.5))
     tk.Entry(lt_frame, textvariable=lt).pack()
 
     ct_frame = ttk.Frame(jt_group)
-    ct_frame.grid(row=3, column=1)
+    ct_frame.grid(row=3, column=2)
     tk.Label(ct_frame, text="Catch Time").pack()
-    ct = tk.StringVar(value=str(0.2))
+    ct = tk.StringVar(value=str(0.1))
     tk.Entry(ct_frame, textvariable=ct).pack()
+
+    stl_frame = ttk.Frame(jt_group)
+    stl_frame.grid(row=4, column=0)
+    tk.Label(stl_frame, text="Stablize leg").pack()
+    stl = tk.StringVar(value=str(2.0))
+    tk.Entry(stl_frame, textvariable=stl).pack()
+
+    bt_frame = ttk.Frame(jt_group)
+    bt_frame.grid(row=4, column=2)
+    tk.Label(bt_frame, text="Back Thrust Specific").pack()
+    bt = tk.StringVar(value=str(2.5))
+    tk.Entry(bt_frame, textvariable=bt).pack()
 
     jparam_data = [
         float(yc.get()),
@@ -417,10 +435,13 @@ def main(args=None):
         float(xf.get()),
         float(xc.get()),
         float(pt.get()),
-        float(tt.get()),
+        float(ftt.get()),
+        float(btt.get()),
         float(ft.get()),
         float(lt.get()),
         float(ct.get()),
+        float(stl.get()),
+        float(bt.get()),
     ]
     jparam_msg = Float64MultiArray()
     jparam_msg.data = jparam_data
@@ -436,10 +457,13 @@ def main(args=None):
                 float(xf.get()),
                 float(xc.get()),
                 float(pt.get()),
-                float(tt.get()),
+                float(ftt.get()),
+                float(btt.get()),
                 float(ft.get()),
                 float(lt.get()),
                 float(ct.get()),
+                float(stl.get()),
+                float(bt.get()),
             ]
             jparam_msg = Float64MultiArray()
             jparam_msg.data = jparam_data
@@ -448,7 +472,7 @@ def main(args=None):
             pass
 
     j_apply_btn = tk.Button(jt_group, text="Apply JP", command=apply_jump_entry)
-    j_apply_btn.grid(row=3, column=2)
+    j_apply_btn.grid(row=4, column=1)
 
     contact_group = ttk.LabelFrame(grid_container, text="Contacts Foot Boolean", padding=15)
     contact_group.grid(row=3, column=2)

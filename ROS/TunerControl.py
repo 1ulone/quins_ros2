@@ -111,10 +111,13 @@ class Tuner(Node):
         self.x_flight =-1.5
         self.x_catch = -1.5
         self.prepare_time = 0.8
-        self.thrust_time = 0.15
+        self.front_thrust_time = 0.15
+        self.back_thrust_time = 0.15
         self.flight_time = 0.05
         self.landing_time = 0.5
         self.catch_time = 0.1
+        self.x_stabilize = 1.5
+        self.back_thrust = 1.5
         self.graph_t = 0.0
 
         # NOTE: Inverse Dynamics Parameters (Velocity & Acceleration)
@@ -220,10 +223,13 @@ class Tuner(Node):
         self.x_flight = msg.data[4]
         self.x_catch = msg.data[5]
         self.prepare_time = msg.data[6] 
-        self.thrust_time = msg.data[7] 
-        self.flight_time = msg.data[8]
-        self.landing_time = msg.data[9]
-        self.catch_time = msg.data[10]
+        self.front_thrust_time = msg.data[7] 
+        self.back_thrust_time = msg.data[8] 
+        self.flight_time = msg.data[9]
+        self.landing_time = msg.data[10]
+        self.catch_time = msg.data[11]
+        self.x_stabilize = msg.data[12]
+        self.back_thrust = msg.data[13]
 
     def phase_callback(self, msg: Float64MultiArray):
         # NOTE: just sets the Phase Offsets into a new Value from msg
@@ -698,18 +704,23 @@ class Tuner(Node):
 
     def jump_process(self, k: KinematicsLogic):
         self.get_logger().warn(f"state : {self.jump_state}")
+
         y_idle = self.z_off
         y_crouch = self.y_crouch
         y_thrust = self.y_thrust
         y_flight = self.y_flight
 
         x_idle = self.x_off
-        x_thrust = self.x_off + self.x_thrust 
+        x_thrust = self.x_off + self.back_thrust 
+        x_stabilize = self.x_off + self.x_stabilize
+        x_rev_thrust = self.x_off - self.x_thrust
         x_flight = self.x_off + self.x_flight
         x_catch = self.x_off + self.x_catch
 
-        current_y = y_idle
-        current_x = x_idle
+        current_y_f = y_idle
+        current_y_b = y_idle
+        current_x_f = x_idle
+        current_x_b = x_idle
 
         avg_fz = np.mean(self.filtered_fz)
         contact_threshold = 2.0
@@ -717,55 +728,90 @@ class Tuner(Node):
         match self.jump_state:
             case "PREPARE":
                 fraction = min(self.t / self.prepare_time, 1.0)
-                current_y = y_idle + fraction * (y_crouch - y_idle) 
-                current_x = x_idle + fraction * (x_thrust - x_idle)
+                current_y_f = y_idle + fraction * (y_crouch - y_idle) 
+                current_x_f = x_idle + fraction * (x_rev_thrust - x_idle)
 
-                t1 = m.degrees(self.current_q[0])
-                t2 = m.degrees(self.current_q[1])
-                t3 = m.degrees(self.current_q[2])
-                fk_matrix = k.fk('FL', t1, t2, t3) 
-                current_y_actual = abs(fk_matrix[1, 3])
+                current_y_b = y_idle
+                current_x_b = x_idle + fraction * (x_rev_thrust - x_idle)
 
-                if fraction >= 1.0 and abs(current_y_actual - y_crouch) < 0.1:
-                    self.jump_state = "THRUST"
+                # t1 = m.degrees(self.current_q[0])
+                # t2 = m.degrees(self.current_q[1])
+                # t3 = m.degrees(self.current_q[2])
+                # fk_matrix = k.fk('FL', t1, t2, t3) 
+                # current_y_actual = abs(fk_matrix[1, 3])
+
+                if fraction >= 1.0:
+                    self.jump_state = "FRONT_THRUST"
                     self.t = 0.0
-            case "THRUST":
-                fraction = min(self.t / self.thrust_time, 1.0)
-                current_y = y_crouch + fraction * (y_thrust - y_crouch)
-                current_x = x_thrust 
 
-                if fraction > 0.5 and avg_fz < contact_threshold:
-                    self.jump_state = "FLIGHT"
+            case "FRONT_THRUST":
+                # Rapid front extension to pitch the body upward
+                fraction = min(self.t / self.front_thrust_time, 1.0)
+                
+                current_y_f = y_crouch + fraction * (y_thrust - y_crouch)
+                current_x_f = x_rev_thrust 
+                
+                current_y_b = y_idle + fraction * (y_crouch - y_idle)
+                current_x_b = x_rev_thrust + fraction * (x_stabilize - x_rev_thrust)
+
+                if fraction >= 1.0:
+                    self.jump_state = "BACK_THRUST"
                     self.t = 0.0
                     
-            case "FLIGHT":
+            case "BACK_THRUST":
+                # Front legs tuck while back legs launch the body
+                fraction = min(self.t / self.back_thrust_time, 1.0)
+                
+                current_y_f = y_thrust + fraction * (y_flight - y_thrust)
+                current_x_f = x_rev_thrust + fraction * (x_flight - x_rev_thrust)
+                
+                current_y_b = y_crouch + fraction * (y_thrust - y_crouch)
+                current_x_b = x_stabilize + fraction * (x_thrust - x_stabilize)
+
+                if fraction >= 1.0:
+                    self.jump_state = "AERIAL"
+                    self.t = 0.0
+
+            case "AERIAL":
+                # All legs tucked for obstacle clearance
                 fraction = min(self.t / self.flight_time, 1.0)
-                current_y = y_thrust + fraction * (y_flight - y_thrust)
-                current_x = x_thrust + fraction * (x_flight - x_thrust)
+
+                current_y_f = y_flight
+                current_x_f = x_flight
+
+                current_y_b = y_thrust + fraction * (y_flight - y_thrust)
+                current_x_b = x_thrust + fraction * (x_flight - x_thrust)
 
                 if fraction >= 1.0:
                     self.jump_state = "DESCENT"
                     self.t = 0.0
 
             case "DESCENT":
+                # Legs extend forward and down to prepare for impact
                 fraction = min(self.t / self.catch_time, 1.0)
-                current_y = y_flight 
-                current_x = x_flight + fraction * (x_catch - x_flight)
+                
+                current_y_f = current_y_b = y_flight 
+                current_x_f = current_x_b = x_flight + fraction * (x_catch - x_flight)
 
-                if self.t > 0.05 and avg_fz > contact_threshold:
+                if fraction >= 1.0 or (self.t > 0.05 and avg_fz > contact_threshold):
                     self.jump_state = "LANDING"
                     self.t = 0.0
 
             case "LANDING":
+                # Return to idle standing posture to absorb load
                 fraction = min(self.t / self.landing_time, 1.0)
-                current_y = y_flight + fraction * (y_idle - y_flight)
-                current_x = x_catch + fraction * (x_idle - x_catch)
+
+                current_y_f = current_y_b = y_flight + fraction * (y_idle - y_flight)
+                current_x_f = current_x_b = x_catch + fraction * (x_idle - x_catch)
 
                 if fraction >= 1.0:
                     self.jump_state = ""
                     self.jumping = False
                     if self.jump_timer is not None:
                         self.jump_timer.cancel()
+                        msg = String()
+                        msg.data = "IDLE"
+                        self.state_callback(msg)
                         self.jump_timer = None
                     return
 
@@ -778,8 +824,12 @@ class Tuner(Node):
         for leg in LEG_NAMES:
             ix, iy, iz = k.get_init_pos(leg)
             
-            tx = ix + current_x 
-            ty = current_y
+            if leg in ['FL', 'FR']:
+                tx = ix + current_x_b 
+                ty = current_y_b
+            else:
+                tx = ix + current_x_f
+                ty = current_y_f
             tz = iz 
             
             theta1, theta2, theta3 = k.ik(leg, tx, ty, tz)
