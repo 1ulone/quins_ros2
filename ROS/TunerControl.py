@@ -1,4 +1,3 @@
-import enum
 import os
 import time
 import rclpy
@@ -55,7 +54,7 @@ class Tuner(Node):
         self.contact_pub = self.create_publisher(Int8MultiArray, 'tuner/contacts', 10)
 
         # NOTE: Subcriber
-        self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
+        self.create_subscription(Odometry, '/model/quadruped/odometry', self.odometry_callback, 10)
         self.create_subscription(String, '/tuner/state', self.state_callback, 10)
         self.create_subscription(JointState, "/joint_states", self.joint_state_callback, 10)
         self.create_subscription(Float64MultiArray, '/tuner/raw', self.raw_tune_callback, 10)
@@ -119,6 +118,7 @@ class Tuner(Node):
         self.x_stabilize = 1.5
         self.back_thrust = 1.5
         self.graph_t = 0.0
+        self.pitch_threshold = 0.0
 
         # NOTE: Inverse Dynamics Parameters (Velocity & Acceleration)
         self.current_q = np.zeros(12)
@@ -230,6 +230,7 @@ class Tuner(Node):
         self.catch_time = msg.data[11]
         self.x_stabilize = msg.data[12]
         self.back_thrust = msg.data[13]
+        self.pitch_threshold = msg.data[14]
 
     def phase_callback(self, msg: Float64MultiArray):
         # NOTE: just sets the Phase Offsets into a new Value from msg
@@ -703,7 +704,7 @@ class Tuner(Node):
         self.t += self.dt # increment the time mod (t)
 
     def jump_process(self, k: KinematicsLogic):
-        self.get_logger().warn(f"state : {self.jump_state}")
+        self.get_logger().warn(f"state : {self.jump_state}, pitcj : {self.current_roll:.2f}")
 
         y_idle = self.z_off
         y_crouch = self.y_crouch
@@ -754,7 +755,7 @@ class Tuner(Node):
                 current_y_b = y_idle + fraction * (y_crouch - y_idle)
                 current_x_b = x_rev_thrust + fraction * (x_stabilize - x_rev_thrust)
 
-                if fraction >= 1.0:
+                if self.current_roll <= self.pitch_threshold:
                     self.jump_state = "BACK_THRUST"
                     self.t = 0.0
                     

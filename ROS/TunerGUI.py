@@ -427,6 +427,12 @@ def main(args=None):
     bt = tk.StringVar(value=str(2.5))
     tk.Entry(bt_frame, textvariable=bt).pack()
 
+    ptr_frame = ttk.Frame(jt_group)
+    ptr_frame.grid(row=5, column=0)
+    tk.Label(ptr_frame, text="Pitch Threshold").pack()
+    ptr = tk.StringVar(value=str(-0.65))
+    tk.Entry(ptr_frame, textvariable=ptr).pack()
+
     jparam_data = [
         float(yc.get()),
         float(yt.get()),
@@ -442,6 +448,7 @@ def main(args=None):
         float(ct.get()),
         float(stl.get()),
         float(bt.get()),
+        float(ptr.get()),
     ]
     jparam_msg = Float64MultiArray()
     jparam_msg.data = jparam_data
@@ -464,6 +471,7 @@ def main(args=None):
                 float(ct.get()),
                 float(stl.get()),
                 float(bt.get()),
+                float(ptr.get()),
             ]
             jparam_msg = Float64MultiArray()
             jparam_msg.data = jparam_data
