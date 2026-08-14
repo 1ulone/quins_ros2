@@ -8,6 +8,12 @@ import math as m
 import numpy as np
 import tkinter as tk
 import xml.etree.ElementTree as ET
+import os
+import sys
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(current_dir))
+
 from LOGIC.KinematicsLogic import KinematicsLogic
 
 BODY_WIDTH = 1.3334   
@@ -401,3 +407,37 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+        # def lerp(a, b, t):
+        #     return a + t * (b - a)
+        #
+        # def logic_process(s, t, k):
+        #     raw_msg = Float64MultiArray()
+        #     raw_msg.data = [s, t, k] 
+        #     self.raw_pub.publish(raw_msg)
+        #
+       #
+        # def animate_transition(target_s, target_t, target_k, duration=1.0):
+        #     start_time = time.time()
+        #     initial_s = self.phi["tr_leg"]["shoulder"]
+        #     initial_t = self.phi["tr_leg"]["thigh"]
+        #     initial_k = self.phi["tr_leg"]["leg"]
+        #
+        #     def step():
+        #         elapsed = time.time() - start_time
+        #         fraction = min(elapsed / duration, 1.0)
+        #
+        #         current_s = lerp(initial_s, target_s, fraction)
+        #         current_t = lerp(initial_t, target_t, fraction)
+        #         current_k = lerp(initial_k, target_k, fraction)
+        #
+        #         for leg in self.phi.values():
+        #             leg["shoulder"] = current_s
+        #             leg["thigh"] = current_t 
+        #             leg["leg"] = current_k 
+        #
+        #         if fraction < 1.0:
+        #             root.after(20, step)
+        #
+        #     step()

@@ -51,7 +51,7 @@ class Tuner(Node):
         # NOTE: Publisher 
         self.joint_pub = self.create_publisher(JointTrajectory, '/joint_trajectory_controller/joint_trajectory', 10)
         self.graph_pub = self.create_publisher(Float64MultiArray, '/tuner/graph', 10)
-        self.contact_pub = self.create_publisher(Int8MultiArray, 'tuner/contacts', 10)
+        # self.contact_pub = self.create_publisher(Int8MultiArray, 'tuner/contacts', 10)
 
         # NOTE: Subcriber
         self.create_subscription(Odometry, '/model/quadruped/odometry', self.odometry_callback, 10)
@@ -89,6 +89,7 @@ class Tuner(Node):
         self.walk_timer: Optional[rclpy.timer.Timer] = None
         self.last_cycle_wall_time = None
         self.last_join_state_stamp = None
+        self.z_off_used = 0.0 
 
         # NOTE: Jump Private Variable
         self.jump_state = ""
@@ -190,6 +191,7 @@ class Tuner(Node):
                 self.t = 0.0
                 self.walk_start_time = self.get_clock().now()
                 self.walking = True
+                self.z_off_used = self.z_off 
 
                 self.walk_timer = self.create_timer(
                     self.dt,
@@ -197,12 +199,24 @@ class Tuner(Node):
                 )
             case "JUMP":
                 # NOTE: create a timed process for the jump process
+                self.animate_transition(0.00, 0.45, -0.90)
                 self.t = 0.0
                 self.jump_state = "PREPARE"
                 self.graph_t = 0.0
                 self.jump_timer = self.create_timer(
                     self.dt,
                     lambda:self.jump_process(self.kinematics)
+                )
+            case "CRAWL":
+                self.target_yaw = self.current_yaw
+                self.t = 0.0
+                self.walk_start_time = self.get_clock().now()
+                self.walking = True
+                self.z_off_used = 1.5
+
+                self.walk_timer = self.create_timer(
+                    self.dt,
+                    lambda: self.walk_process(self.kinematics)
                 )
 
     def params_callback(self, msg: Float64MultiArray):
@@ -268,16 +282,16 @@ class Tuner(Node):
         self.current_q = q_sorted
         self.current_q_dot = q_dot_sorted
 
-        contact_states, vertical_forces = self.estimate_grf_contact(
-            self.current_q,
-            self.current_q_dot,
-            tau_sorted
-        )
+        # contact_states, vertical_forces = self.estimate_grf_contact(
+        #     self.current_q,
+        #     self.current_q_dot,
+        #     tau_sorted
+        # )
 
-        contacts = Int8MultiArray()
-        contacts.data = contact_states
-        self.contact_pub.publish(contacts)
-
+        # contacts = Int8MultiArray()
+        # contacts.data = contact_states
+        # self.contact_pub.publish(contacts)
+        #
         self.last_join_state_stamp = self.get_clock().now()
 
     def odometry_callback(self, msg: Odometry):
@@ -569,7 +583,7 @@ class Tuner(Node):
 
                 # NOTE: Calculate the absolute target foot coordinates
                 tx = ix + xl + self.x_off
-                ty = self.z_off - yl
+                ty = self.z_off_used - yl
                 tz = iz + zl
 
                 # NOTE: Calculate Inverse Kinematics to find Theta
