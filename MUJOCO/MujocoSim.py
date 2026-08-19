@@ -6,6 +6,7 @@ import queue
 import mujoco
 import tempfile
 import threading
+import imageio
 import mujoco.viewer
 import math as m
 import numpy as np
@@ -14,7 +15,6 @@ import xml.etree.ElementTree as ET
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(current_dir))
 
-# Import your new framework-agnostic architecture
 from LOGIC.GaitLogic import GaitLogic, LEG_NAMES, JOINT_NAMES
 from ROS.BaseGUI import GUI
 
@@ -56,7 +56,6 @@ def main():
             actuators_xml += f'    <motor name="{joint}_motor" joint="{joint}" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>\n'
     actuators_xml += "</actuator>\n"
     
-    # Inject default joint damping to match Gazebo's ODE solver
     damping_xml = "<default>\n    <joint damping=\"0.05\" frictionloss=\"0.01\"/>\n</default>\n"
     mjcf_xml = mjcf_xml.replace('<worldbody>', f'{damping_xml}<worldbody>')
     mjcf_xml = mjcf_xml.replace('</worldbody>', f'</worldbody>\n{actuators_xml}')
@@ -68,11 +67,11 @@ def main():
             if body.find('joint') is None:
                 body.set('pos', '0 0 1.5')
                 ET.SubElement(body, 'freejoint', name='root_floating_base')
+                ET.SubElement(body, 'camera', name='track_cam', mode='trackcom', pos='0 -2 1')
                 break
     mjcf_xml = ET.tostring(root_xml, encoding='unicode')
 
     model = mujoco.MjModel.from_xml_string(mjcf_xml)
-    print(f"Total MuJoCo Mass: {mujoco.mj_getTotalmass(model):.2f} kg")
     data = mujoco.MjData(model)
 
     model.geom_contype[:] = 1
@@ -97,7 +96,6 @@ def main():
 
     # ---------------- 2. Setup Logic & UI ----------------
     
-    # Command buffer updated by GaitLogic callbacks
     cmd = {
         "q_des": np.zeros(12),
         "qd_des": np.zeros(12),
@@ -108,7 +106,6 @@ def main():
         "kd": 25.0
     }
 
-    # Create a thread-safe pipeline for the graph data
     graph_queue = queue.Queue()
 
     def handle_walk_points(points_data):
@@ -142,19 +139,16 @@ def main():
         cmd["qdd_des"] = np.zeros(12)
         
     def handle_graph_push(graph_data):
-        # MuJoCo Thread: Push data to the queue safely, don't draw!
         graph_queue.put(graph_data)
 
-    # Initialize Logic
     logic = GaitLogic({
         "walk_points": handle_walk_points,
         "jump_points": handle_jump_points,
         "transition_cb": handle_transition,
         "raw_tune_cb": handle_raw_tune,
-        "graph": handle_graph_push  # Assign the safe queue function
+        "graph": handle_graph_push
     })
 
-    # Initialize GUI in its own thread
     def start_gui():
         gui = GUI({
             "state": logic.update_state,
@@ -168,7 +162,6 @@ def main():
         while True:
             needs_redraw = False
             
-            # GUI Thread: Drain the queue and append data without drawing yet
             while not graph_queue.empty():
                 g_data = graph_queue.get_nowait()
                 gui.time_history.append(g_data[0])
@@ -176,7 +169,6 @@ def main():
                 gui.measured_history.append(g_data[2])
                 needs_redraw = True
                 
-            # Only command Matplotlib to draw ONCE per UI loop to prevent lag
             if needs_redraw:
                 gui.refresh_graph()
                 
@@ -186,148 +178,119 @@ def main():
     threading.Thread(target=start_gui, daemon=True).start()
 
     # ---------------- 3. Simulation Loop ----------------
-    physics_hz = 1.0 / model.opt.timestep # usually 500Hz
-    control_hz = logic.control_rate       # matches 50.0Hz
+    physics_hz = 1.0 / model.opt.timestep 
+    control_hz = logic.control_rate       
     decimation_steps = int(physics_hz / control_hz)
     step_counter = 0
 
-    with mujoco.viewer.launch_passive(model, data) as viewer:
-        while viewer.is_running():
-            step_start = time.time()
+    record_hz = 60
+    record_steps = int(physics_hz / record_hz)
+    renderer = mujoco.Renderer(model, height=480, width=640)
+    video_writer = imageio.get_writer('simulation.mp4', fps=record_hz)
 
-            # --- HIGH-LEVEL LOGIC (Runs at 50Hz) ---
-            if step_counter % decimation_steps == 0:
-                
-                # A. Read Low-Freq Telemetry for GaitLogic
-                q_sorted = np.zeros(12)
-                qd_sorted = np.zeros(12)
+    try:
+        with mujoco.viewer.launch_passive(model, data) as viewer:
+            while viewer.is_running():
+                step_start = time.time()
+
+                if step_counter % decimation_steps == 0:
+                    q_sorted = np.zeros(12)
+                    qd_sorted = np.zeros(12)
+                    idx = 0
+                    for leg in LEG_NAMES:
+                        for j in JOINT_NAMES[leg]:
+                            q_sorted[idx] = data.qpos[joint_info[j]['qpos_adr']]
+                            qd_sorted[idx] = data.qvel[joint_info[j]['qvel_adr']]
+                            idx += 1
+                    
+                    logic.current_q = q_sorted
+                    logic.current_q_dot = qd_sorted
+                    
+                    qw, qx, qy, qz = data.qpos[3:7]
+                    sinr_cosp = 2.0 * (qw * qx + qy * qz)
+                    cosr_cosp = 1.0 - 2.0 * (qx * qx + qy * qy)
+                    logic.current_roll = m.atan2(sinr_cosp, cosr_cosp)
+                    
+                    siny_cosp = 2.0 * (qw * qz + qx * qy)
+                    cosy_cosp = 1.0 - 2.0 * (qy * qy + qz * qz)
+                    logic.current_yaw = m.atan2(siny_cosp, cosy_cosp)
+
+                    logic.loop_step()
+
+                q_act = np.zeros(12)
+                qd_act = np.zeros(12)
                 idx = 0
                 for leg in LEG_NAMES:
                     for j in JOINT_NAMES[leg]:
-                        q_sorted[idx] = data.qpos[joint_info[j]['qpos_adr']]
-                        qd_sorted[idx] = data.qvel[joint_info[j]['qvel_adr']]
+                        q_act[idx] = data.qpos[joint_info[j]['qpos_adr']]
+                        qd_act[idx] = data.qvel[joint_info[j]['qvel_adr']]
                         idx += 1
+
+                _m = np.zeros((model.nv, model.nv), dtype=np.float64)
+                mujoco.mj_fullM(model, data, _m) 
+
+                mujoco.mj_fwdPosition(model, data)
+                mujoco.mj_fwdVelocity(model, data)
+                bias_forces = data.qfrc_bias
                 
-                logic.current_q = q_sorted
-                logic.current_q_dot = qd_sorted
+                tau_grf = np.zeros(model.nv)
+                planned_stance = cmd["is_stance"]
+                planned_forces = cmd["foot_forces"]
+
+                for i, name in enumerate(foot_body_names):
+                    if planned_stance[i]:
+                        fid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name)
+                        jacp = np.zeros((3, model.nv))
+                        mujoco.mj_jacBody(model, data, jacp, None, fid)
+                        
+                        f_z = planned_forces[i][2] 
+                        tau_grf += jacp.T @ np.array([0.0, 0.0, f_z])
+
+                qdd_des_full = np.zeros(model.nv)
+                pd_torques = np.zeros(model.nv)
                 
-                qw, qx, qy, qz = data.qpos[3:7]
-                sinr_cosp = 2.0 * (qw * qx + qy * qz)
-                cosr_cosp = 1.0 - 2.0 * (qx * qx + qy * qy)
-                logic.current_roll = m.atan2(sinr_cosp, cosr_cosp)
+                idx = 0
+                for leg in LEG_NAMES:
+                    for j in JOINT_NAMES[leg]:
+                        adr = joint_info[j]['qvel_adr']
+                        
+                        qdd_des_full[adr] = cmd["qdd_des"][idx]
+                        
+                        dt_sub = (step_counter % decimation_steps) * model.opt.timestep
+                        q_des_interp = cmd["q_des"][idx] + (cmd["qd_des"][idx] * dt_sub)
+                        qd_des_interp = cmd["qd_des"][idx] + (cmd["qdd_des"][idx] * dt_sub)
+                        
+                        pos_err = q_des_interp - q_act[idx]
+                        vel_err = qd_des_interp - qd_act[idx]
+                        pd_torques[adr] = (cmd["kp"] * pos_err) + (cmd["kd"] * vel_err)
+                        
+                        idx += 1
+                        
+                ff_torques = (_m @ qdd_des_full) + bias_forces - tau_grf
+
+                for leg in LEG_NAMES:
+                    for j in JOINT_NAMES[leg]:
+                        info = joint_info[j]
+                        adr = info['qvel_adr']
+                        
+                        final_torque = ff_torques[adr] + pd_torques[adr]
+                        data.ctrl[info['actuator_id']] = np.clip(final_torque, -1500.0, 1500.0)
+
+                mujoco.mj_step(model, data)
+                viewer.sync()
                 
-                siny_cosp = 2.0 * (qw * qz + qx * qy)
-                cosy_cosp = 1.0 - 2.0 * (qy * qy + qz * qz)
-                logic.current_yaw = m.atan2(siny_cosp, cosy_cosp)
+                if step_counter % record_steps == 0:
+                    mujoco.mjv_updateScene(model, data, viewer.opt, None, viewer.cam, mujoco.mjtCatBit.mjCAT_ALL, renderer.scene)
+                    video_writer.append_data(renderer.render())
 
-                # B. Execute Mathematical Core
-                logic.loop_step()
+                step_counter += 1
 
-            # --- LOW-LEVEL PD CONTROLLER (Runs at 500Hz Physics Rate) ---
-            
-            # 1. Read High-Freq Joint States for smooth PD calculation
-            q_act = np.zeros(12)
-            qd_act = np.zeros(12)
-            idx = 0
-            for leg in LEG_NAMES:
-                for j in JOINT_NAMES[leg]:
-                    q_act[idx] = data.qpos[joint_info[j]['qpos_adr']]
-                    qd_act[idx] = data.qvel[joint_info[j]['qvel_adr']]
-                    idx += 1
-
-            # 2. Solve Mass Matrix and Bias Forces
-            _m = np.zeros((model.nv, model.nv), dtype=np.float64)
-            mujoco.mj_fullM(model, data, _m) 
-
-            mujoco.mj_fwdPosition(model, data)
-            mujoco.mj_fwdVelocity(model, data)
-            bias_forces = data.qfrc_bias
-
-            # 3. Calculate Feedforward + PD Torques + GRF
-            total_mass = mujoco.mj_getTotalmass(model)
-            gravity = 9.81
-            mg_half = (total_mass * gravity) / 2.0
-            
-            tau_grf = np.zeros(model.nv)
-            planned_stance = cmd["is_stance"]
-            planned_forces = cmd["foot_forces"]
-
-            foot_body_names = ['fl_foot', 'fr_foot', 'rl_foot', 'rr_foot']
-            for i, name in enumerate(foot_body_names):
-                if planned_stance[i]:
-                    fid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name)
-                    jacp = np.zeros((3, model.nv))
-                    mujoco.mj_jacBody(model, data, jacp, None, fid)
+                elapsed = time.time() - step_start
+                if elapsed < model.opt.timestep:
+                    time.sleep(model.opt.timestep - elapsed)
                     
-                    # Inject dynamic thrust calculated by GaitLogic
-                    f_z = planned_forces[i][2] 
-                    tau_grf += jacp.T @ np.array([0.0, 0.0, f_z])
-            
-            # --- Front Axle Distribution ---
-            # front_active = []
-            # if planned_stance[0]: front_active.append('fl_foot')
-            # if planned_stance[1]: front_active.append('fr_foot')
-            #
-            # if front_active:
-            #     f_z_front = mg_half / len(front_active)
-            #     for name in front_active:
-            #         fid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name)
-            #         jacp = np.zeros((3, model.nv))
-            #         mujoco.mj_jacBody(model, data, jacp, None, fid)
-            #         tau_grf += jacp.T @ np.array([0.0, 0.0, f_z_front])
-            #
-            # # --- Rear Axle Distribution ---
-            # rear_active = []
-            # if planned_stance[2]: rear_active.append('rl_foot')
-            # if planned_stance[3]: rear_active.append('rr_foot')
-            #
-            # if rear_active:
-            #     f_z_rear = mg_half / len(rear_active)
-            #     for name in rear_active:
-            #         fid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name)
-            #         jacp = np.zeros((3, model.nv))
-            #         mujoco.mj_jacBody(model, data, jacp, None, fid)
-            #         tau_grf += jacp.T @ np.array([0.0, 0.0, f_z_rear])
-
-            qdd_des_full = np.zeros(model.nv)
-            pd_torques = np.zeros(model.nv)
-            
-            idx = 0
-            for leg in LEG_NAMES:
-                for j in JOINT_NAMES[leg]:
-                    adr = joint_info[j]['qvel_adr']
-                    
-                    qdd_des_full[adr] = cmd["qdd_des"][idx]
-                    
-                    dt_sub = (step_counter % decimation_steps) * model.opt.timestep
-                    q_des_interp = cmd["q_des"][idx] + (cmd["qd_des"][idx] * dt_sub)
-                    qd_des_interp = cmd["qd_des"][idx] + (cmd["qdd_des"][idx] * dt_sub)
-                    
-                    pos_err = q_des_interp - q_act[idx]
-                    vel_err = qd_des_interp - qd_act[idx]
-                    pd_torques[adr] = (cmd["kp"] * pos_err) + (cmd["kd"] * vel_err)
-                    
-                    idx += 1
-                    
-            ff_torques = (_m @ qdd_des_full) + bias_forces - tau_grf
-
-            # 4. Apply Final Torques
-            for leg in LEG_NAMES:
-                for j in JOINT_NAMES[leg]:
-                    info = joint_info[j]
-                    adr = info['qvel_adr']
-                    
-                    final_torque = ff_torques[adr] + pd_torques[adr]
-                    data.ctrl[info['actuator_id']] = np.clip(final_torque, -1500.0, 1500.0)
-
-            # --- STEP PHYSICS ---
-            mujoco.mj_step(model, data)
-            viewer.sync()
-            step_counter += 1
-
-            elapsed = time.time() - step_start
-            if elapsed < model.opt.timestep:
-                time.sleep(model.opt.timestep - elapsed)
+    finally:
+        video_writer.close()
 
 if __name__ == '__main__':
     main()
