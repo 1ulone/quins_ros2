@@ -120,10 +120,12 @@ def main():
         cmd["is_stance"] = pt["is_stance"]
         cmd["foot_forces"] = pt["foot_forces"]
 
-    def handle_jump_points(q_desired):
+    def handle_jump_points(q_desired, qd_desired, qdd_desired, foot_forces, is_stance):
         cmd["q_des"] = np.array(q_desired)
-        cmd["qd_des"] = np.zeros(12)
-        cmd["qdd_des"] = np.zeros(12)
+        cmd["qd_des"] = np.array(qd_desired)
+        cmd["qdd_des"] = np.array(qdd_desired)
+        cmd["foot_forces"] = np.array(foot_forces)
+        cmd["is_stance"] = is_stance
 
     def handle_transition(current_angles):
         cmd["q_des"] = np.array(current_angles)
@@ -158,7 +160,7 @@ def main():
             "state": logic.update_state,
             "phase": logic.update_phase_offsets,
             "wt_params": logic.update_wt_params,
-            "jt_param": logic.update_jt_params,
+            "jt_params": logic.update_jt_params,
             "raw_tune": logic.raw_tune
         })
         gui.setup()

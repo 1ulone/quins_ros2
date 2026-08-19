@@ -289,19 +289,19 @@ class GUI:
         xt_frame = ttk.Frame(jt_group)
         xt_frame.grid(row=1, column=0)
         tk.Label(xt_frame, text="X Thrust").pack()
-        xt = tk.StringVar(value=str(0.35))
+        xt = tk.StringVar(value=str(2.5))
         tk.Entry(xt_frame, textvariable=xt).pack()
 
         xf_frame = ttk.Frame(jt_group)
         xf_frame.grid(row=1, column=1)
         tk.Label(xf_frame, text="X Flight").pack()
-        xf = tk.StringVar(value=str(1.2))
+        xf = tk.StringVar(value=str(0.0))
         tk.Entry(xf_frame, textvariable=xf).pack()
 
         xc_frame = ttk.Frame(jt_group)
         xc_frame.grid(row=1, column=2)
         tk.Label(xc_frame, text="X Catch").pack()
-        xc = tk.StringVar(value=str(-1.0))
+        xc = tk.StringVar(value=str(-1.5))
         tk.Entry(xc_frame, textvariable=xc).pack()
 
         pt_frame = ttk.Frame(jt_group)
@@ -319,7 +319,7 @@ class GUI:
         btt_frame = ttk.Frame(jt_group)
         btt_frame.grid(row=2, column=2)
         tk.Label(btt_frame, text="Back Thrust Time").pack()
-        btt = tk.StringVar(value=str(0.4))
+        btt = tk.StringVar(value=str(0.5))
         tk.Entry(btt_frame, textvariable=btt).pack()
 
         ft_frame = ttk.Frame(jt_group)
@@ -343,7 +343,7 @@ class GUI:
         stl_frame = ttk.Frame(jt_group)
         stl_frame.grid(row=4, column=0)
         tk.Label(stl_frame, text="Stablize leg").pack()
-        stl = tk.StringVar(value=str(2.0))
+        stl = tk.StringVar(value=str(0.5))
         tk.Entry(stl_frame, textvariable=stl).pack()
 
         bt_frame = ttk.Frame(jt_group)

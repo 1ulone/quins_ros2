@@ -72,6 +72,8 @@ class GaitLogic():
 
         self.walking = False
         self.jump_state = ""
+        self.jump_q_history = np.zeros(12)
+        self.jump_qd_history = np.zeros(12)
 
         self.transitioning = False
         self.transition_start_time = 0.0
@@ -163,6 +165,8 @@ class GaitLogic():
                 self.t = 0.0
                 self.jump_state = "PREPARE"
                 self.graph_t = 0.0
+                self.jump_q_history = np.copy(self.current_q)
+                self.jump_qd_history = np.zeros(12)
 
             case "CRAWL":
                 self.gait_freq = 2.0
@@ -224,6 +228,7 @@ class GaitLogic():
         self.x_stabilize = msg[12]
         self.back_thrust = msg[13]
         self.pitch_threshold = msg[14]
+        print("wei")
 
     def update_phase_offsets(self, msg: list):
         # NOTE: just sets the Phase Offsets into a new Value from msg
@@ -536,8 +541,6 @@ class GaitLogic():
         self.t += self.dt # increment the time mod (t)
 
     def jump_process(self):
-        print(f"state : {self.jump_state}, pitch : {self.current_roll:.2f}")
-
         y_idle = self.z_off
         y_crouch = self.y_crouch
         y_thrust = self.y_thrust
@@ -550,121 +553,142 @@ class GaitLogic():
         x_flight = self.x_off + self.x_flight
         x_catch = self.x_off + self.x_catch
 
-        current_y_f = y_idle
-        current_y_b = y_idle
-        current_x_f = x_idle
-        current_x_b = x_idle
+        current_x = x_idle
+        current_y = y_idle
 
         avg_fz = np.mean(self.filtered_fz)
         contact_threshold = 2.0
+        
+        foot_forces = np.zeros((4, 3))
+        is_stance = [False, False, False, False]
+        base_weight = (self.robot_mass * 9.81) / 4.0
 
+        t1 = self.prepare_time
+        t2 = t1 + self.back_thrust_time
+        t3 = t2 + self.flight_time
+        t4 = t3 + self.catch_time
+
+        # Fast-forward override
+        if self.jump_state == "DESCENT" and (self.t - t3) > 0.05 and avg_fz > contact_threshold:
+            self.t = t4
+            self.jump_state = "LANDING"
+
+        # 1. Lock active state to prevent boundary whiplash in Central Difference
+        active_state = self.jump_state
+        t_start = 0.0
+        duration = 1.0
+
+        if active_state == "PREPARE":
+            t_start = 0.0
+            duration = self.prepare_time
+        elif active_state == "THRUST":
+            t_start = t1
+            duration = self.back_thrust_time
+        elif active_state == "FLIGHT":
+            t_start = t2
+            duration = self.flight_time
+        elif active_state == "DESCENT":
+            t_start = t3
+            duration = self.catch_time
+        elif active_state == "LANDING":
+            t_start = t4
+            duration = self.landing_time
+
+        q_eval = []
+        current_y_actual = 0.0
+
+        for step in [-1, 0, 1]:
+            t_eval = self.t + step * self.dt
+            fraction = (t_eval - t_start) / duration 
+            # DO NOT CLIP FRACTION. Allow math to extrapolate tangents naturally.
+            
+            match active_state:
+                case "PREPARE":
+                    s = 3.0 * (fraction**2) - 2.0 * (fraction**3) 
+                    current_y = y_idle + s * (y_crouch - y_idle) 
+                    current_x = x_idle + s * (x_stabilize - x_idle) 
+                    if step == 0:
+                        is_stance = [True, True, True, True]
+                        for i in range(4): foot_forces[i, 2] = base_weight
+                        t_fk1, t_fk2, t_fk3 = m.degrees(self.current_q[0]), m.degrees(self.current_q[1]), m.degrees(self.current_q[2])
+                        fk_matrix = self.kinematics.fk('FL', t_fk1, t_fk2, t_fk3) 
+                        current_y_actual = abs(fk_matrix[1, 3])
+
+                case "THRUST":
+                    s = fraction ** 2
+                    current_y = y_crouch + s * (y_thrust - y_crouch)
+                    current_x = x_stabilize + s * (x_thrust - x_stabilize)
+                    if step == 0:
+                        is_stance = [True, True, True, True]
+                        for i in range(4): foot_forces[i, 2] = base_weight * 2.5 
+                        
+                case "FLIGHT":
+                    s = fraction 
+                    current_y = y_thrust + s * (y_flight - y_thrust)
+                    current_x = x_thrust + s * (x_flight - x_thrust)
+                    if step == 0: is_stance = [False, False, False, False]
+
+                case "DESCENT":
+                    s = 3.0 * (fraction**2) - 2.0 * (fraction**3)
+                    current_y = y_flight 
+                    current_x = x_flight + s * (x_catch - x_flight)
+                    if step == 0: is_stance = [False, False, False, False]
+
+                case "LANDING":
+                    s = 3.0 * (fraction**2) - 2.0 * (fraction**3)
+                    current_y = y_flight + s * (y_idle - y_flight)
+                    current_x = x_catch + s * (x_idle - x_catch)
+                    if step == 0:
+                        is_stance = [True, True, True, True]
+                        for i in range(4): foot_forces[i, 2] = base_weight * 1.5
+
+            q_desired = []
+            for leg in LEG_NAMES:
+                ix, iy, iz = self.kinematics.get_init_pos(leg)
+                tx, ty, tz = ix + current_x, current_y, iz 
+                theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
+                q_desired.extend([theta1, theta2, theta3])
+                
+            q_eval.append(np.array(q_desired))
+
+        # Predictive Central Difference Array Matrix 
+        q_d = q_eval[1]
+        qd_d = (q_eval[2] - q_eval[0]) / (2.0 * self.dt)
+        qdd_d = (q_eval[2] - 2.0 * q_eval[1] + q_eval[0]) / (self.dt**2)
+        qdd_d = np.clip(qdd_d, -1500.0, 1500.0)
+
+        if self.jump_state == "THRUST":
+            print(f"[DEBUG] t: {self.t:.3f} | q_d (pos): {q_d[1]:.3f} | qd_d (vel): {qd_d[1]:.3f} | qdd_d (accel): {qdd_d[1]:.3f}")
+
+        # Handle state transitions based on absolute time
         match self.jump_state:
             case "PREPARE":
-                fraction = min(self.t / self.prepare_time, 1.0)
-                current_y_f = y_idle + fraction * (y_crouch - y_idle) 
-                current_x_f = x_idle + fraction * (x_rev_thrust - x_idle)
-
-                current_y_b = y_idle
-                current_x_b = x_idle + fraction * (x_rev_thrust - x_idle)
-
-                # t1 = m.degrees(self.current_q[0])
-                # t2 = m.degrees(self.current_q[1])
-                # t3 = m.degrees(self.current_q[2])
-                # fk_matrix = k.fk('FL', t1, t2, t3) 
-                # current_y_actual = abs(fk_matrix[1, 3])
-
-                if fraction >= 1.0:
-                    self.jump_state = "FRONT_THRUST"
-                    self.t = 0.0
-
-            case "FRONT_THRUST":
-                # Rapid front extension to pitch the body upward
-                fraction = min(self.t / self.front_thrust_time, 1.0)
-                
-                current_y_f = y_crouch + fraction * (y_thrust - y_crouch)
-                current_x_f = x_rev_thrust 
-                
-                current_y_b = y_idle + fraction * (y_crouch - y_idle)
-                current_x_b = x_rev_thrust + fraction * (x_stabilize - x_rev_thrust)
-
-                if self.current_roll <= self.pitch_threshold:
-                    self.jump_state = "BACK_THRUST"
-                    self.t = 0.0
-                    
-            case "BACK_THRUST":
-                # Front legs tuck while back legs launch the body
-                fraction = min(self.t / self.back_thrust_time, 1.0)
-                
-                current_y_f = y_thrust + fraction * (y_flight - y_thrust)
-                current_x_f = x_rev_thrust + fraction * (x_flight - x_rev_thrust)
-                
-                current_y_b = y_crouch + fraction * (y_thrust - y_crouch)
-                current_x_b = x_stabilize + fraction * (x_thrust - x_stabilize)
-
-                if fraction >= 1.0:
-                    self.jump_state = "AERIAL"
-                    self.t = 0.0
-
-            case "AERIAL":
-                # All legs tucked for obstacle clearance
-                fraction = min(self.t / self.flight_time, 1.0)
-
-                current_y_f = y_flight
-                current_x_f = x_flight
-
-                current_y_b = y_thrust + fraction * (y_flight - y_thrust)
-                current_x_b = x_thrust + fraction * (x_flight - x_thrust)
-
-                if fraction >= 1.0:
+                if self.t >= t1 and abs(current_y_actual - y_crouch) < 0.1:
+                    self.jump_state = "THRUST"
+            case "THRUST":
+                if self.t >= t2:
+                    self.jump_state = "FLIGHT"
+            case "FLIGHT":
+                if self.t >= t3:
                     self.jump_state = "DESCENT"
-                    self.t = 0.0
-
             case "DESCENT":
-                # Legs extend forward and down to prepare for impact
-                fraction = min(self.t / self.catch_time, 1.0)
-                
-                current_y_f = current_y_b = y_flight 
-                current_x_f = current_x_b = x_flight + fraction * (x_catch - x_flight)
-
-                if fraction >= 1.0 or (self.t > 0.05 and avg_fz > contact_threshold):
+                # Descent fast-forward is handled at top of loop
+                if self.t >= t4:
                     self.jump_state = "LANDING"
-                    self.t = 0.0
-
             case "LANDING":
-                # Return to idle standing posture to absorb load
-                fraction = min(self.t / self.landing_time, 1.0)
-
-                current_y_f = current_y_b = y_flight + fraction * (y_idle - y_flight)
-                current_x_f = current_x_b = x_catch + fraction * (x_idle - x_catch)
-
-                if fraction >= 1.0:
+                if self.t >= (t4 + self.landing_time):
                     self.update_state("IDLE")
                     return
 
-        q_desired = []
-        for leg in LEG_NAMES:
-            ix, iy, iz = self.kinematics.get_init_pos(leg)
-            
-            if leg in ['FL', 'FR']:
-                tx = ix + current_x_b 
-                ty = current_y_b
-            else:
-                tx = ix + current_x_f
-                ty = current_y_f
-            tz = iz 
-            
-            theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
-            q_desired.extend([theta1, theta2, theta3])
-            
         if "graph" in self.callbacks:
             self.callbacks["graph"]([
                 float(self.graph_t),
-                float(q_desired[1]),
+                float(q_d[1]),
                 float(self.current_q[1])
             ])
 
         if "jump_points" in self.callbacks:
-            self.callbacks["jump_points"](q_desired)
+            self.callbacks["jump_points"](q_d.tolist(), qd_d.tolist(), qdd_d.tolist(), foot_forces.tolist(), is_stance)
 
         self.t += self.dt
         self.graph_t += self.dt
