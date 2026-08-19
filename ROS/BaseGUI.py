@@ -144,8 +144,8 @@ class GUI:
 
         trotBtn = tk.Radiobutton(
             state_group,
-            text="TROT",
-            value="TROT",
+            text="RUN",
+            value="RUN",
             variable=self.state,
             font=font_style,
             command=update_state,
@@ -164,6 +164,7 @@ class GUI:
                             0.0,
                             m.pi,
                             m.pi,
+                            0.5 # freq
                         ]
                         self.callbacks['phase'](phase_offsets)
                     case "4BEAT":
@@ -172,6 +173,7 @@ class GUI:
                             m.pi / 2.0,
                             m.pi,
                             3.0 * m.pi / 2.0,
+                            0.75 # freq
                         ] 
                         self.callbacks['phase'](phase_offsets)
 
