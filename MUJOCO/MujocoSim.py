@@ -155,7 +155,8 @@ def main():
             "phase": logic.update_phase_offsets,
             "wt_params": logic.update_wt_params,
             "jt_params": logic.update_jt_params,
-            "raw_tune": logic.raw_tune
+            "raw_tune": logic.raw_tune,
+            "gamepad": logic.update_gamepad_params,
         })
         gui.setup()
         
@@ -187,6 +188,8 @@ def main():
     record_steps = int(physics_hz / record_hz)
     renderer = mujoco.Renderer(model, height=480, width=640)
     video_writer = imageio.get_writer('simulation.mp4', fps=record_hz)
+
+    last_render_time = time.time()
 
     try:
         with mujoco.viewer.launch_passive(model, data) as viewer:
@@ -277,7 +280,10 @@ def main():
                         data.ctrl[info['actuator_id']] = np.clip(final_torque, -1500.0, 1500.0)
 
                 mujoco.mj_step(model, data)
-                viewer.sync()
+                current_time = time.time()
+                if (current_time - last_render_time) > 0.016:
+                    viewer.sync()
+                    last_render_time = current_time
                 
                 if step_counter % record_steps == 0:
                     mujoco.mjv_updateScene(model, data, viewer.opt, None, viewer.cam, mujoco.mjtCatBit.mjCAT_ALL, renderer.scene)

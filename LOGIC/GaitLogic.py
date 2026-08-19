@@ -239,6 +239,20 @@ class GaitLogic():
             'BL': msg[3],
         }
 
+    def update_gamepad_params(self, msg: list):
+        if not self.walking:
+            return
+
+        ly = msg[0]
+        rx = msg[1]
+        
+        forward_dir = 1.0 if ly < 0 else -1.0
+        scale = 3.0 if self.current_state == "RUN" else 1.0
+        self.step_len = forward_dir * scale 
+
+        yaw_turn_rate = 0.02
+        self.target_yaw += rx * yaw_turn_rate
+
     def raw_tune(self, msg: list):
         # NOTE: Raw Tuning just sends a theta value from msg (per coxa, tibia, femur)
         self.send_theta(msg[0], msg[1], msg[2])

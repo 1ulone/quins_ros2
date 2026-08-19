@@ -1,5 +1,6 @@
 import math as m
 import tkinter as tk
+import pygame
 from tkinter import ttk
 from collections import deque
 from tkinter.font import Font
@@ -8,6 +9,21 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class GUI:
     def __init__(self, callbacks):
+        pygame.init()
+        pygame.joystick.init()
+        self.joystick = None
+
+        if pygame.joystick.get_count() > 0:
+            self.joystick = pygame.joystick.Joystick(0)
+            self.joystick.init()
+            print(f"[INPUT] Connected : {self.joystick.get_name()}")
+
+            self.num_buttons = self.joystick.get_numbuttons()
+            self.button_states = [False] * self.num_buttons
+        else:
+            print("[INPUT] No Gamepad detected")
+            self.joystick = None
+
         self.root = tk.Tk()
         self.callbacks = callbacks
 
@@ -25,6 +41,9 @@ class GUI:
             'sh': tk.StringVar(master=self.root, value="0.75"), 
             'sc': tk.StringVar(master=self.root, value="0.9")
         }
+
+        self.ly = 0.0
+        self.rx = 0.0
         
         self.fig = Figure(figsize=(5.0, 2.5), dpi=100)
         self.ax = self.fig.add_subplot(111)
@@ -43,6 +62,9 @@ class GUI:
         self.ax.set_xlabel("Time (s)")
         self.ax.set_ylabel("Position (rad)")
         self.ax.grid(True)
+
+        self.ly_display = tk.StringVar(master=self.root, value="Left Stick Y: 0.0")
+        self.rx_display = tk.StringVar(master=self.root, value="Right Stick X: 0.0")
 
         canvas_widget = self.canvas.get_tk_widget()
         canvas_widget.pack(fill=tk.NONE, expand=False, pady=5)
@@ -152,50 +174,11 @@ class GUI:
         )
         trotBtn.grid(column=0, row=3)
 
-        phase_group = ttk.LabelFrame(grid_container, text=f"Change Phase Type {self.phase_s.get()}", padding=15)
-        phase_group.grid(row=0, column=1, sticky='nsew')
+        gpad_group = ttk.LabelFrame(grid_container, text=f"Gamepad group {self.phase_s.get()}", padding=15)
+        gpad_group.grid(row=0, column=1, sticky='nsew')
 
-        def update_phase():
-            if self.callbacks.get('phase'):
-                match self.phase_s.get():
-                    case "CROSS":
-                        phase_offsets = [
-                            0.0,
-                            0.0,
-                            m.pi,
-                            m.pi,
-                            0.5 # freq
-                        ]
-                        self.callbacks['phase'](phase_offsets)
-                    case "4BEAT":
-                        phase_offsets = [
-                            0.0,
-                            m.pi / 2.0,
-                            m.pi,
-                            3.0 * m.pi / 2.0,
-                            0.75 # freq
-                        ] 
-                        self.callbacks['phase'](phase_offsets)
-
-        cross = tk.Radiobutton(
-            phase_group,
-            text="Cross Pair",
-            value="CROSS",
-            variable=self.phase_s,
-            font=font_style,
-            command=update_phase,
-        )
-        cross.pack()
-
-        creep = tk.Radiobutton(
-            phase_group,
-            text="4-beat cycle",
-            value="4BEAT",
-            variable=self.phase_s,
-            font=font_style,
-            command=update_phase,
-        )
-        creep.pack()
+        tk.Label(gpad_group, textvariable=self.ly_display).pack()
+        tk.Label(gpad_group, textvariable=self.rx_display).pack()
 
         wt_group = ttk.LabelFrame(grid_container, text="WALK TUNING PARAMS", padding=15)
         wt_group.grid(row=1, column=0, columnspan=2)
@@ -424,6 +407,8 @@ class GUI:
         leg_slider = tk.Scale(slider_group, from_=-3.14, to=3.14, resolution=0.01, orient="horizontal", length=300, command=tuning_process)
 
     def refresh_graph(self):
+        return
+
         if len(self.time_history) > 1:
             self.ax.clear()
 
@@ -445,13 +430,57 @@ class GUI:
             self.canvas.draw()
 
     def update_graph(self, t, desired, measured):
+        return 
+
         self.time_history.append(t)
         self.desired_history.append(desired)
         self.measured_history.append(measured)
         self.refresh_graph()
 
     def update(self):
+        self.update_gamepad_input()
         self.root.update()
 
+    def set_quad_state(self, new_state):
+        self.state.set(new_state)
+        
+        if self.callbacks.get('state'):
+            self.callbacks['state'](self.state.get())
+        if self.state.get() == "JUMP":
+            self.time_history.clear()
+            self.desired_history.clear()
+            self.measured_history.clear()
 
+    def update_gamepad_input(self):
+        if self.joystick is None:
+            return
+        
+        button_mapping = {
+            0: "JUMP",   # Cross / A
+            1: "CROUCH", # Circle / B
+            2: "IDLE",   # Square / X
+            3: "WALK",   # Triangle / Y
+            4: "CRAWL",  # L1
+            5: "RUN"     # R1
+        }
 
+        # 1. Process discrete button events directly from the queue
+        for event in pygame.event.get():
+            if event.type == pygame.JOYBUTTONDOWN:
+                print(f"[DEBUG] Raw Event Button {event.button} pressed")
+                if event.button in button_mapping:
+                    self.set_quad_state(button_mapping[event.button])
+
+        # 2. Poll continuous axis states
+        raw_ly = self.joystick.get_axis(1)
+        raw_rx = self.joystick.get_axis(0)
+
+        deadzone = 0.1
+        self.ly = raw_ly if abs(raw_ly) > deadzone else 0.0
+        self.rx = raw_rx if abs(raw_rx) > deadzone else 0.0
+
+        self.ly_display.set(f"Left Stick Y: {self.ly:.2f}")
+        self.rx_display.set(f"Right Stick X: {self.rx:.2f}")
+
+        if self.callbacks.get("gamepad"):
+            self.callbacks["gamepad"]([self.ly, self.rx])
