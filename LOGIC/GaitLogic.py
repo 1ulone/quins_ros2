@@ -246,7 +246,11 @@ class GaitLogic():
         ly = msg[0]
         rx = msg[1]
         
-        forward_dir = 1.0 if ly < 0 else -1.0
+        if ly == 0:
+            forward_dir = 0.0
+        else:
+            forward_dir = 1.0 if ly < 0 else -1.0
+
         scale = 3.0 if self.current_state == "RUN" else 1.0
         self.step_len = forward_dir * scale 
 

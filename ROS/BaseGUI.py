@@ -407,7 +407,8 @@ class GUI:
         leg_slider = tk.Scale(slider_group, from_=-3.14, to=3.14, resolution=0.01, orient="horizontal", length=300, command=tuning_process)
 
     def refresh_graph(self):
-        return
+        if self.joystick != None:
+            return
 
         if len(self.time_history) > 1:
             self.ax.clear()
@@ -430,7 +431,8 @@ class GUI:
             self.canvas.draw()
 
     def update_graph(self, t, desired, measured):
-        return 
+        if self.joystick != None:
+            return 
 
         self.time_history.append(t)
         self.desired_history.append(desired)
