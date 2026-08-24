@@ -189,3 +189,48 @@ class KinematicsLogic():
         theta1, theta2, theta3 = self.ik(leg_id, lx, ly, lz)
         return theta1, theta2, theta3
 
+    # NOTE: Get Jacobian Matrix 
+    def get_jacobian(self, leg_id, theta1, theta2, theta3):
+        n = self.phase_to_index(leg_id)
+        
+        def P(jvso, theta):
+            v = jvso[0:3]
+            w = jvso[3:6]
+            matrix = np.array([
+                [    0, -w[2],  w[1], v[0]],
+                [ w[2],     0, -w[0], v[1]],
+                [-w[1],  w[0],     0, v[2]],
+                [    0,     0,     0,    0]
+            ])
+            return expm(matrix * theta)
+            
+        def Ad(T):
+            R = T[0:3, 0:3]
+            p = T[0:3, 3]
+            p_skew = np.array([[0, -p[2], p[1]], [p[2], 0, -p[0]], [-p[1], p[0], 0]])
+            Ad_matrix = np.zeros((6, 6))
+            Ad_matrix[0:3, 0:3] = R
+            Ad_matrix[0:3, 3:6] = p_skew @ R
+            Ad_matrix[3:6, 3:6] = R
+            return Ad_matrix
+
+        S1 = self.jvso[n][0]
+        S2 = self.jvso[n][1]
+        S3 = self.jvso[n][2]
+        
+        T1 = P(S1, theta1)
+        T2 = P(S2, theta2)
+        T3 = P(S3, theta3)
+        
+        J_s = np.zeros((6, 3))
+        J_s[:, 0] = S1
+        J_s[:, 1] = Ad(T1) @ S2
+        J_s[:, 2] = Ad(T1 @ T2) @ S3
+        
+        FK = T1 @ T2 @ T3 @ self.ee_io[n]
+        p = FK[0:3, 3]
+        
+        p_skew = np.array([[0, -p[2], p[1]], [p[2], 0, -p[0]], [-p[1], p[0], 0]])
+        
+        J_linear = J_s[0:3, :] - p_skew @ J_s[3:6, :]
+        return J_linear

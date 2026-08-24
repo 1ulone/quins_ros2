@@ -1,5 +1,6 @@
 import time
 import math as m
+from matplotlib.pyplot import step
 import numpy as np
 from LOGIC.KinematicsLogic import KinematicsLogic
 
@@ -262,11 +263,12 @@ class GaitLogic():
         self.send_theta(msg[0], msg[1], msg[2])
 
     def trajectory_controller(self, phase, step_len):
-        z = 0.0
+        z, z_dot, z_ddot = 0.0, 0.0, 0.0
         # NOTE: z value will always be 0.0, (depth if the legs is viewed as a 2d leg)
 
         stance_phase_end = 2.0 * m.pi * self.duty_factor
         swing_phase_len = 2.0 * m.pi * (1.0 - self.duty_factor)
+        omega = 2.0 * m.pi * self.gait_freq
 
         # print(f"duty fact : {self.duty_factor}, stance len : {stance_phase_end}, swing phase : {swing_phase_len} ")
 
@@ -277,26 +279,45 @@ class GaitLogic():
             # - x goes from -step_len/2 to step_len/2 ([-] is somehow forward)
             # - y = 0 we want the leg to stay on ground
 
+            ds_dt = omega / stance_phase_end
             fraction = phase / stance_phase_end 
+
             x = -(step_len / 2.0) + (fraction * step_len)
-            y = 0.0
+            x_dot = step_len * ds_dt
+            x_ddot = 0.0
+
+            y, y_dot, y_ddot = 0.0, 0.0, 0.0
         else: # NOTE: swing phase : foot is off ground arc-ing forward
             # - fraction goes from 0 -> 1
             # - x goes from +step_len/2 to -step_len/2
             # - y follows a half-sine arc : 0 -> step_h -> 0
 
+            ds_dt = omega / swing_phase_len
             s = (phase - stance_phase_end) / swing_phase_len
+
             v = step_len * (swing_phase_len / stance_phase_end)
             c = step_len + v
-            x = (step_len / 2.0) + (v * s) - (10.0 * c * s**3) + (15.0 * c * s**4) - (6.0 * c * s**5)
-            y = 64.0 * self.step_h * (s**3) * ((1.0 - s)**3)
 
-        return x, y, z
+            x = (step_len / 2.0) + (v * s) - (10.0 * c * s**3) + (15.0 * c * s**4) - (6.0 * c * s**5)
+            dx_ds = v - 30.0 * c * (s**2) + 60.0 * c * (s**3) - 30.0 * c * (s**4)
+            d2x_ds2 = -60.0 * c * s + 180.0 * c * (s**2) - 120.0 * c * (s**3)
+            x_dot = dx_ds * ds_dt
+            x_ddot = d2x_ds2 * (ds_dt**2)
+
+            y = 64.0 * self.step_h * (s**3) * ((1.0 - s)**3)
+            dy_ds = 64.0 * self.step_h * (3.0 * s**2 - 12.0 * s**3 + 15.0 * s**4 - 6.0  * s**5)
+            d2y_ds2 = 64.0 * self.step_h * (6.0 * s - 36.0 * s**2 + 60.0 * s**3 - 30.0 * s**4)
+            y_dot = dy_ds * ds_dt
+            y_ddot = d2y_ds2 * (ds_dt**2)
+
+        return (x, y, z), (x_dot, y_dot, z_dot), (x_ddot, y_ddot, z_ddot)
 
     def run_trajectory_controller(self, phase, step_len, leg):
-        z = 0.0
+        z, x_dot, y_dot, z_dot, x_ddot, y_ddot, z_ddot = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
         stance_phase_end = 2.0 * m.pi * self.duty_factor
         swing_phase_len = 2.0 * m.pi * (1.0 - self.duty_factor)
+        target_x = 0.0
 
         # Asymmetric Stride: Front legs catch (reach forward), Back legs push (sweep back)
         if leg in ['BL', 'BR']:
@@ -307,18 +328,13 @@ class GaitLogic():
             x_end = (step_len * 0.8)
 
         if phase < stance_phase_end:
-            # Stance Phase: Sweep flat on the ground
             fraction = phase / stance_phase_end 
             x = x_start + fraction * (x_end - x_start)
             y = 0.0 
         else: 
-            # Swing Phase: Return arc
             s = (phase - stance_phase_end) / swing_phase_len
-            
-            # Your exact inverted target path
             target_x = -x_end + (s * (x_end - x_start))
             
-            # LERP the teleportation jump over the first 15% of the swing
             if s < 0.15:
                 blend = s / 0.15
                 x = (1.0 - blend) * x_end + blend * target_x
@@ -327,7 +343,13 @@ class GaitLogic():
                 
             y = 64.0 * self.step_h * (s**3) * ((1.0 - s)**3)
 
-        return x, y, z
+        # The requested debug print, flushed immediately
+        if leg == 'FL' and phase >= stance_phase_end:
+            import sys
+            print(f"[DEBUG RUN - FL] phase: {phase:.2f} | x: {x:.3f} | target_x: {target_x:.3f}")
+            sys.stdout.flush()
+
+        return (x, y, z), (x_dot, y_dot, z_dot), (x_ddot, y_ddot, z_ddot)
 
     def setup_transition(self, target_s, target_t, target_k, duration=1.0):
         self.transitioning = True
@@ -372,186 +394,169 @@ class GaitLogic():
         # w = 2*pi*f = 2pi/T
         omega = 2.0 * m.pi * self.gait_freq
 
-        # NOTE: sets the trajectory to look forward ahead (10 steps) 
-        lookahead_steps = 10 
-        points = []
-        all_pos_history = []
-        is_stance_history = []
-
         # NOTE: Create a linear ramp multiplier from 0.0 to 1.0 over the first 1s
         # to scale the base step length
         ramp_duration = 1.0
         ramp_factor = min(self.t / ramp_duration, 1.0)
         base_step_len = self.step_len * ramp_factor
 
-        for i in range(lookahead_steps):
-            # NOTE: Calculate target timestamp for the current lookahead_steps
-            t_ahead = self.t + i * self.dt
+        # NOTE: Get the Modulo of the phase angle
+        # With the equation : (w * t_ahead) mod (2pi)
+        # its a reference clock as in the omega is the parent. the phase_now
+        # is what currently time it is kinda thing. it's mapping a linear time
+        # into angular (doesnt mean shit for me) or into a cyclical value between
+        # 0 and 2pi radians.
+        phase_now = (omega * self.t) % (2.0 * m.pi)
 
-            # NOTE: Get the Modulo of the phase angle
-            # With the equation : (w * t_ahead) mod (2pi)
-            # its a reference clock as in the omega is the parent. the phase_now
-            # is what currently time it is kinda thing. it's mapping a linear time
-            # into angular (doesnt mean shit for me) or into a cyclical value between
-            # 0 and 2pi radians.
-            phase_now = (omega * t_ahead) % (2.0 * m.pi)
-
-            # NOTE: Initialize an empty lists for the target joints angles and stances
-            # for this specific time step.
-            q_desired = []
-            is_stance_list = []
+        # NOTE: Initialize an empty lists for the target joints angles and stances
+        q_desired, q_dot_desired, q_ddot_desired = [], [], []
+        is_stance_list = []
+        points = []
 
             # NOTE: get yaw error
-            yaw_error = self.target_yaw - self.current_yaw
+        yaw_error = self.target_yaw - self.current_yaw
+        stance_limit = 2.0 * m.pi * self.duty_factor
 
-            stance_limit = 2.0 * m.pi * self.duty_factor
+        for leg in LEG_NAMES:
+            # NOTE: leg specific phase shift 
+            # leg_phase is the most local shit of time after phase_now
+            # calculate or timed each own leg cycle. calculated by adding
+            # a static angular offset to the phase_now. 
+            # it tells which leg should start doing shit first by 
+            # adding the offset shit
+            leg_phase = (phase_now + self.phase_offsets[leg]) % (2.0 * m.pi)
+            is_stance = (leg_phase < stance_limit) # check if leg is in the stance phase
+            is_stance_list.append(is_stance) # record and set the starting step
 
-            for leg in LEG_NAMES:
-                # NOTE: leg specific phase shift 
-                # leg_phase is the most local shit of time after phase_now
-                # calculate or timed each own leg cycle. calculated by adding
-                # a static angular offset to the phase_now. 
-                # it tells which leg should start doing shit first by 
-                # adding the offset shit
-                leg_phase = (phase_now + self.phase_offsets[leg]) % (2.0 * m.pi)
-                is_stance = (leg_phase < stance_limit) # check if leg is in the stance phase
-                is_stance_list.append(is_stance) # record and set the starting step
+            active_step_len = base_step_len
+            # NOTE: Adjusts the step length asymmetrically based on yaw error 
+            # to induce rotation. Left legs increase stride, 
+            # right legs decrease stride (or vice versa).
+            if leg in ['FL', 'BL']:
+                active_step_len += (yaw_error * self.sc_yaw) * ramp_factor
+            elif leg in ['FR', 'BR']:
+                active_step_len -= (yaw_error * self.sc_yaw) * ramp_factor
 
-                active_step_len = base_step_len
-                if i == 0 and leg == 'FL':
-                    traj_stance = leg_phase < (2.0 * m.pi * self.duty_factor)
-                    physics_stance = is_stance
-                    if traj_stance != physics_stance:
-                        print(f"DESYNC ERROR | Phase: {leg_phase:.2f} | Trajectory Stance: {traj_stance} | Physics Stance: {physics_stance}")
+            # NOTE: Calculate the cartesian foot trajectory offset for the 
+            # current phase
+            if self.current_state == "RUN":
+                pos, vel, acc = self.run_trajectory_controller(leg_phase, active_step_len, leg)
+            else:
+                pos, vel, acc = self.trajectory_controller(leg_phase, active_step_len)
 
-                # NOTE: Adjusts the step length asymmetrically based on yaw error 
-                # to induce rotation. Left legs increase stride, 
-                # right legs decrease stride (or vice versa).
-                if leg in ['FL', 'BL']:
-                    active_step_len += (yaw_error * self.sc_yaw) * ramp_factor
-                elif leg in ['FR', 'BR']:
-                    active_step_len -= (yaw_error * self.sc_yaw) * ramp_factor
+            # NOTE: Retrieves the static nominal resting position of the leg
+            ix, iy, iz = self.kinematics.get_init_pos(leg)
 
-                # NOTE: Calculate the cartesian foot trajectory offset for the 
-                # current phase
-                if self.current_state == "RUN":
-                    xl, yl, zl = self.run_trajectory_controller(leg_phase, active_step_len, leg)
-                else:
-                    xl, yl, zl = self.trajectory_controller(leg_phase, self.step_len)
+            # NOTE: Calculate the absolute target foot coordinates
+            tx = ix + pos[0] + self.x_off
+            ty = self.z_off_used - pos[1] 
+            tz = iz + pos[2]
 
-                # NOTE: Retrieves the static nominal resting position of the leg
-                ix, iy, iz = self.kinematics.get_init_pos(leg)
+            # NOTE: Calculate Inverse Kinematics to find Theta
+            theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
+            q_desired.extend([theta1, theta2, theta3]) # appends theta for graph 
 
-                # NOTE: Calculate the absolute target foot coordinates
-                tx = ix + xl + self.x_off
-                ty = self.z_off_used - yl
-                tz = iz + zl
-
-                # NOTE: Calculate Inverse Kinematics to find Theta
-                theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
-                q_desired.extend([theta1, theta2, theta3]) # appends theta for graph 
+            if self.current_state == "RUN":
+                # Shrink window to 0.04s (2 ticks) to restore aggressive sweeping power
+                lookahead_window = 0.04 
                 
-                # NOTE: cache the calculated angle into the leg dict
-                if i == 0:
-                    phi_key = LEG_TO_PHI[leg]
-                    self.phi[phi_key]["shoulder"] = theta1
-                    self.phi[phi_key]["thigh"] = theta2
-                    self.phi[phi_key]["leg"] = theta3
+                q_curr = np.array([theta1, theta2, theta3])
+                
+                def get_future_ik(time_offset):
+                    p_fut = (omega * (self.t + time_offset)) % (2.0 * m.pi)
+                    lp_fut = (p_fut + self.phase_offsets[leg]) % (2.0 * m.pi)
+                    pos_fut, _, _ = self.run_trajectory_controller(lp_fut, active_step_len, leg)
+                    tx_fut = ix + pos_fut[0] + self.x_off
+                    ty_fut = self.z_off_used - pos_fut[1] 
+                    tz_fut = iz + pos_fut[2]
+                    return np.array(self.kinematics.ik(leg, tx_fut, ty_fut, tz_fut))
 
-            # NOTE: appends all position and stance to an array for tracking
-            q_d = np.array(q_desired)
-            all_pos_history.append(q_d)
-            is_stance_history.append(is_stance_list)
+                q_next1 = get_future_ik(lookahead_window)
+                q_next2 = get_future_ik(2.0 * lookahead_window)
 
-        # NOTE: Calculate the velocities (q dot) with Angular Wrapping
-        # This prevents the "infinity shit" when the joint wraps around 360 degrees
-        all_vel_history = []
-        for i in range(lookahead_steps):
-            if i == 0:
-                diff = all_pos_history[1] - all_pos_history[0]
-                diff = (diff + np.pi) % (2.0 * np.pi) - np.pi
-                q_dot_d = diff / self.dt
-            elif i == lookahead_steps - 1:
-                diff = all_pos_history[i] - all_pos_history[i - 1]
-                diff = (diff + np.pi) % (2.0 * np.pi) - np.pi
-                q_dot_d = diff / self.dt
+                diff_1 = q_next1 - q_curr
+                diff_1 = (diff_1 + m.pi) % (2.0 * m.pi) - m.pi
+                q_dot = diff_1 / lookahead_window
+
+                diff_2 = q_next2 - q_next1
+                diff_2 = (diff_2 + m.pi) % (2.0 * m.pi) - m.pi
+                q_dot_next = diff_2 / lookahead_window
+
+                q_ddot = (q_dot_next - q_dot) / lookahead_window
+                
+                # Target the exact symptoms from the video:
+                # 1. Kill the Motor 1 (shoulder) twitch by clamping its velocity tighter
+                q_dot[0] = np.clip(q_dot[0], -10.0, 10.0)
+                
+                # 2. Let Motor 2 and 3 (thigh/calf) output max power to push the dog
+                q_dot[1] = np.clip(q_dot[1], -40.0, 40.0)
+                q_dot[2] = np.clip(q_dot[2], -40.0, 40.0)
+
+                q_ddot = np.clip(q_ddot, -1500.0, 1500.0)          
             else:
-                diff = all_pos_history[i + 1] - all_pos_history[i - 1]
-                diff = (diff + np.pi) % (2.0 * np.pi) - np.pi
-                q_dot_d = diff / (2.0 * self.dt)
-            all_vel_history.append(q_dot_d)
+                # WALK remains untouched using the analytical Jacobian
+                cart_vel = np.array([vel[0], -vel[1], vel[2]])
+                cart_acc = np.array([acc[0], -acc[1], acc[2]])
 
-        # NOTE: Calculate the acceleration and clamp it
-        # Prevents finite-difference spikes from blowing up the physics solver mass matrix
-        all_acc_history = []
-        for i in range(lookahead_steps):
-            if i == 0:
-                diff = all_vel_history[1] - all_vel_history[0]
-            elif i == lookahead_steps - 1:
-                diff = all_vel_history[i] - all_vel_history[i - 1]
-            else:
-                diff = (all_vel_history[i + 1] - all_vel_history[i - 1]) / 2.0
+                delta = 1e-4
+                q_dx = self.kinematics.ik(leg, tx + delta, ty, tz)
+                q_dy = self.kinematics.ik(leg, tx, ty + delta, tz)
+                q_dz = self.kinematics.ik(leg, tx, ty, tz + delta)
+
+                J_inv = np.zeros((3, 3))
+                J_inv[:, 0] = (np.array(q_dx) - np.array([theta1, theta2, theta3])) / delta
+                J_inv[:, 1] = (np.array(q_dy) - np.array([theta1, theta2, theta3])) / delta
+                J_inv[:, 2] = (np.array(q_dz) - np.array([theta1, theta2, theta3])) / delta
+
+                q_dot = J_inv @ cart_vel
+                q_ddot = J_inv @ cart_acc
+                q_ddot = np.clip(q_ddot, -1500.0, 1500.0)
+
+            q_dot_desired.extend(q_dot.tolist())
+            q_ddot_desired.extend(q_ddot.tolist())
             
-            q_ddot_d = diff / self.dt
-            q_ddot_d = np.clip(q_ddot_d, -1500.0, 1500.0) 
-            all_acc_history.append(q_ddot_d)
+            # NOTE: cache the calculated angle into the leg dict
+            phi_key = LEG_TO_PHI[leg]
+            self.phi[phi_key]["shoulder"] = theta1
+            self.phi[phi_key]["thigh"] = theta2
+            self.phi[phi_key]["leg"] = theta3
 
-        # NOTE: Initialize the torque matrix first (array really)
-        torque = np.zeros(14) 
+        # NOTE: for graph, track starts here
+        if "graph" in self.callbacks:
+            self.callbacks["graph"]([
+                float(self.t),
+                float(q_desired[1]),
+                float(self.current_q[1])
+            ])
 
-        # NOTE: Compute torques for each lookahead_steps
-        for i in range(lookahead_steps):
+        # NOTE: Initialize the foot force matrix and Counts the active stance legs
+        foot_forces = np.zeros((4, 3))
+        stance_count = sum(is_stance_list)
 
-            # NOTE: get all the previously Calculated velocities and accelerations
-            q_d = all_pos_history[i]
-            q_dot_d = all_vel_history[i]
-            q_ddot_d = all_acc_history[i]
-            is_stance_list = is_stance_history[i]
-
-            # NOTE: for graph, track starts here
-            if i == 0 and "graph" in self.callbacks:
-                self.callbacks["graph"]([
-                    float(self.t),
-                    float(q_d[1]),
-                    float(self.current_q[1])
-                ])
-
-            # NOTE: Initialize the foot force matrix and Counts the active stance legs
-            foot_forces = np.zeros((4, 3))
-            stance_count = sum(is_stance_list)
-
-            # NOTE: Calculate the basic static weight distribution 
-            # across active stance feet.
-            # Calculate the basic static weight distribution 
-            if stance_count > 0:
-                base_weight_per_foot = (self.robot_mass * 9.81) / stance_count
-                t_ahead = self.t + i * self.dt
-                phase_now = (omega * t_ahead) % (2.0 * m.pi)
-                stance_limit = 2.0 * m.pi * self.duty_factor
-
-                for leg_idx, leg_name in enumerate(LEG_NAMES):
+        # NOTE: Calculate the basic static weight distribution 
+        # across active stance feet.
+        # Calculate the basic static weight distribution 
+        if stance_count > 0:
+            base_weight_per_foot = (self.robot_mass * 9.81) / stance_count
+            for leg_idx, leg_name in enumerate(LEG_NAMES):
+                if is_stance_list[leg_idx]:
                     leg_phase = (phase_now + self.phase_offsets[leg_name]) % (2.0 * m.pi)
+                    stance_fraction = leg_phase / stance_limit
+                    dynamic_multiplier = 1.0 + m.sin(stance_fraction * m.pi)
                     
-                    # Apply force only during stance phase
-                    if leg_phase < stance_limit:
-                        stance_fraction = leg_phase / stance_limit
-                        
-                        # Sinusoidal multiplier peaks at mid-stance
-                        dynamic_multiplier = 1.0 + m.sin(stance_fraction * m.pi)
-                        
-                        if self.current_state == "RUN":
-                            dynamic_multiplier *= 1.75 # Extra peak force to achieve flight phase
+                    if self.current_state == "RUN":
+                        dynamic_multiplier *= 1.75 # Extra peak force to achieve flight phase
 
-                        foot_forces[leg_idx, 2] = base_weight_per_foot * dynamic_multiplier
+                    foot_forces[leg_idx, 2] = base_weight_per_foot * dynamic_multiplier
 
-            points.append({
-                "positions": q_d.tolist(),
-                "velocities": q_dot_d.tolist(),
-                "accelerations": q_ddot_d.tolist(),
-                "foot_forces": foot_forces.tolist(),
-                "is_stance": is_stance_list,
-                "time_offset": i * self.dt
-            })
+        points.append({
+            "positions": q_desired,
+            "velocities": q_dot_desired,
+            "accelerations": q_ddot_desired,
+            "foot_forces": foot_forces.tolist(),
+            "is_stance": is_stance_list,
+            "time_offset": 0.0
+        })
 
         if "walk_points" in self.callbacks:
             self.callbacks["walk_points"](points)

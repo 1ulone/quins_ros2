@@ -254,7 +254,7 @@ class GUI:
         yc_frame = ttk.Frame(jt_group)
         yc_frame.grid(row=0, column=0)
         tk.Label(yc_frame, text="Y Crouch").pack()
-        yc = tk.StringVar(value=str(0.6))
+        yc = tk.StringVar(value=str(0.8))
         tk.Entry(yc_frame, textvariable=yc).pack()
 
         yt_frame = ttk.Frame(jt_group)
@@ -290,7 +290,7 @@ class GUI:
         pt_frame = ttk.Frame(jt_group)
         pt_frame.grid(row=2, column=0)
         tk.Label(pt_frame, text="Prepare Time").pack()
-        pt = tk.StringVar(value=str(0.85))
+        pt = tk.StringVar(value=str(1.0))
         tk.Entry(pt_frame, textvariable=pt).pack()
 
         ftt_frame = ttk.Frame(jt_group)
@@ -325,7 +325,7 @@ class GUI:
 
         stl_frame = ttk.Frame(jt_group)
         stl_frame.grid(row=4, column=0)
-        tk.Label(stl_frame, text="Stablize leg").pack()
+        tk.Label(stl_frame, text="Stabilize leg").pack()
         stl = tk.StringVar(value=str(0.5))
         tk.Entry(stl_frame, textvariable=stl).pack()
 
