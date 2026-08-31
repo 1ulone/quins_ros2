@@ -13,14 +13,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BODY.stl" scale="0.1 0.1 0.1"/> 
+        <mesh filename="package://quins_ros2/meshes/QUAD_BODY.stl" scale="0.1 0.1 0.1"/> 
       </geometry>
       <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BODY_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BODY_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -44,14 +44,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BL_SHOULDER.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BL_SHOULDER.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BL_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BL_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -73,14 +73,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BL_THIGH.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BL_THIGH.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BL_THIGH_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BL_THIGH_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -102,14 +102,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BL_LEG.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BL_LEG.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BL_LEG_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BL_LEG_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -148,14 +148,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BR_SHOULDER.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BR_SHOULDER.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BR_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BR_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -177,14 +177,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BR_THIGH.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BR_THIGH.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BR_THIGH_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BR_THIGH_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -206,14 +206,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BR_LEG.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BR_LEG.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_BR_LEG_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_BR_LEG_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -252,14 +252,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TL_SHOULDER.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TL_SHOULDER.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TL_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TL_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -281,14 +281,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TL_THIGH.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TL_THIGH.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TL_THIGH_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TL_THIGH_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -310,14 +310,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TL_LEG.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TL_LEG.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TL_LEG_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TL_LEG_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -357,14 +357,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TR_SHOULDER.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TR_SHOULDER.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TR_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TR_SHOULDER_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -386,14 +386,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TR_THIGH.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TR_THIGH.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="gray"><color rgba="0.5 0.5 0.5 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TR_THIGH_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TR_THIGH_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>
@@ -415,14 +415,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TR_LEG.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TR_LEG.stl" scale="0.1 0.1 0.1"/>
       </geometry>
       <material name="dark_gray"><color rgba="0.2 0.2 0.2 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://quins/meshes/QUAD_TR_LEG_C.stl" scale="0.1 0.1 0.1"/>
+        <mesh filename="package://quins_ros2/meshes/QUAD_TR_LEG_C.stl" scale="0.1 0.1 0.1"/>
       </geometry>
     </collision>
     <inertial>

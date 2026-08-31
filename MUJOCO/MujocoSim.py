@@ -11,6 +11,7 @@ import mujoco.viewer
 import math as m
 import numpy as np
 import xml.etree.ElementTree as ET
+os.environ["LC_NUMERIC"] = "C"
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -22,13 +23,13 @@ from ROS.BaseGUI import GUI
 
 def main():
     # ---------------- 1. Setup Mujoco Environment ----------------
-    urdf_path = '/home/ulone/ros2_ws/src/quins/urdf/quadruped.urdf'
-    absolute_pkg_path = '/home/ulone/ros2_ws/src/quins/'
+    urdf_path = '/home/rslab/ros2_ws/src/quins_ros2/urdf/quadruped.urdf'
+    absolute_pkg_path = '/home/rslab/ros2_ws/src/quins_ros2/'
 
     with open(urdf_path, 'r') as file:
         urdf_xml = file.read()
 
-    urdf_xml = urdf_xml.replace('package://quins/', absolute_pkg_path)
+    urdf_xml = urdf_xml.replace('package://quins_ros2/', absolute_pkg_path)
     urdf_xml = re.sub(r'<xacro:arg.*?>', '', urdf_xml)
     urdf_xml = re.sub(r'(<robot[^>]*>)', r'\1\n<mujoco><compiler fusestatic="false"/></mujoco>', urdf_xml, count=1)
 
@@ -186,18 +187,18 @@ def main():
     decimation_steps = int(physics_hz / control_hz)
     step_counter = 0
 
-    fosmc_controllers = [
-        FOSMC(
-            dt=model.opt.timestep, 
-            lam=0.5, 
-            alpha=1.5, 
-            Ke1=24.0, 
-            Ke2=5.0, 
-            Ks=25.0, 
-            Kr=10.0, 
-            q_bound=0.01
-        ) for _ in range(12)
-    ]
+    fosmc = FOSMC(
+        dof=12,
+        dt=model.opt.timestep,
+        lam=0.5,
+        alpha=1.5,
+        Ke1=24.0,
+        Ke2=5.0,
+        Ks=25.0,
+        Kr=10.0,
+        gamma_c=0.01,
+        gamma_a=0.01
+    )
 
     record_hz = 60
     record_steps = int(physics_hz / record_hz)
@@ -267,27 +268,40 @@ def main():
                 qdd_des_full = np.zeros(model.nv)
                 pd_torques = np.zeros(model.nv)
                 
+                q_des_interp_arr = np.zeros(12)
+                qd_des_interp_arr = np.zeros(12)
+                q_act_arr = np.zeros(12)
+                qd_act_arr = np.zeros(12)
+                adr_map = []
+
                 idx = 0
                 for leg in LEG_NAMES:
                     for j in JOINT_NAMES[leg]:
                         adr = joint_info[j]['qvel_adr']
+                        adr_map.append(adr)
                         
                         qdd_des_full[adr] = cmd["qdd_des"][idx]
                         
                         dt_sub = (step_counter % decimation_steps) * model.opt.timestep
-                        q_des_interp = cmd["q_des"][idx] + (cmd["qd_des"][idx] * dt_sub)
-                        qd_des_interp = cmd["qd_des"][idx] + (cmd["qdd_des"][idx] * dt_sub)
+                        q_des_interp_arr[idx] = cmd["q_des"][idx] + (cmd["qd_des"][idx] * dt_sub)
+                        qd_des_interp_arr[idx] = cmd["qd_des"][idx] + (cmd["qdd_des"][idx] * dt_sub)
                         
-                        pos_err = q_act[idx] - q_des_interp
-                        vel_err = qd_act[idx] - qd_des_interp
+                        q_act_arr[idx] = q_act[idx]
+                        qd_act_arr[idx] = qd_act[idx]
                         
-                        pos_err_arr = np.array([pos_err])
-                        vel_err_arr = np.array([vel_err])
-                        
-                        torque = fosmc_controllers[idx].compute(pos_err_arr, vel_err_arr)
-                        pd_torques[adr] = float(torque[0])
-                        pd_torques[adr] = float(torque[0])                      
                         idx += 1
+
+                pd_torques_arr = fosmc.compute(
+                    q=q_act_arr, 
+                    q_dot=qd_act_arr, 
+                    q_d=q_des_interp_arr, 
+                    q_dot_d=qd_des_interp_arr
+                )
+
+                pd_torques_arr = np.nan_to_num(pd_torques_arr, nan=0.0, posinf=1500.0, neginf=-1500.0)
+
+                for i, adr in enumerate(adr_map):
+                    pd_torques[adr] = float(pd_torques_arr[i])
                         
                 ff_torques = (_m @ qdd_des_full) + bias_forces - tau_grf
 
