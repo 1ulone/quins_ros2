@@ -23,8 +23,8 @@ from ROS.BaseGUI import GUI
 
 def main():
     # ---------------- 1. Setup Mujoco Environment ----------------
-    urdf_path = '/home/rslab/ros2_ws/src/quins_ros2/urdf/quadruped.urdf'
-    absolute_pkg_path = '/home/rslab/ros2_ws/src/quins_ros2/'
+    urdf_path = '/home/ulone/ros2_ws/src/quins_ros2/urdf/quadruped.urdf'
+    absolute_pkg_path = '/home/ulone/ros2_ws/src/quins_ros2/'
 
     with open(urdf_path, 'r') as file:
         urdf_xml = file.read()
@@ -49,7 +49,7 @@ def main():
     </asset>
     <worldbody>
         <light pos="0 0 5" dir="0 0 -1" directional="true"/>
-        <geom name="floor" type="plane" pos="0 0 -2.5" size="100 100 0.1" material="grid" condim="3" friction="1.0 0.005 0.0001"/>
+        <geom name="floor" type="plane" pos="0 0 -2.5" size="100 100 0.1" material="grid" condim="3" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/>
     """
     mjcf_xml = mjcf_xml.replace('<worldbody>', environment_injection)
 
@@ -59,7 +59,7 @@ def main():
             actuators_xml += f'    <motor name="{joint}_motor" joint="{joint}" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>\n'
     actuators_xml += "</actuator>\n"
     
-    damping_xml = "<default>\n    <joint damping=\"0.05\" frictionloss=\"0.01\"/>\n</default>\n"
+    damping_xml = "<default>\n    <joint damping=\"0.05\" frictionloss=\"0.01\"/>\n    <geom contype=\"1\" conaffinity=\"0\"/>\n</default>\n"
     mjcf_xml = mjcf_xml.replace('<worldbody>', f'{damping_xml}<worldbody>')
     mjcf_xml = mjcf_xml.replace('</worldbody>', f'</worldbody>\n{actuators_xml}')
 
@@ -77,12 +77,12 @@ def main():
     model = mujoco.MjModel.from_xml_string(mjcf_xml)
     data = mujoco.MjData(model)
 
-    model.geom_contype[:] = 1
-    model.geom_conaffinity[:] = 0
-    floor_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
-    if floor_id != -1:
-        model.geom_contype[floor_id] = 0
-        model.geom_conaffinity[floor_id] = 1
+    # model.geom_contype[:] = 1
+    # model.geom_conaffinity[:] = 0
+    # floor_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
+    # if floor_id != -1:
+    #     model.geom_contype[floor_id] = 0
+    #     model.geom_conaffinity[floor_id] = 1
 
     joint_info = {}
     for leg, joints in JOINT_NAMES.items():
@@ -94,7 +94,7 @@ def main():
                 'actuator_id': mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, f"{joint}_motor"),
             }
 
-    foot_body_names = ['fl_foot', 'fr_foot', 'rl_foot', 'rr_foot']
+    foot_body_names = ['tl_tip_link', 'tr_tip_link', 'bl_tip_link', 'br_tip_link']
     foot_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name) for name in foot_body_names]
 
     # ---------------- 2. Setup Logic & UI ----------------
