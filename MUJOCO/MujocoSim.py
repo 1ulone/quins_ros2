@@ -12,10 +12,12 @@ import math as m
 import numpy as np
 import xml.etree.ElementTree as ET
 
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(current_dir))
 
 from LOGIC.GaitLogic import GaitLogic, LEG_NAMES, JOINT_NAMES
+from LOGIC.FOSMCLogic import FOSMC
 from ROS.BaseGUI import GUI
 
 def main():
@@ -184,6 +186,19 @@ def main():
     decimation_steps = int(physics_hz / control_hz)
     step_counter = 0
 
+    fosmc_controllers = [
+        FOSMC(
+            dt=model.opt.timestep, 
+            lam=0.5, 
+            alpha=1.5, 
+            Ke1=24.0, 
+            Ke2=5.0, 
+            Ks=25.0, 
+            Kr=10.0, 
+            q_bound=0.01
+        ) for _ in range(12)
+    ]
+
     record_hz = 60
     record_steps = int(physics_hz / record_hz)
     renderer = mujoco.Renderer(model, height=480, width=640)
@@ -263,10 +278,15 @@ def main():
                         q_des_interp = cmd["q_des"][idx] + (cmd["qd_des"][idx] * dt_sub)
                         qd_des_interp = cmd["qd_des"][idx] + (cmd["qdd_des"][idx] * dt_sub)
                         
-                        pos_err = q_des_interp - q_act[idx]
-                        vel_err = qd_des_interp - qd_act[idx]
-                        pd_torques[adr] = (cmd["kp"] * pos_err) + (cmd["kd"] * vel_err)
+                        pos_err = q_act[idx] - q_des_interp
+                        vel_err = qd_act[idx] - qd_des_interp
                         
+                        pos_err_arr = np.array([pos_err])
+                        vel_err_arr = np.array([vel_err])
+                        
+                        torque = fosmc_controllers[idx].compute(pos_err_arr, vel_err_arr)
+                        pd_torques[adr] = float(torque[0])
+                        pd_torques[adr] = float(torque[0])                      
                         idx += 1
                         
                 ff_torques = (_m @ qdd_des_full) + bias_forces - tau_grf
