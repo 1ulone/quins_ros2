@@ -49,11 +49,14 @@ ros2 launch quins master_launch.py
 ```
 
 #### Building and Launching on Mujoco 
-just run it using python
+just run it using python, assuming your already inside the repo folder
 ```
 python3 MUJOCO/MujocoSim.py
 ```
-assuming your already inside the repo folder
+if by any means you would edit the .urdf for gazebo and wanted it to be used on Mujoco, then run the `convert_urdf.py` script with
+```
+python3 MUJOCO/convert_urdf.py
+```
 
 some other stuff are also here like the rl simulation. you can run it with python3 the visualize.py on RL folder.
 

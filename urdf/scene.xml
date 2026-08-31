@@ -1,0 +1,136 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="mjbots_quad">
+<compiler angle="radian" meshdir="../meshes"/>
+
+  <asset>
+    <mesh name="QUAD_BODY_C" content_type="model/stl" file="QUAD_BODY_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BL_SHOULDER_C" content_type="model/stl" file="QUAD_BL_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BL_THIGH_C" content_type="model/stl" file="QUAD_BL_THIGH_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BL_LEG_C" content_type="model/stl" file="QUAD_BL_LEG_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BR_SHOULDER_C" content_type="model/stl" file="QUAD_BR_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BR_THIGH_C" content_type="model/stl" file="QUAD_BR_THIGH_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BR_LEG_C" content_type="model/stl" file="QUAD_BR_LEG_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TL_SHOULDER_C" content_type="model/stl" file="QUAD_TL_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TL_THIGH_C" content_type="model/stl" file="QUAD_TL_THIGH_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TL_LEG_C" content_type="model/stl" file="QUAD_TL_LEG_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TR_SHOULDER_C" content_type="model/stl" file="QUAD_TR_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TR_THIGH_C" content_type="model/stl" file="QUAD_TR_THIGH_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TR_LEG_C" content_type="model/stl" file="QUAD_TR_LEG_C.stl" scale="0.1 0.1 0.1" />
+  </asset>
+
+  
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="32" height="32" />
+        <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1="0.1 0.2 0.3" rgb2="0.2 0.3 0.4" />
+        <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance="0.2" />
+    </asset>
+    <default>
+    <joint damping="0.05" frictionloss="0.01" />
+    <geom contype="1" conaffinity="0" />
+</default>
+<worldbody>
+        <light pos="0 0 5" dir="0 0 -1" directional="true" />
+        <geom name="floor" type="plane" pos="0 0 -2.5" size="100 100 0.1" material="grid" condim="3" friction="1.0 0.005 0.0001" contype="0" conaffinity="1" />
+    
+    <body name="dummy" pos="0 0 1.5">
+      <body name="base_link">
+        <inertial pos="0 0 0" quat="0 0.707107 0 0.707107" mass="5" diaginertia="3.921 3.204 1.92" />
+        <geom type="mesh" mesh="QUAD_BODY_C" />
+        <body name="bl_shoulder_link" pos="-0.63527 -1.2 -0.03">
+          <inertial pos="0 0 0" quat="0 0.707107 0 0.707107" mass="0.6" diaginertia="0.248 0.187 0.182" />
+          <joint name="bl_shoulder_joint" pos="0 0 0" axis="0 1 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+          <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_BL_SHOULDER_C" />
+          <body name="bl_thigh_link" pos="-1.12 -0.6203 0.022">
+            <inertial pos="0 0 0" mass="0.8" diaginertia="0.386 0.263 0.142" />
+            <joint name="bl_thigh_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+            <geom type="mesh" mesh="QUAD_BL_THIGH_C" />
+            <body name="bl_leg_link" pos="0.1446 0 -1.2971">
+              <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
+              <joint name="bl_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+              <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_BL_LEG_C" />
+              <body name="bl_tip_link" pos="0 -0.99207 -1.1797">
+                <site name="bl_foot_site" pos="0 0 0" size="0.01" />
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="br_shoulder_link" pos="0.63527 -1.2 -0.03">
+          <inertial pos="0 0 0" quat="0 0.707107 0 0.707107" mass="0.6" diaginertia="0.248 0.187 0.182" />
+          <joint name="br_shoulder_joint" pos="0 0 0" axis="0 1 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+          <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_BR_SHOULDER_C" />
+          <body name="br_thigh_link" pos="1.12 -0.6203 0.022">
+            <inertial pos="0 0 0" mass="0.8" diaginertia="0.386 0.263 0.142" />
+            <joint name="br_thigh_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+            <geom type="mesh" mesh="QUAD_BR_THIGH_C" />
+            <body name="br_leg_link" pos="-0.1446 0 -1.2971">
+              <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
+              <joint name="br_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+              <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_BR_LEG_C" />
+              <body name="br_tip_link" pos="0 -0.99207 -1.1797">
+                <site name="br_foot_site" pos="0 0 0" size="0.01" />
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="tl_shoulder_link" pos="-0.6667 1.1462 -0.0414">
+          <inertial pos="0 0 0" quat="0 0.707107 0 0.707107" mass="0.6" diaginertia="0.248 0.187 0.182" />
+          <joint name="tl_shoulder_joint" pos="0 0 0" axis="0 1 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+          <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_TL_SHOULDER_C" />
+          <body name="tl_thigh_link" pos="-1.1059 0.639 -0.0012">
+            <inertial pos="0 0 0" mass="0.8" diaginertia="0.386 0.263 0.142" />
+            <joint name="tl_thigh_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+            <geom type="mesh" mesh="QUAD_TL_THIGH_C" />
+            <body name="tl_leg_link" pos="0.1256 0 -1.295">
+              <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
+              <joint name="tl_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+              <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_TL_LEG_C" />
+              <body name="tl_tip_link" pos="0 -0.99207 -1.1797">
+                <site name="tl_foot_site" pos="0 0 0" size="0.01"/>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="tr_shoulder_link" pos="0.6667 1.1462 -0.0414">
+          <inertial pos="0 0 0" quat="0 0.707107 0 0.707107" mass="0.6" diaginertia="0.248 0.187 0.182" />
+          <joint name="tr_shoulder_joint" pos="0 0 0" axis="0 1 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+          <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_TR_SHOULDER_C" />
+          <body name="tr_thigh_link" pos="1.1059 0.639 -0.0012">
+            <inertial pos="0 0 0" mass="0.8" diaginertia="0.386 0.263 0.142" />
+            <joint name="tr_thigh_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+            <geom type="mesh" mesh="QUAD_TR_THIGH_C" />
+            <body name="tr_leg_link" pos="-0.1256 0 -1.295">
+              <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
+              <joint name="tr_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
+              <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_TR_LEG_C" />
+              <body name="tr_tip_link" pos="0 -0.99207 -1.1797">
+                <site name="tr_foot_site" pos="0 0 0" size="0.01"/>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    <freejoint name="root_floating_base" /><camera name="track_cam" mode="trackcom" pos="0 -2 1" /></body>
+  </worldbody>
+<actuator>
+    <motor name="tl_shoulder_joint_motor" joint="tl_shoulder_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    <motor name="tl_thigh_joint_motor" joint="tl_thigh_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    <motor name="tl_leg_joint_motor" joint="tl_leg_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    <motor name="tr_shoulder_joint_motor" joint="tr_shoulder_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    <motor name="tr_thigh_joint_motor" joint="tr_thigh_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    <motor name="tr_leg_joint_motor" joint="tr_leg_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    <motor name="bl_shoulder_joint_motor" joint="bl_shoulder_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    <motor name="bl_thigh_joint_motor" joint="bl_thigh_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    <motor name="bl_leg_joint_motor" joint="bl_leg_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    <motor name="br_shoulder_joint_motor" joint="br_shoulder_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    <motor name="br_thigh_joint_motor" joint="br_thigh_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    <motor name="br_leg_joint_motor" joint="br_leg_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+</actuator>
+    
+    <sensor>
+        <force name="tl_foot_force_sensor" site="tl_foot_site" />
+        <force name="tr_foot_force_sensor" site="tr_foot_site" />
+        <force name="bl_foot_force_sensor" site="bl_foot_site" />
+        <force name="br_foot_force_sensor" site="br_foot_site" />
+    </sensor>
+
+</mujoco>

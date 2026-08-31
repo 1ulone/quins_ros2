@@ -9,9 +9,12 @@ from envs.quadruped_env_walk import QuadrupedEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
+from pathlib import Path
 
-URDF_PATH = "/home/ulone/ros2_ws/src/quins/urdf/quadruped.urdf"
-PACKAGE_ROOT = "/home/ulone/ros2_ws/src/quins/"
+script_dir = Path(__file__).resolve().parent
+URDF_PATH = str(script_dir.parent/"urdf"/"quadruped.urdf")
+PACKAGE_ROOT = str(script_dir.parent)
+
 LOG_DIR = "./logs/"
 MODEL_DIR = "./models/"
 N_ENVS = 12  # match to your CPU core count

@@ -229,7 +229,6 @@ class GaitLogic():
         self.x_stabilize = msg[12]
         self.back_thrust = msg[13]
         self.pitch_threshold = msg[14]
-        print("wei")
 
     def update_phase_offsets(self, msg: list):
         # NOTE: just sets the Phase Offsets into a new Value from msg

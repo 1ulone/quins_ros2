@@ -7,10 +7,13 @@ sys.path.insert(0, os.path.dirname(current_dir))
 
 from envs.quadruped_env_walk import QuadrupedEnv
 from stable_baselines3 import PPO
+from pathlib import Path
 
-URDF_PATH = "/home/ulone/ros2_ws/src/quins/urdf/quadruped.urdf"
-PACKAGE_ROOT = "/home/ulone/ros2_ws/src/quins/"
-MODEL_PATH = "./models/ppo_quadruped_straight"
+script_dir = Path(__file__).resolve().parent
+
+PACKAGE_ROOT = str(script_dir.parent) 
+URDF_PATH = str(script_dir.parent/"urdf"/"quadruped.urdf")
+MODEL_PATH = "./models/"
 
 env = QuadrupedEnv(
     urdf_path=URDF_PATH,

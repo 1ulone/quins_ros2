@@ -103,18 +103,4 @@ class FOSMC:
         tau_r = -self.Kr @ self.boundary_layer(s)
         tau_nn = self.W_a.T @ psi_a
         tau_p = -self.Ks @ s + tau_nn.flatten() + tau_r
-
-        # --- EXPLOSION TRAP ---
-        # Triggers if the controller outputs NaN or a massive torque
-        if np.any(np.isnan(tau_p)) or np.any(np.abs(tau_p) > 1000):
-            print("\n[DEBUG] --- FATAL FOSMC EXPLOSION TRACE ---")
-            print(f"Position Error (e):      {np.round(e, 3)}")
-            print(f"Velocity Error (e_dot):  {np.round(e_dot, 3)}")
-            print(f"Frac Deriv (d_alpha_e):  {np.round(d_alpha_e, 3)}")
-            print(f"Sliding Surface (s):     {np.round(s, 3)}")
-            print(f"Actor Weights (W_a max): {np.max(np.abs(self.W_a)):.3f}")
-            print(f"Critic Weights (W_c max):{np.max(np.abs(self.W_c)):.3f}")
-            print(f"Raw Torque (tau_p):      {np.round(tau_p, 3)}")
-            print("-------------------------------------------\n")
-
         return tau_p

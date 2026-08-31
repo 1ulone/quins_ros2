@@ -5,10 +5,11 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(current_dir))
 
 from envs.quadruped_env_stand import QuadrupedEnv
+from pathlib import Path
 
-# UPDATE THESE PATHS to match your system
-URDF_PATH = "/home/ulone/ros2_ws/src/quins/urdf/quadruped.urdf"
-PACKAGE_ROOT = "/home/ulone/ros2_ws/src/quins/"
+script_dir = Path(__file__).resolve().parent
+URDF_PATH = str(script_dir.parent/"urdf"/"quadruped.urdf")
+PACKAGE_ROOT = str(script_dir.parent) 
 
 env = QuadrupedEnv(
     urdf_path=URDF_PATH,
