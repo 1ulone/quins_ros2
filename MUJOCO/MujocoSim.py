@@ -14,6 +14,8 @@ sys.path.insert(0, os.path.dirname(current_dir))
 
 from LOGIC.GaitLogic import GaitLogic, LEG_NAMES, JOINT_NAMES
 from LOGIC.FOSMCLogic import FOSMC
+from LOGIC.MpcLogic import CentroidalMPC
+from LOGIC.DynamicsLogic import QuadrupedDynamics
 from ROS.BaseGUI import GUI
 from pathlib import Path
 
@@ -21,6 +23,7 @@ def main():
     # ---------------- 1. Setup Mujoco Environment ----------------
     script_dir = Path(__file__).resolve().parent
     scene_path = str(script_dir.parent/'urdf'/'scene.xml')
+    urdf_path = str(script_dir.parent/'urdf'/'quadruped.urdf')
     
     if not os.path.exists(scene_path):
         print(f"Error: {scene_path} not found. Run convert_urdf.py first.")
@@ -42,8 +45,8 @@ def main():
     foot_body_names = ['tl_tip_link', 'tr_tip_link', 'bl_tip_link', 'br_tip_link']
     foot_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name) for name in foot_body_names]   
 
-    sensor_names = ['tl_foot_force_sensor', 'tr_foot_force_sensor', 'bl_foot_force_sensor', 'br_foot_force_sensor']
-    sensor_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SENSOR, name) for name in sensor_names]
+    # sensor_names = ['tl_foot_force_sensor', 'tr_foot_force_sensor', 'bl_foot_force_sensor', 'br_foot_force_sensor']
+    # sensor_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SENSOR, name) for name in sensor_names]
     # ---------------- 2. Setup Logic & UI ----------------
     
     cmd = {
@@ -154,6 +157,15 @@ def main():
 
     last_render_time = time.time()
 
+    dyn = QuadrupedDynamics(urdf_path)
+    mpc = CentroidalMPC(urdf_path, n=10, dt=0.02)
+
+    physics_hz = int(1.0 / model.opt.timestep)
+    mpc_hz = 50
+    mpc_decimation = int(physics_hz / mpc_hz)
+
+    optimal_foot_forces = np.zeros(12)
+
     try:
         with mujoco.viewer.launch_passive(model, data) as viewer:
             while viewer.is_running():
@@ -183,6 +195,35 @@ def main():
 
                     logic.loop_step()
 
+                if step_counter % mpc_decimation == 0:
+                    p_act = data.qpos[0:3]
+                    v_act = data.qvel[0:3]
+                    w_act = data.qvel[3:6]
+                    
+                    qw, qx, qy, qz = data.qpos[3:7]
+                    sinp = 2.0 * (qw * qy - qz * qx)
+                    current_pitch = m.asin(np.clip(sinp, -1.0, 1.0))
+                    rpy_act = np.array([logic.current_roll, current_pitch, logic.current_yaw])
+
+                    foot_positions = [data.xpos[fid] for fid in foot_ids]
+
+                    current_stance = cmd["is_stance"]
+                    planned_stance_schedule = [current_stance for _ in range(mpc.n)]
+                    opti, U_f, p_ref, v_ref = mpc.setup_problem(
+                        p_act, v_act, rpy_act, w_act, 
+                        foot_positions, 
+                        planned_stance_schedule
+                    )
+
+                    opti.set_value(p_ref, np.array([0, 0, 0.5]))
+                    opti.set_value(v_ref, np.zeros(3))
+
+                    try:
+                        sol = opti.solve()
+                        optimal_foot_forces = np.array(sol.value(U_f[:, 0])).flatten()
+                    except Exception as e:
+                        print("MPC Solve Failed, using previous forces.")
+
                 q_act = np.zeros(12)
                 qd_act = np.zeros(12)
                 idx = 0
@@ -192,30 +233,7 @@ def main():
                         qd_act[idx] = data.qvel[joint_info[j]['qvel_adr']]
                         idx += 1
 
-                _m = np.zeros((model.nv, model.nv), dtype=np.float64)
-                mujoco.mj_fullM(model, data, _m) 
-
-                mujoco.mj_fwdPosition(model, data)
-                mujoco.mj_fwdVelocity(model, data)
-                bias_forces = data.qfrc_bias
-                
-                tau_grf = np.zeros(model.nv)
                 planned_stance = cmd["is_stance"]
-
-                measured_foot_forces = np.zeros((4, 3))
-                for i, s_id in enumerate(sensor_ids):
-                    adr = model.sensor_adr[s_id]
-                    dim = model.sensor_dim[s_id]
-                    measured_foot_forces[i] = data.sensordata[adr:adr+dim]
-
-                for i in range(4):
-                    if planned_stance[i]:
-                        fid = foot_ids[i]
-                        jacp = np.zeros((3, model.nv))
-                        mujoco.mj_jacBody(model, data, jacp, None, fid)
-
-                        f_z = measured_foot_forces[i][2]
-                        tau_grf += jacp.T @ np.array([0.0, 0.0, f_z])
 
                 qdd_des_full = np.zeros(model.nv)
                 pd_torques = np.zeros(model.nv)
@@ -255,14 +273,22 @@ def main():
                 for i, adr in enumerate(adr_map):
                     pd_torques[adr] = float(pd_torques_arr[i])
                         
-                ff_torques = (_m @ qdd_des_full) + bias_forces - tau_grf
+                tau_ff = np.zeros(model.nv)
+                jacobians = dyn.get_foot_jacobians(data.qpos) 
+
+                for i in range(4):
+                    if planned_stance[i]:
+                        F_i = optimal_foot_forces[3*i : 3*i+3]
+                        J_i = jacobians[i]
+                        
+                        tau_ff += J_i.T @ F_i
 
                 for leg in LEG_NAMES:
                     for j in JOINT_NAMES[leg]:
                         info = joint_info[j]
                         adr = info['qvel_adr']
                         
-                        final_torque = ff_torques[adr] + pd_torques[adr]
+                        final_torque = tau_ff[adr] + pd_torques[adr]
                         data.ctrl[info['actuator_id']] = np.clip(final_torque, -1500.0, 1500.0)
 
                 mujoco.mj_step(model, data)
