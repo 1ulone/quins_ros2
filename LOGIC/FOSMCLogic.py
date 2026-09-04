@@ -103,4 +103,4 @@ class FOSMC:
         tau_r = -self.Kr @ self.boundary_layer(s)
         tau_nn = self.W_a.T @ psi_a
         tau_p = -self.Ks @ s + tau_nn.flatten() + tau_r
-        return tau_p
+        return tau_p, s

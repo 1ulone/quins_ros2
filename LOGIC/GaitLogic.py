@@ -241,6 +241,7 @@ class GaitLogic():
 
     def update_gamepad_params(self, msg: list):
         if not self.walking:
+            self.step_len = -1.0
             return
 
         ly = msg[0]

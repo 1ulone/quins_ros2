@@ -1,21 +1,21 @@
 <?xml version='1.0' encoding='utf-8'?>
 <mujoco model="mjbots_quad">
-  <compiler angle="radian" />
+<compiler angle="radian" meshdir="../meshes"/>
 
   <asset>
-    <mesh name="QUAD_BODY_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_BODY_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_BL_SHOULDER_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_BL_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_BL_THIGH_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_BL_THIGH_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_BL_LEG_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_BL_LEG_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_BR_SHOULDER_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_BR_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_BR_THIGH_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_BR_THIGH_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_BR_LEG_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_BR_LEG_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_TL_SHOULDER_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_TL_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_TL_THIGH_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_TL_THIGH_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_TL_LEG_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_TL_LEG_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_TR_SHOULDER_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_TR_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_TR_THIGH_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_TR_THIGH_C.stl" scale="0.1 0.1 0.1" />
-    <mesh name="QUAD_TR_LEG_C" content_type="model/stl" file="/home/rslab/ros2_ws/src/quins_ros2/meshes/QUAD_TR_LEG_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BODY_C" content_type="model/stl" file="QUAD_BODY_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BL_SHOULDER_C" content_type="model/stl" file="QUAD_BL_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BL_THIGH_C" content_type="model/stl" file="QUAD_BL_THIGH_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BL_LEG_C" content_type="model/stl" file="QUAD_BL_LEG_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BR_SHOULDER_C" content_type="model/stl" file="QUAD_BR_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BR_THIGH_C" content_type="model/stl" file="QUAD_BR_THIGH_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_BR_LEG_C" content_type="model/stl" file="QUAD_BR_LEG_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TL_SHOULDER_C" content_type="model/stl" file="QUAD_TL_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TL_THIGH_C" content_type="model/stl" file="QUAD_TL_THIGH_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TL_LEG_C" content_type="model/stl" file="QUAD_TL_LEG_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TR_SHOULDER_C" content_type="model/stl" file="QUAD_TR_SHOULDER_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TR_THIGH_C" content_type="model/stl" file="QUAD_TR_THIGH_C.stl" scale="0.1 0.1 0.1" />
+    <mesh name="QUAD_TR_LEG_C" content_type="model/stl" file="QUAD_TR_LEG_C.stl" scale="0.1 0.1 0.1" />
   </asset>
 
   
@@ -30,13 +30,7 @@
 </default>
 <worldbody>
         <light pos="0 0 5" dir="0 0 -1" directional="true" />
-        <geom name="floor" type="plane" pos="0 0 -2.5" size="100 100 0.1" material="grid" condim="3" friction="1.5 0.005 0.0001" contype="1" conaffinity="1" />
-        
-        
-        <geom name="hurdle_1" type="box" pos="3.0 0 -2.4" size="0.2 2.0 0.1" material="grid" condim="3" contype="1" conaffinity="1" />
-        <geom name="hurdle_2" type="box" pos="5.0 0 -2.3" size="0.2 2.0 0.2" material="grid" condim="3" contype="1" conaffinity="1" />
-        <geom name="stair_1" type="box" pos="7.0 0 -2.4" size="0.5 2.0 0.1" material="grid" condim="3" contype="1" conaffinity="1" />
-        <geom name="stair_2" type="box" pos="8.0 0 -2.2" size="0.5 2.0 0.3" material="grid" condim="3" contype="1" conaffinity="1" />
+        <geom name="floor" type="plane" pos="0 0 -2.5" size="100 100 0.1" material="grid" condim="3" friction="1.0 0.005 0.0001" contype="0" conaffinity="1" />
     
     <body name="dummy" pos="0 0 1.5">
       <body name="base_link">
@@ -54,7 +48,9 @@
               <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
               <joint name="bl_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
               <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_BL_LEG_C" />
-              <body name="bl_tip_link" pos="0 -0.99207 -1.1797" />
+              <body name="bl_tip_link" pos="0 -0.99207 -1.1797">
+                <site name="bl_foot_site" pos="0 0 0" size="0.01" />
+              </body>
             </body>
           </body>
         </body>
@@ -70,7 +66,9 @@
               <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
               <joint name="br_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
               <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_BR_LEG_C" />
-              <body name="br_tip_link" pos="0 -0.99207 -1.1797" />
+              <body name="br_tip_link" pos="0 -0.99207 -1.1797">
+                <site name="br_foot_site" pos="0 0 0" size="0.01" />
+              </body>
             </body>
           </body>
         </body>
@@ -86,7 +84,9 @@
               <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
               <joint name="tl_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
               <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_TL_LEG_C" />
-              <body name="tl_tip_link" pos="0 -0.99207 -1.1797" />
+              <body name="tl_tip_link" pos="0 -0.99207 -1.1797">
+                <site name="tl_foot_site" pos="0 0 0" size="0.01"/>
+              </body>
             </body>
           </body>
         </body>
@@ -102,7 +102,9 @@
               <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
               <joint name="tr_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
               <geom type="mesh" rgba="0.2 0.2 0.2 1" mesh="QUAD_TR_LEG_C" />
-              <body name="tr_tip_link" pos="0 -0.99207 -1.1797" />
+              <body name="tr_tip_link" pos="0 -0.99207 -1.1797">
+                <site name="tr_foot_site" pos="0 0 0" size="0.01"/>
+              </body>
             </body>
           </body>
         </body>
@@ -123,5 +125,12 @@
     <motor name="br_thigh_joint_motor" joint="br_thigh_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
     <motor name="br_leg_joint_motor" joint="br_leg_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
 </actuator>
+    
+    <sensor>
+        <force name="tl_foot_force_sensor" site="tl_foot_site" />
+        <force name="tr_foot_force_sensor" site="tr_foot_site" />
+        <force name="bl_foot_force_sensor" site="bl_foot_site" />
+        <force name="br_foot_force_sensor" site="br_foot_site" />
+    </sensor>
 
 </mujoco>

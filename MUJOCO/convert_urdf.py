@@ -15,7 +15,7 @@ def generate_mjcf():
     with open(urdf_path, 'r') as file:
         urdf_xml = file.read()
 
-    urdf_xml = urdf_xml.replace('package://quins_ros2/', absolute_pkg_path)
+    urdf_xml = urdf_xml.replace('package://quins_ros2', absolute_pkg_path)
     urdf_xml = re.sub(r'<xacro:arg.*?>', '', urdf_xml)
     urdf_xml = re.sub(r'(<robot[^>]*>)', r'\1\n<mujoco><compiler fusestatic="false"/></mujoco>', urdf_xml, count=1)
 
@@ -29,7 +29,7 @@ def generate_mjcf():
         mjcf_xml = file.read()
     os.remove(temp_mjcf.name)
 
-    # 3. Inject Environment and Scene Lighting
+    # 3. Inject Environment, Scene Lighting, and Procedural Terrain (Obstacles)
     environment_injection = """
     <asset>
         <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="32" height="32"/>
@@ -38,7 +38,13 @@ def generate_mjcf():
     </asset>
     <worldbody>
         <light pos="0 0 5" dir="0 0 -1" directional="true"/>
-        <geom name="floor" type="plane" pos="0 0 -2.5" size="100 100 0.1" material="grid" condim="3" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/>
+        <geom name="floor" type="plane" pos="0 0 -2.5" size="100 100 0.1" material="grid" condim="3" friction="1.5 0.005 0.0001" contype="1" conaffinity="1"/>
+        
+        <!-- Phase 1 Terrain Curriculum: Hurdles and Stairs -->
+        <geom name="hurdle_1" type="box" pos="3.0 0 -2.4" size="0.2 2.0 0.1" material="grid" condim="3" contype="1" conaffinity="1"/>
+        <geom name="hurdle_2" type="box" pos="5.0 0 -2.3" size="0.2 2.0 0.2" material="grid" condim="3" contype="1" conaffinity="1"/>
+        <geom name="stair_1" type="box" pos="7.0 0 -2.4" size="0.5 2.0 0.1" material="grid" condim="3" contype="1" conaffinity="1"/>
+        <geom name="stair_2" type="box" pos="8.0 0 -2.2" size="0.5 2.0 0.3" material="grid" condim="3" contype="1" conaffinity="1"/>
     """
     mjcf_xml = mjcf_xml.replace('<worldbody>', environment_injection)
 

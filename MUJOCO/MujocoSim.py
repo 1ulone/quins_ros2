@@ -18,6 +18,7 @@ from LOGIC.MpcLogic import CentroidalMPC
 from LOGIC.DynamicsLogic import QuadrupedDynamics
 from ROS.BaseGUI import GUI
 from pathlib import Path
+# from .ActorCriticRBF import ActorCriticFOSMC
 
 def main():
     # ---------------- 1. Setup Mujoco Environment ----------------
@@ -261,7 +262,7 @@ def main():
                         
                         idx += 1
 
-                pd_torques_arr = fosmc.compute(
+                pd_torques_arr, s_current = fosmc.compute(
                     q=q_act_arr, 
                     q_dot=qd_act_arr, 
                     q_d=q_des_interp_arr, 
@@ -302,6 +303,7 @@ def main():
                     video_writer.append_data(renderer.render())
 
                 step_counter += 1
+                print(data.qpos[2])
 
                 elapsed = time.time() - step_start
                 if elapsed < model.opt.timestep:
