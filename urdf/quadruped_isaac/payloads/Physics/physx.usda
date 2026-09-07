@@ -1,0 +1,127 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.3"
+    }
+    defaultPrim = "mjbots_quad"
+    doc = """Generated from Composed Stage of root layer /tmp/tmp16t6of9s/mjbots_quad.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_quadruped_isaac_9mid60zb/usdex_quadruped_isaac/mjbots_quad.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_quadruped_isaac_9mid60zb/temp_quadruped_isaac/quadruped_isaac.usd
+
+
+Generated from Composed Stage of root layer /home/rslab/ros2_ws/src/quins_ros2/urdf/quadruped_isaac/payloads/base.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    subLayers = [
+        @./physics.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "mjbots_quad"
+{
+    over "Physics"
+    {
+        over "bl_shoulder_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+
+        over "bl_thigh_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+
+        over "bl_leg_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+
+        over "br_shoulder_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+
+        over "br_thigh_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+
+        over "br_leg_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+
+        over "tl_shoulder_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+
+        over "tl_thigh_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+
+        over "tl_leg_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+
+        over "tr_shoulder_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+
+        over "tr_thigh_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+
+        over "tr_leg_joint" (
+            prepend apiSchemas = ["PhysxJointAPI"]
+        )
+        {
+            float physxJoint:jointFriction = 1
+            float physxJoint:maxJointVelocity = 572.9578
+        }
+    }
+}
+

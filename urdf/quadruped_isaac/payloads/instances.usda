@@ -1,0 +1,427 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.3"
+    }
+    doc = """Generated from Composed Stage of root layer /tmp/tmp16t6of9s/mjbots_quad.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_quadruped_isaac_9mid60zb/usdex_quadruped_isaac/mjbots_quad.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_quadruped_isaac_9mid60zb/temp_quadruped_isaac/quadruped_isaac.usd
+
+
+Generated from Composed Stage of root layer /home/rslab/ros2_ws/src/quins_ros2/urdf/quadruped_isaac/payloads/base.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Scope "Instances"
+{
+    def Xform "QUAD_BODY" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BODY>
+    )
+    {
+        over "QUAD_BODY" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_BODY/VisualMaterials/gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_BL_SHOULDER" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BL_SHOULDER>
+    )
+    {
+        over "QUAD_BL_SHOULDER" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_BL_SHOULDER/VisualMaterials/dark_gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "dark_gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/dark_gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_BL_THIGH" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BL_THIGH>
+    )
+    {
+        over "QUAD_BL_THIGH" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_BL_THIGH/VisualMaterials/gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_BL_LEG" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BL_LEG>
+    )
+    {
+        over "QUAD_BL_LEG" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_BL_LEG/VisualMaterials/dark_gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "dark_gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/dark_gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_BL_LEG_C" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BL_LEG_C>
+    )
+    {
+        over "QUAD_BL_LEG_C" (
+            apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+        )
+        {
+            token physics:approximation = "convexHull"
+            token purpose = "guide"
+        }
+    }
+
+    def Xform "QUAD_BL_THIGH_C" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BL_THIGH_C>
+    )
+    {
+        over "QUAD_BL_THIGH_C" (
+            apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+        )
+        {
+            token physics:approximation = "convexHull"
+            token purpose = "guide"
+        }
+    }
+
+    def Xform "QUAD_BL_SHOULDER_C" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BL_SHOULDER_C>
+    )
+    {
+        over "QUAD_BL_SHOULDER_C" (
+            apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+        )
+        {
+            token physics:approximation = "convexHull"
+            token purpose = "guide"
+        }
+    }
+
+    def Xform "QUAD_BR_SHOULDER" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BR_SHOULDER>
+    )
+    {
+        over "QUAD_BR_SHOULDER" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_BR_SHOULDER/VisualMaterials/dark_gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "dark_gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/dark_gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_BR_THIGH" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BR_THIGH>
+    )
+    {
+        over "QUAD_BR_THIGH" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_BR_THIGH/VisualMaterials/gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_BR_LEG" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BR_LEG>
+    )
+    {
+        over "QUAD_BR_LEG" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_BR_LEG/VisualMaterials/dark_gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "dark_gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/dark_gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_BR_THIGH_C" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BR_THIGH_C>
+    )
+    {
+        over "QUAD_BR_THIGH_C" (
+            apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+        )
+        {
+            token physics:approximation = "convexHull"
+            token purpose = "guide"
+        }
+    }
+
+    def Xform "QUAD_BR_SHOULDER_C" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BR_SHOULDER_C>
+    )
+    {
+        over "QUAD_BR_SHOULDER_C" (
+            apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+        )
+        {
+            token physics:approximation = "convexHull"
+            token purpose = "guide"
+        }
+    }
+
+    def Xform "QUAD_TL_SHOULDER" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_TL_SHOULDER>
+    )
+    {
+        over "QUAD_TL_SHOULDER" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_TL_SHOULDER/VisualMaterials/dark_gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "dark_gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/dark_gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_TL_THIGH" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_TL_THIGH>
+    )
+    {
+        over "QUAD_TL_THIGH" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_TL_THIGH/VisualMaterials/gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_TL_LEG" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_TL_LEG>
+    )
+    {
+        over "QUAD_TL_LEG" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_TL_LEG/VisualMaterials/dark_gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "dark_gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/dark_gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_TL_SHOULDER_C" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_TL_SHOULDER_C>
+    )
+    {
+        over "QUAD_TL_SHOULDER_C" (
+            apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+        )
+        {
+            token physics:approximation = "convexHull"
+            token purpose = "guide"
+        }
+    }
+
+    def Xform "QUAD_TR_SHOULDER" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_TR_SHOULDER>
+    )
+    {
+        over "QUAD_TR_SHOULDER" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_TR_SHOULDER/VisualMaterials/dark_gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "dark_gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/dark_gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_TR_THIGH" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_TR_THIGH>
+    )
+    {
+        over "QUAD_TR_THIGH" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_TR_THIGH/VisualMaterials/gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_TR_LEG" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_TR_LEG>
+    )
+    {
+        over "QUAD_TR_LEG" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            custom rel material:binding
+            prepend rel material:binding = </Instances/QUAD_TR_LEG/VisualMaterials/dark_gray>
+        }
+
+        def Scope "VisualMaterials"
+        {
+            def Material "dark_gray" (
+                instanceable = true
+                prepend references = @./materials.usda@</Materials/dark_gray>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "QUAD_TR_SHOULDER_C" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_TR_SHOULDER_C>
+    )
+    {
+        over "QUAD_TR_SHOULDER_C" (
+            apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+        )
+        {
+            token physics:approximation = "convexHull"
+            token purpose = "guide"
+        }
+    }
+
+    def Xform "QUAD_BODY_C" (
+        prepend references = @./geometries.usd@</Geometries/QUAD_BODY_C>
+    )
+    {
+        over "QUAD_BODY_C" (
+            apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+        )
+        {
+            token physics:approximation = "convexHull"
+            token purpose = "guide"
+        }
+    }
+}
+

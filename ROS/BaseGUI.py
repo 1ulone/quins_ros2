@@ -186,7 +186,7 @@ class GUI:
         gf_frame = ttk.Frame(wt_group)
         gf_frame.grid(row=0, column=0)
         tk.Label(gf_frame, text="Gait Frequency").pack()
-        gf = tk.StringVar(value=str(0.5))
+        gf = tk.StringVar(value=str(2.0))
         tk.Entry(gf_frame, textvariable=gf).pack()
 
         xo_frame = ttk.Frame(wt_group)
@@ -198,19 +198,19 @@ class GUI:
         zo_frame = ttk.Frame(wt_group)
         zo_frame.grid(row=0, column=2)
         tk.Label(zo_frame, text="Z Offset (Ride Height)").pack()
-        zo = tk.StringVar(value=str(2.7))
+        zo = tk.StringVar(value=str(2.6))
         tk.Entry(zo_frame, textvariable=zo).pack()
 
         sl_frame = ttk.Frame(wt_group)
         sl_frame.grid(row=1, column=0)
         tk.Label(sl_frame, text="Step Length (Stride)").pack()
-        sl = tk.StringVar(value=str(2.0))
+        sl = tk.StringVar(value=str(1.5))
         tk.Entry(sl_frame, textvariable=sl).pack()
 
         sh_frame = ttk.Frame(wt_group)
         sh_frame.grid(row=1, column=1)
         tk.Label(sh_frame, text="Step Height (Clearance)").pack()
-        sh = tk.StringVar(value=str(0.75))
+        sh = tk.StringVar(value=str(1.0))
         tk.Entry(sh_frame, textvariable=sh).pack()
 
         sc_frame = ttk.Frame(wt_group)

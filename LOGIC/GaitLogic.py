@@ -142,12 +142,12 @@ class GaitLogic():
             case "WALK": 
                 # NOTE: create a timed process for a walk process
 
-                self.gait_freq = 1.0
-                self.x_off = 0.25
-                self.z_off = 2.5
-                self.step_len = 1.5
-                self.step_h = 1.0
-                self.sc_yaw = 0.9
+                # self.gait_freq = 2.0
+                # self.x_off = 0.25
+                # self.z_off = 2.5
+                # self.step_len = 1.5
+                # self.step_h = 1.0
+                # self.sc_yaw = 0.9
 
                 self.t = 0.0
                 self.walking = True
