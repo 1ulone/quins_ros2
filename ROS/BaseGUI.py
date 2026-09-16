@@ -174,6 +174,16 @@ class GUI:
         )
         trotBtn.grid(column=0, row=3)
 
+        turnBtn = tk.Radiobutton(
+            state_group,
+            text="TURN",
+            value="TURN",
+            variable=self.state,
+            font=font_style,
+            command=update_state,
+        )
+        turnBtn.grid(column=1, row=3)
+
         gpad_group = ttk.LabelFrame(grid_container, text=f"Gamepad group {self.phase_s.get()}", padding=15)
         gpad_group.grid(row=0, column=1, sticky='nsew')
 

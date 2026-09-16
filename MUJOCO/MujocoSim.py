@@ -164,12 +164,79 @@ def main():
     mpc_hz = 50
     mpc_decimation = int(physics_hz / mpc_hz)
 
+
+    # ---------------- 4. Asynchronous MPC Setup ----------------
+    mpc_lock = threading.Lock()
+    
+    # Shared state dictionary for the MPC thread to read from
+    shared_mpc_state = {
+        "p_act": np.zeros(3),
+        "v_act": np.zeros(3),
+        "rpy_act": np.zeros(3),
+        "w_act": np.zeros(3),
+        "foot_positions": [np.zeros(3) for _ in range(4)],
+        "stance_schedule": [[True, True, True, True] for _ in range(mpc.n)],
+        "z_off": 2.5,
+        "target_yaw": 0.0,
+        "yaw_rate": 0.0,
+        "p_ref_xy": np.zeros(2)
+    }
+    
+    # This will hold the latest solved forces for the physics loop to consume
+    global optimal_foot_forces
     optimal_foot_forces = np.zeros(12)
+    planned_stance_schedule = []
+    turn_anchor_xy = np.zeros(2)
+    was_turning = False
+    mpc_running = True
+
+    def mpc_worker():
+        global optimal_foot_forces
+        while mpc_running:
+            start_t = time.time()
+            
+            # Safely copy current state
+            with mpc_lock:
+                state = {k: np.copy(v) if isinstance(v, np.ndarray) else (list(v) if isinstance(v, list) else v) for k, v in shared_mpc_state.items()}
+                
+            try:
+                # Calculate required angular velocity for the MPC so it doesn't fight the turn
+                forces = mpc.solve(
+                    p_init=state["p_act"],
+                    v_init=state["v_act"],
+                    rpy_init=state["rpy_act"],
+                    w_init=state["w_act"],
+                    foot_positions=state["foot_positions"],
+                    stance_schedule=state["stance_schedule"],
+                    p_ref=np.array([state["p_ref_xy"][0], state["p_ref_xy"][1], state["z_off"]]),
+                    v_ref=np.array([0.0, state["target_vy"], 0.0]),
+                    rpy_ref=np.array([state["rpy_act"][0], state["rpy_act"][1], state["target_yaw"]]),
+                    w_ref=np.array([0.0, 0.0, state["yaw_rate"]])
+                )
+                # Safely update the forces available to the physics engine
+                with mpc_lock:
+                    optimal_foot_forces = forces
+            except Exception as e:
+                # Silently pass to avoid spamming the console during edge-case solver failures
+                pass
+                
+            # Enforce the ~50Hz control rate
+            elapsed = time.time() - start_t
+            if elapsed < mpc.dt:
+                time.sleep(mpc.dt - elapsed)
+
+    # Start the background solver
+    threading.Thread(target=mpc_worker, daemon=True).start()
+    continous_yaw = 0.0
+    prev_raw_yaw = 0.0
 
     try:
         with mujoco.viewer.launch_passive(model, data) as viewer:
             while viewer.is_running():
                 step_start = time.time()
+                if logic.turning and not was_turning:
+                    turn_anchor_xy = data.qpos[0:2].copy()
+                was_turning = logic.turning
 
                 if step_counter % decimation_steps == 0:
                     q_sorted = np.zeros(12)
@@ -191,11 +258,63 @@ def main():
                     
                     siny_cosp = 2.0 * (qw * qz + qx * qy)
                     cosy_cosp = 1.0 - 2.0 * (qy * qy + qz * qz)
-                    logic.current_yaw = m.atan2(siny_cosp, cosy_cosp)
+                    raw_yaw = m.atan2(siny_cosp, cosy_cosp)
+
+                    delta_yaw = raw_yaw - prev_raw_yaw
+                    delta_yaw = (delta_yaw + m.pi) % (2.0 * m.pi) - m.pi
+
+                    continous_yaw += delta_yaw
+                    prev_raw_yaw = raw_yaw
+                    logic.current_yaw = continous_yaw
+                    # logic.current_yaw = m.atan2(siny_cosp, cosy_cosp)
+
+                    # --- FACING DIRECTION DEBUG ---
+                    if step_counter % (decimation_steps * 25) == 0:
+                        mat = np.zeros(9)
+                        mujoco.mju_quat2Mat(mat, data.qpos[3:7])
+                        mat = mat.reshape(3, 3)
+                        
+                        # Assuming local +Y is the front face of your new URDF
+                        local_front = np.array([0.0, 1.0, 0.0])
+                        global_front = mat @ local_front
+                        
+                        print(f"\n=== FACING DIRECTION ===")
+                        print(f"Global Front Vector -> X: {global_front[0]:.3f}, Y: {global_front[1]:.3f}, Z: {global_front[2]:.3f}")
+                        print(f"Current Yaw (rad): {logic.current_yaw:.3f}")
+                        print("========================\n")
+                    # ------------------------------
 
                     logic.loop_step()
 
+                # --- SKELETON VERIFICATION DEBUG ---
+                if step_counter % (decimation_steps * 25) == 0:  # Triggers twice a second
+                    print("\n=== SKELETON ALIGNMENT VERIFICATION ===")
+                    
+                    # 1. FOSMC's Analytical Skeleton (KinematicsLogic FK)
+                    # Grabbing the current angles for the Front Left (FL) leg[cite: 44]
+                    t1 = m.degrees(logic.current_q[0])
+                    t2 = m.degrees(logic.current_q[1])
+                    t3 = m.degrees(logic.current_q[2])
+                    
+                    # Calculating where the math thinks the foot is[cite: 40]
+                    analytical_fl = logic.kinematics.fk('FL', t1, t2, t3)
+                    fosmc_pos = np.array([analytical_fl[0, 3], analytical_fl[1, 3], analytical_fl[2, 3]])
+                    
+                    # 2. MPC's Physical Skeleton (MuJoCo/Pinocchio)
+                    # Grabbing the absolute world coordinates of the foot and the base[cite: 44]
+                    fl_foot_world = data.xpos[foot_ids[0]]
+                    base_world = data.qpos[0:3]
+                    
+                    # Finding the physical foot position relative to the body center
+                    mpc_pos = fl_foot_world - base_world
+                    
+                    print(f"FOSMC (Analytical FL) -> X: {fosmc_pos[0]:.3f}, Y: {fosmc_pos[1]:.3f}, Z: {fosmc_pos[2]:.3f}")
+                    print(f"MPC   (Physical FL)   -> X: {mpc_pos[0]:.3f}, Y: {mpc_pos[1]:.3f}, Z: {mpc_pos[2]:.3f}")
+                    print("=======================================\n")
+                # -----------------------------------
+
                 if step_counter % mpc_decimation == 0:
+                    # Update variables
                     p_act = data.qpos[0:3]
                     v_act = data.qvel[0:3]
                     w_act = data.qvel[3:6]
@@ -204,25 +323,45 @@ def main():
                     sinp = 2.0 * (qw * qy - qz * qx)
                     current_pitch = m.asin(np.clip(sinp, -1.0, 1.0))
                     rpy_act = np.array([logic.current_roll, current_pitch, logic.current_yaw])
-
                     foot_positions = [data.xpos[fid] for fid in foot_ids]
 
-                    current_stance = cmd["is_stance"]
-                    planned_stance_schedule = [current_stance for _ in range(mpc.n)]
-                    opti, U_f, p_ref, v_ref = mpc.setup_problem(
-                        p_act, v_act, rpy_act, w_act, 
-                        foot_positions, 
-                        planned_stance_schedule
-                    )
+                    planned_stance_schedule = []
+                    if not logic.walking and not logic.turning and logic.jump_state == "":
+                        planned_stance_schedule = [[True, True, True, True] for _ in range(mpc.n)]
+                    else:
+                        omega = 2.0 * m.pi * logic.gait_freq
+                        stance_limit = 2.0 * m.pi * logic.duty_factor
+                        for k in range(mpc.n):
+                            t_future = logic.t + (k * mpc.dt)
+                            phase_future = (omega * t_future) % (2.0 * m.pi)
+                            k_stance = [((phase_future + logic.phase_offsets[leg]) % (2.0 * m.pi)) < stance_limit for leg in LEG_NAMES]
+                            planned_stance_schedule.append(k_stance)
 
-                    opti.set_value(p_ref, np.array([0, 0, 0.5]))
-                    opti.set_value(v_ref, np.zeros(3))
+                    target_vy = 0.0
+                    if logic.walking or logic.current_state == "RUN":
+                        ramp_duration = 1.0
+                        ramp_factor = min(logic.t / ramp_duration, 1.0)
+                        active_step_len = logic.step_len * ramp_factor
+                        target_vy = -((active_step_len * logic.gait_freq) / logic.duty_factor)
+                    
+                    # Mailbox Drop-off: Hand data to the background thread
+                    with mpc_lock:
+                        shared_mpc_state["p_act"] = p_act
+                        shared_mpc_state["v_act"] = v_act
+                        shared_mpc_state["rpy_act"] = rpy_act
+                        shared_mpc_state["w_act"] = w_act
+                        shared_mpc_state["foot_positions"] = foot_positions
+                        shared_mpc_state["stance_schedule"] = planned_stance_schedule
+                        shared_mpc_state["z_off"] = logic.z_off
+                        shared_mpc_state["target_vy"] = target_vy
+                        shared_mpc_state["target_yaw"] = logic.target_yaw
+                        shared_mpc_state["yaw_rate"] = logic.yaw_rate
+                        if logic.walking or logic.current_state == "RUN":
+                            shared_mpc_state["p_ref_xy"][0] = p_act[0]
+                            shared_mpc_state["p_ref_xy"][1] += target_vy * mpc.dt 
+                        else:
+                            shared_mpc_state["p_ref_xy"] = turn_anchor_xy if logic.turning else p_act[0:2]
 
-                    try:
-                        sol = opti.solve()
-                        optimal_foot_forces = np.array(sol.value(U_f[:, 0])).flatten()
-                    except Exception as e:
-                        print("MPC Solve Failed, using previous forces.")
 
                 q_act = np.zeros(12)
                 qd_act = np.zeros(12)
@@ -233,7 +372,7 @@ def main():
                         qd_act[idx] = data.qvel[joint_info[j]['qvel_adr']]
                         idx += 1
 
-                planned_stance = cmd["is_stance"]
+                planned_stance = cmd["is_stance"] if (logic.walking or logic.turning or logic.jump_state != "") else [True, True, True, True]
 
                 qdd_des_full = np.zeros(model.nv)
                 pd_torques = np.zeros(model.nv)
@@ -274,15 +413,38 @@ def main():
                     pd_torques[adr] = float(pd_torques_arr[i])
                         
                 tau_ff = np.zeros(model.nv)
-                jacobians = dyn.get_foot_jacobians(data.qpos) 
+                q_pin = np.zeros(dyn.model.nq)
+                q_pin[0:3] = data.qpos[0:3]
+                q_pin[3:7] = [
+                    data.qpos[4],
+                    data.qpos[5],
+                    data.qpos[6],
+                    data.qpos[3],
+                ]  # Pinocchio uses [x,y,z,w]
+
+                # Accurately map joint positions using Pinocchio IDs to avoid URDF order mismatch
+                for leg in LEG_NAMES:
+                    for j in JOINT_NAMES[leg]:
+                        pin_id = dyn.model.getJointId(j)
+                        idx_q = dyn.model.joints[pin_id].idx_q
+                        q_pin[idx_q] = data.qpos[joint_info[j]['qpos_adr']]
+
+                jacobians = dyn.get_foot_jacobians(q_pin)
 
                 for i in range(4):
-                    if planned_stance[i]:
-                        F_i = optimal_foot_forces[3*i : 3*i+3]
-                        J_i = jacobians[i]
-                        
-                        tau_ff += J_i.T @ F_i
+                  if planned_stance[i]:
+                    F_i = optimal_foot_forces[3 * i : 3 * i + 3]
+                    # Extract only the 12 actuated joints (columns 6 to 18)
+                    J_joints = jacobians[i][:, 6:]
+                    tau_joints_pin = -J_joints.T @ F_i
 
+                    # Accurately map torques back to MuJoCo using Pinocchio IDs
+                    for leg in LEG_NAMES:
+                        for j in JOINT_NAMES[leg]:
+                            pin_id = dyn.model.getJointId(j)
+                            idx_v = dyn.model.joints[pin_id].idx_v - 6
+                            adr = joint_info[j]['qvel_adr']
+                            tau_ff[adr] += tau_joints_pin[idx_v]
                 for leg in LEG_NAMES:
                     for j in JOINT_NAMES[leg]:
                         info = joint_info[j]
@@ -309,6 +471,7 @@ def main():
                     
     finally:
         video_writer.close()
+        mpc_running = False 
 
 if __name__ == '__main__':
     main()

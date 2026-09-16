@@ -3,11 +3,11 @@
 
   <xacro:arg name="controller_config" default=""/>
 
-  <link name="dummy"/>
-  <joint name="dummy_joint" type="fixed">
-    <parent link="dummy"/>
-    <child link="base_link"/>
-  </joint>
+  <!-- <link name="dummy"/> -->
+  <!-- <joint name="dummy_joint" type="fixed"> -->
+  <!--   <parent link="dummy"/> -->
+  <!--   <child link="base_link"/> -->
+  <!-- </joint> -->
 
   <link name="base_link">
     <visual>
@@ -119,18 +119,18 @@
   </link>
 
   <link name="bl_tip_link">
-    <!-- <collision> -->
-    <!--   <origin xyz="0 0 0" rpy="0 0 0"/> -->
-    <!--   <geometry> -->
-    <!--     <sphere radius="0.04"/> -->
-    <!--   </geometry> -->
-    <!-- </collision> -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+    </collision>
   </link>
 
   <joint name="bl_leg_to_tip" type="fixed">
     <parent link="bl_leg_link"/>
     <child link="bl_tip_link"/>
-    <origin xyz="0 -0.99207 -1.1797" rpy="0 0 0"/> 
+    <origin xyz="0 0 -1.515" rpy="0 0 0"/> 
   </joint>
 
   <!-- ==================== BACK RIGHT LEG ==================== -->
@@ -223,18 +223,18 @@
   </link>
 
   <link name="br_tip_link">
-    <!-- <collision> -->
-    <!--   <origin xyz="0 0 0" rpy="0 0 0"/> -->
-    <!--   <geometry> -->
-    <!--     <sphere radius="0.04"/> -->
-    <!--   </geometry> -->
-    <!-- </collision> -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+    </collision>
   </link>
 
   <joint name="br_leg_to_tip" type="fixed">
     <parent link="br_leg_link"/>
     <child link="br_tip_link"/>
-    <origin xyz="0 -0.99207 -1.1797" rpy="0 0 0"/> 
+    <origin xyz="0 0 -1.515" rpy="0 0 0"/> 
   </joint>
 
   <!-- ==================== FRONT LEFT LEG ==================== -->
@@ -327,18 +327,18 @@
   </link>
 
   <link name="tl_tip_link">
-    <!-- <collision> -->
-    <!--   <origin xyz="0 0 0" rpy="0 0 0"/> -->
-    <!--   <geometry> -->
-    <!--     <sphere radius="0.04"/> -->
-    <!--   </geometry> -->
-    <!-- </collision> -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+    </collision>
   </link>
 
   <joint name="tl_leg_to_tip" type="fixed">
     <parent link="tl_leg_link"/>
     <child link="tl_tip_link"/>
-    <origin xyz="0 -0.99207 -1.1797" rpy="0 0 0"/> 
+    <origin xyz="0 0 -1.515" rpy="0 0 0"/> 
   </joint>
 
 
@@ -432,172 +432,190 @@
   </link>
 
   <link name="tr_tip_link">
-    <!-- <collision> -->
-    <!--   <origin xyz="0 0 0" rpy="0 0 0"/> -->
-    <!--   <geometry> -->
-    <!--     <sphere radius="0.04"/> -->
-    <!--   </geometry> -->
-    <!-- </collision> -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+    </collision>
   </link>
 
   <joint name="tr_leg_to_tip" type="fixed">
     <parent link="tr_leg_link"/>
     <child link="tr_tip_link"/>
-    <origin xyz="0 -0.99207 -1.1797" rpy="0 0 0"/> 
+    <origin xyz="0 0 -1.515" rpy="0 0 0"/> 
   </joint>
 
   <!-- ==================== ros2_control ==================== -->
 
-  <ros2_control name="GazeboSimSystem" type="system">
-    <hardware>
-      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
-    </hardware>
-
-    <joint name="bl_shoulder_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="bl_thigh_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="bl_leg_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="br_shoulder_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="br_thigh_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="br_leg_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="tl_shoulder_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="tl_thigh_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="tl_leg_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="tr_shoulder_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="tr_thigh_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="tr_leg_joint">
-      <command_interface name="position"/>
-      <command_interface name="effort"/>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-  </ros2_control>
-
-  <!-- ==================== Gazebo plugin ==================== -->
-  <gazebo>
-    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-      <parameters>$(arg controller_config)</parameters>
-      <robot_param>robot_description</robot_param>
-      <robot_param_node>robot_state_publisher</robot_param_node>
-      <position_proportional_gain>0.3</position_proportional_gain>
-    </plugin>
-  </gazebo>
-
-  <gazebo>
-    <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
-      <odom_frame>world</odom_frame>
-      <robot_base_frame>base_link</robot_base_frame>
-      <odom_publish_frequency>50</odom_publish_frequency>
-      <publish_tf>true</publish_tf>
-    </plugin>
-  </gazebo>
-
-  <!-- Foot friction (ground contact only — selfCollide removed from legs) -->
-  <gazebo reference="bl_leg_link">
-    <mu1>1.5</mu1>
-    <mu2>1.5</mu2>
-  </gazebo>
-  <gazebo reference="br_leg_link">
-    <mu1>1.5</mu1>
-    <mu2>1.5</mu2>
-  </gazebo>
-  <gazebo reference="tl_leg_link">
-    <mu1>1.5</mu1>
-    <mu2>1.5</mu2>
-  </gazebo>
-  <gazebo reference="tr_leg_link">
-    <mu1>1.5</mu1>
-    <mu2>1.5</mu2>
-  </gazebo>
+  <!-- <ros2_control name="GazeboSimSystem" type="system"> -->
+  <!--   <hardware> -->
+  <!--     <plugin>gz_ros2_control/GazeboSimSystem</plugin> -->
+  <!--   </hardware> -->
+  <!---->
+  <!--   <joint name="bl_shoulder_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!--   <joint name="bl_thigh_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!--   <joint name="bl_leg_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!--   <joint name="br_shoulder_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!--   <joint name="br_thigh_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!--   <joint name="br_leg_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!--   <joint name="tl_shoulder_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!--   <joint name="tl_thigh_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!--   <joint name="tl_leg_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!--   <joint name="tr_shoulder_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!--   <joint name="tr_thigh_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!--   <joint name="tr_leg_joint"> -->
+  <!--     <command_interface name="position"/> -->
+  <!--     <command_interface name="effort"/> -->
+  <!--     <state_interface name="position"> -->
+  <!--       <param name="initial_value">0.0</param> -->
+  <!--     </state_interface> -->
+  <!--     <state_interface name="velocity"/> -->
+  <!--     <state_interface name="effort"/> -->
+  <!--   </joint> -->
+  <!-- </ros2_control> -->
+  <!---->
+  <!-- <!-- ==================== Gazebo plugin ==================== --> -->
+  <!-- <gazebo> -->
+  <!--   <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin"> -->
+  <!--     <parameters>$(arg controller_config)</parameters> -->
+  <!--     <robot_param>robot_description</robot_param> -->
+  <!--     <robot_param_node>robot_state_publisher</robot_param_node> -->
+  <!--     <position_proportional_gain>0.3</position_proportional_gain> -->
+  <!--   </plugin> -->
+  <!-- </gazebo> -->
+  <!---->
+  <!-- <gazebo> -->
+  <!--   <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher"> -->
+  <!--     <odom_frame>world</odom_frame> -->
+  <!--     <robot_base_frame>base_link</robot_base_frame> -->
+  <!--     <odom_publish_frequency>50</odom_publish_frequency> -->
+  <!--     <publish_tf>true</publish_tf> -->
+  <!--   </plugin> -->
+  <!-- </gazebo> -->
+  <!---->
+  <!-- <!-- Foot friction (ground contact only — selfCollide removed from legs) --> -->
+  <!-- <gazebo reference="bl_leg_link"> -->
+  <!--   <mu1>1.5</mu1> -->
+  <!--   <mu2>1.5</mu2> -->
+  <!-- </gazebo> -->
+  <!-- <gazebo reference="br_leg_link"> -->
+  <!--   <mu1>1.5</mu1> -->
+  <!--   <mu2>1.5</mu2> -->
+  <!-- </gazebo> -->
+  <!-- <gazebo reference="tl_leg_link"> -->
+  <!--   <mu1>1.5</mu1> -->
+  <!--   <mu2>1.5</mu2> -->
+  <!-- </gazebo> -->
+  <!-- <gazebo reference="tr_leg_link"> -->
+  <!--   <mu1>1.5</mu1> -->
+  <!--   <mu2>1.5</mu2> -->
+  <!-- </gazebo> -->
+  <mujoco>
+    <compiler discardvisual="false" angle="radian"/>
+    <actuator>
+      <motor name="tl_shoulder_joint_motor" joint="tl_shoulder_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="tl_thigh_joint_motor" joint="tl_thigh_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="tl_leg_joint_motor" joint="tl_leg_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="tr_shoulder_joint_motor" joint="tr_shoulder_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="tr_thigh_joint_motor" joint="tr_thigh_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="tr_leg_joint_motor" joint="tr_leg_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="bl_shoulder_joint_motor" joint="bl_shoulder_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="bl_thigh_joint_motor" joint="bl_thigh_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="bl_leg_joint_motor" joint="bl_leg_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="br_shoulder_joint_motor" joint="br_shoulder_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="br_thigh_joint_motor" joint="br_thigh_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="br_leg_joint_motor" joint="br_leg_joint" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    </actuator>
+  </mujoco>
+</robot>
 
 </robot>

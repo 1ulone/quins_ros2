@@ -1,8 +1,8 @@
 import time
 import math as m
-from matplotlib.pyplot import step
 import numpy as np
 from LOGIC.KinematicsLogic import KinematicsLogic
+from pathlib import Path
 
 # NOTE: ---------------- CONSTANT VALUE ----------------
 LEG_NAMES = [
@@ -28,7 +28,10 @@ LEG_TO_PHI = {
 
 class GaitLogic():
     def __init__(self, callbacks=None):
-        self.kinematics = KinematicsLogic()
+        script_dir = Path(__file__).resolve().parent
+        urdf_path = str(script_dir.parent/'urdf'/'quadruped.urdf')
+
+        self.kinematics = KinematicsLogic(urdf_path)
         self.callbacks = callbacks if callbacks else {}
 
         self.control_rate = 50.0 
@@ -41,6 +44,7 @@ class GaitLogic():
         self.current_pitch = 0.0
         self.current_yaw = 0.0
         self.target_yaw = 0.0
+        self.yaw_rate = 0.0
 
         # NOTE: Inverse Dynamics Parameters (Velocity & Acceleration)
         self.current_q = np.zeros(12)
@@ -72,6 +76,8 @@ class GaitLogic():
         }
 
         self.walking = False
+        self.turning = False
+        self.yaw_rate = 0.0
         self.jump_state = ""
         self.jump_q_history = np.zeros(12)
         self.jump_qd_history = np.zeros(12)
@@ -125,6 +131,7 @@ class GaitLogic():
         # NOTE: if state_callback is triggered again, 
         # it will cancel the walk timer, to avoid duplicated process
         self.walking = False
+        self.turning = False
         self.jump_state = ""
         self.transitioning = False
         self.current_state = msg
@@ -141,13 +148,12 @@ class GaitLogic():
                 self.setup_transition(0.00, 0.45, -0.90)
             case "WALK": 
                 # NOTE: create a timed process for a walk process
-
                 self.gait_freq = 1.0
-                self.x_off = 0.25
+                self.x_off = 0.0
                 self.z_off = 2.5
-                self.step_len = 1.5
-                self.step_h = 1.0
-                self.sc_yaw = 0.9
+                self.step_len = 1.0
+                self.step_h = 0.75
+                self.sc_yaw = 0.0
 
                 self.t = 0.0
                 self.walking = True
@@ -175,7 +181,7 @@ class GaitLogic():
                 self.z_off = 1.8
                 self.step_len = 0.8
                 self.step_h = 0.5
-                self.sc_yaw = 0.9
+                self.sc_yaw = 0.0
 
                 self.t = 0.0
                 self.walking = True
@@ -188,7 +194,7 @@ class GaitLogic():
                 self.z_off = 2.5
                 self.step_len = 3.0
                 self.step_h = 2.0
-                self.sc_yaw = 0.9
+                self.sc_yaw = 0.0
 
                 self.t = 0.0
                 self.walking = True
@@ -201,6 +207,29 @@ class GaitLogic():
                     'BR': m.pi, # (90 degree)
                     'FR': 0.0, # (180 degree)
                     'BL': m.pi, # (270 degree)
+                }
+            case "TURN":
+                self.gait_freq = 1.5     # Faster stepping to maintain dynamic balance while pivoting
+                self.x_off = 0.0        # Standard resting X offset
+                self.z_off = 2.5         # Standard resting Z height
+                self.step_len = 0.0      # Zero forward displacement
+                self.step_h = 1.0        # Normal step height for ground clearance
+                self.sc_yaw = 0.5        # Arc multiplier for the turn_trajectory_controller
+
+                self.t = 0.0
+                self.turning = True      # Must be True so loop_step() triggers walk_process()
+                self.duty_factor = 0.5   # Standard trot timing
+                self.z_off_used = self.z_off
+                
+                # Snap target_yaw to current_yaw initially so it doesn't violently whip around on transition
+                self.target_yaw = self.current_yaw 
+
+                # Alternating diagonal pairs for a stable trot-in-place
+                self.phase_offsets = {
+                    'FL': 0.0, 
+                    'BR': 0.0, 
+                    'FR': m.pi, 
+                    'BL': m.pi, 
                 }
 
     def update_wt_params(self, msg: list):
@@ -257,6 +286,7 @@ class GaitLogic():
         yaw_turn_rate = 0.02
         self.target_yaw += rx * yaw_turn_rate
 
+
     def raw_tune(self, msg: list):
         # NOTE: Raw Tuning just sends a theta value from msg (per coxa, tibia, femur)
         self.send_theta(msg[0], msg[1], msg[2])
@@ -282,7 +312,7 @@ class GaitLogic():
             fraction = phase / stance_phase_end 
 
             x = -(step_len / 2.0) + (fraction * step_len)
-            x_dot = step_len * ds_dt
+            x_dot = (step_len * ds_dt)
             x_ddot = 0.0
 
             y, y_dot, y_ddot = 0.0, 0.0, 0.0
@@ -297,9 +327,9 @@ class GaitLogic():
             v = step_len * (swing_phase_len / stance_phase_end)
             c = step_len + v
 
-            x = (step_len / 2.0) + (v * s) - (10.0 * c * s**3) + (15.0 * c * s**4) - (6.0 * c * s**5)
-            dx_ds = v - 30.0 * c * (s**2) + 60.0 * c * (s**3) - 30.0 * c * (s**4)
-            d2x_ds2 = -60.0 * c * s + 180.0 * c * (s**2) - 120.0 * c * (s**3)
+            x = ((step_len / 2.0) + (v * s) - (10.0 * c * s**3) + (15.0 * c * s**4) - (6.0 * c * s**5))
+            dx_ds = (v - 30.0 * c * (s**2) + 60.0 * c * (s**3) - 30.0 * c * (s**4))
+            d2x_ds2 = (-60.0 * c * s + 180.0 * c * (s**2) - 120.0 * c * (s**3))
             x_dot = dx_ds * ds_dt
             x_ddot = d2x_ds2 * (ds_dt**2)
 
@@ -400,11 +430,6 @@ class GaitLogic():
         base_step_len = self.step_len * ramp_factor
 
         # NOTE: Get the Modulo of the phase angle
-        # With the equation : (w * t_ahead) mod (2pi)
-        # its a reference clock as in the omega is the parent. the phase_now
-        # is what currently time it is kinda thing. it's mapping a linear time
-        # into angular (doesnt mean shit for me) or into a cyclical value between
-        # 0 and 2pi radians.
         phase_now = (omega * self.t) % (2.0 * m.pi)
 
         # NOTE: Initialize an empty lists for the target joints angles and stances
@@ -412,44 +437,31 @@ class GaitLogic():
         is_stance_list = []
         points = []
 
-            # NOTE: get yaw error
-        yaw_error = self.target_yaw - self.current_yaw
+        # NOTE: get yaw error
+        yaw_error = (self.target_yaw - self.current_yaw + m.pi) % (2.0 * m.pi) - m.pi
         stance_limit = 2.0 * m.pi * self.duty_factor
 
         for leg in LEG_NAMES:
             # NOTE: leg specific phase shift 
-            # leg_phase is the most local shit of time after phase_now
-            # calculate or timed each own leg cycle. calculated by adding
-            # a static angular offset to the phase_now. 
-            # it tells which leg should start doing shit first by 
-            # adding the offset shit
             leg_phase = (phase_now + self.phase_offsets[leg]) % (2.0 * m.pi)
             is_stance = (leg_phase < stance_limit) # check if leg is in the stance phase
             is_stance_list.append(is_stance) # record and set the starting step
 
             active_step_len = base_step_len
-            # NOTE: Adjusts the step length asymmetrically based on yaw error 
-            # to induce rotation. Left legs increase stride, 
-            # right legs decrease stride (or vice versa).
-            if leg in ['FL', 'BL']:
-                active_step_len += (yaw_error * self.sc_yaw) * ramp_factor
-            elif leg in ['FR', 'BR']:
-                active_step_len -= (yaw_error * self.sc_yaw) * ramp_factor
 
-            # NOTE: Calculate the cartesian foot trajectory offset for the 
-            # current phase
+            # NOTE: Retrieves the static nominal resting position of the leg first
+            ix, iy, iz = self.kinematics.get_init_pos(leg)
+
+            # NOTE: Calculate the cartesian foot trajectory offset for the current phase
             if self.current_state == "RUN":
                 pos, vel, acc = self.run_trajectory_controller(leg_phase, active_step_len, leg)
             else:
                 pos, vel, acc = self.trajectory_controller(leg_phase, active_step_len)
 
-            # NOTE: Retrieves the static nominal resting position of the leg
-            ix, iy, iz = self.kinematics.get_init_pos(leg)
-
             # NOTE: Calculate the absolute target foot coordinates
-            tx = ix + pos[0] + self.x_off
-            ty = self.z_off_used - pos[1] 
-            tz = iz + pos[2]
+            tx = ix + self.x_off 
+            ty = iy + pos[0]  # Corrected to align with the negative velocity mapping
+            tz = -self.z_off_used + pos[1]
 
             # NOTE: Calculate Inverse Kinematics to find Theta
             theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
@@ -465,9 +477,9 @@ class GaitLogic():
                     p_fut = (omega * (self.t + time_offset)) % (2.0 * m.pi)
                     lp_fut = (p_fut + self.phase_offsets[leg]) % (2.0 * m.pi)
                     pos_fut, _, _ = self.run_trajectory_controller(lp_fut, active_step_len, leg)
-                    tx_fut = ix + pos_fut[0] + self.x_off
-                    ty_fut = self.z_off_used - pos_fut[1] 
-                    tz_fut = iz + pos_fut[2]
+                    tx_fut = ix + self.x_off
+                    ty_fut = iy - pos_fut[0] 
+                    tz_fut = -self.z_off_used + pos_fut[1]
                     return np.array(self.kinematics.ik(leg, tx_fut, ty_fut, tz_fut))
 
                 q_next1 = get_future_ik(lookahead_window)
@@ -494,18 +506,13 @@ class GaitLogic():
                 q_ddot = np.clip(q_ddot, -1500.0, 1500.0)          
             else:
                 # WALK remains untouched using the analytical Jacobian
-                cart_vel = np.array([vel[0], -vel[1], vel[2]])
-                cart_acc = np.array([acc[0], -acc[1], acc[2]])
+                cart_vel = np.array([0.0, vel[0], vel[1]])
+                cart_acc = np.array([0.0, acc[0], acc[1]])
 
-                delta = 1e-4
-                q_dx = self.kinematics.ik(leg, tx + delta, ty, tz)
-                q_dy = self.kinematics.ik(leg, tx, ty + delta, tz)
-                q_dz = self.kinematics.ik(leg, tx, ty, tz + delta)
-
-                J_inv = np.zeros((3, 3))
-                J_inv[:, 0] = (np.array(q_dx) - np.array([theta1, theta2, theta3])) / delta
-                J_inv[:, 1] = (np.array(q_dy) - np.array([theta1, theta2, theta3])) / delta
-                J_inv[:, 2] = (np.array(q_dz) - np.array([theta1, theta2, theta3])) / delta
+                # Replaced finite difference with exact analytical Jacobian
+                J_analytical = self.kinematics.get_jacobian(leg, theta1, theta2, theta3)
+                damp = 1e-6
+                J_inv = J_analytical.T @ np.linalg.inv(J_analytical @ J_analytical.T + damp * np.eye(3))
 
                 q_dot = J_inv @ cart_vel
                 q_ddot = J_inv @ cart_acc
@@ -533,8 +540,6 @@ class GaitLogic():
         stance_count = sum(is_stance_list)
 
         # NOTE: Calculate the basic static weight distribution 
-        # across active stance feet.
-        # Calculate the basic static weight distribution 
         if stance_count > 0:
             base_weight_per_foot = (self.robot_mass * 9.81) / stance_count
             for leg_idx, leg_name in enumerate(LEG_NAMES):
@@ -561,6 +566,101 @@ class GaitLogic():
             self.callbacks["walk_points"](points)
 
         self.t += self.dt # increment the time mod (t)
+
+    def turn_process(self):
+        omega = 2.0 * m.pi * self.gait_freq
+        phase_now = (omega * self.t) % (2.0 * m.pi)
+        stance_limit = 2.0 * m.pi * self.duty_factor
+
+        q_desired, q_dot_desired, q_ddot_desired = [], [], []
+        is_stance_list = []
+        foot_forces = np.zeros((4, 3))
+
+        if abs(self.yaw_rate) < 0.1:
+            self.yaw_rate = 0.5
+
+        # Anchor target yaw to current yaw to prevent MPC runaway torque spikes
+        self.target_yaw = self.current_yaw + (self.yaw_rate * self.dt)
+
+        for leg in LEG_NAMES:
+            leg_phase = (phase_now + self.phase_offsets[leg]) % (2.0 * m.pi)
+            is_stance = (leg_phase < stance_limit)
+            is_stance_list.append(is_stance)
+
+            # ix, iy, iz are retrieved directly from the resting pose
+            ix, iy, iz = self.kinematics.get_init_pos(leg)
+            
+            # Get 1D normalized trajectory (pos_norm[0] goes -0.5 to 0.5 during stance)
+            pos_norm, vel_norm, acc_norm = self.trajectory_controller(leg_phase, 1.0)
+            
+            # The total angular sweep amplitude needed to cancel the body's turn
+            angular_amplitude = self.yaw_rate * (self.duty_factor / self.gait_freq)
+            
+            # Corrected linear mapping for your specific coordinate frame (-X Forward, -Z Right).
+            # A positive yaw rotates the body Clockwise. 
+            # Therefore, Left legs must sweep Backward (+X), and Front legs must sweep Left (+Z).
+            dx_sweep = -angular_amplitude * iy
+            dy_sweep = angular_amplitude * ix
+            
+            # Apply the normalized 1D path directly
+            tx = ix + (pos_norm[0] * dx_sweep)
+            ty = iy + (pos_norm[0] * dy_sweep) 
+            tz = -self.z_off_used + pos_norm[1]
+
+            theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
+            q_desired.extend([theta1, theta2, theta3])
+            
+            # Scale velocities and accelerations identically
+            vx = vel_norm[0] * dx_sweep
+            vy = vel_norm[0] * dy_sweep
+            ax = acc_norm[0] * dx_sweep
+            ay = acc_norm[0] * dy_sweep
+
+            cart_vel = np.array([vx, vy, -vel_norm[1]])
+            cart_acc = np.array([ax, ay, -acc_norm[1]])
+
+            # Replaced finite difference with exact analytical Jacobian
+            J_analytical = self.kinematics.get_jacobian(leg, theta1, theta2, theta3)
+            damp = 1e-6
+            J_inv = J_analytical.T @ np.linalg.inv(J_analytical @ J_analytical.T + damp * np.eye(3))
+
+            q_dot = J_inv @ cart_vel
+            q_ddot = J_inv @ cart_acc
+            
+            q_dot_desired.extend(np.clip(q_dot, -20.0, 20.0).tolist())
+            q_ddot_desired.extend(np.clip(q_ddot, -1500.0, 1500.0).tolist())
+
+        # Calculate Stance Forces for MPC
+        stance_count = sum(is_stance_list)
+        if stance_count > 0:
+            base_weight_per_foot = (self.robot_mass * 9.81) / stance_count
+            for leg_idx, leg_name in enumerate(LEG_NAMES):
+                if is_stance_list[leg_idx]:
+                    leg_phase = (phase_now + self.phase_offsets[leg_name]) % (2.0 * m.pi)
+                    stance_fraction = leg_phase / stance_limit
+                    dynamic_multiplier = 1.0 + m.sin(stance_fraction * m.pi)
+                    foot_forces[leg_idx, 2] = base_weight_per_foot * dynamic_multiplier
+
+        if self.t % 0.5 < self.dt:
+            print(f"\n--- DEBUG TURN ---")
+            print(f"Time: {self.t:.2f} | Yaw Rate: {self.yaw_rate:.2f}")
+            print(f"Target Yaw: {self.target_yaw:.2f} | Current Yaw: {self.current_yaw:.2f}")
+            print(f"FL Stance: {is_stance_list[0]} | FR Stance: {is_stance_list[1]}")
+            print(f"------------------\n")
+
+        points = [{
+            "positions": q_desired,
+            "velocities": q_dot_desired,
+            "accelerations": q_ddot_desired,
+            "foot_forces": foot_forces.tolist(),
+            "is_stance": is_stance_list,
+            "time_offset": 0.0
+        }]
+
+        if "walk_points" in self.callbacks:
+            self.callbacks["walk_points"](points)
+
+        self.t += self.dt
 
     def jump_process(self):
         y_idle = self.z_off
@@ -718,6 +818,8 @@ class GaitLogic():
     def loop_step(self):
         if self.transitioning:
             self.process_transition()
+        elif self.turning:
+            self.turn_process()
         elif self.walking:
             self.walk_process()
         elif self.jump_state != "":
