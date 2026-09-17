@@ -45,8 +45,9 @@ def main():
     foot_body_names = ['tl_tip_link', 'tr_tip_link', 'bl_tip_link', 'br_tip_link']
     foot_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name) for name in foot_body_names]   
 
-    # sensor_names = ['tl_foot_force_sensor', 'tr_foot_force_sensor', 'bl_foot_force_sensor', 'br_foot_force_sensor']
-    # sensor_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SENSOR, name) for name in sensor_names]
+    sensor_names = ['tl_foot_force_sensor', 'tr_foot_force_sensor', 'bl_foot_force_sensor', 'br_foot_force_sensor']
+    sensor_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SENSOR, name) for name in sensor_names]
+    sensor_adr = [model.sensor_adr[sid] for sid in sensor_ids]
     # ---------------- 2. Setup Logic & UI ----------------
     
     cmd = {
@@ -56,7 +57,8 @@ def main():
         "foot_forces": np.zeros((4, 3)),
         "is_stance": [False, False, False, False],
         "kp": 600.0,
-        "kd": 25.0
+        "kd": 25.0,
+        "swing_fraction": [0.0, 0.0, 0.0, 0.0]
     }
 
     graph_queue = queue.Queue()
@@ -69,6 +71,7 @@ def main():
         cmd["qdd_des"] = np.array(pt["accelerations"])
         cmd["is_stance"] = pt["is_stance"]
         cmd["foot_forces"] = pt["foot_forces"]
+        cmd["swing_fraction"] = pt.get("swing_fraction", [0.0, 0.0, 0.0, 0.0])
 
     def handle_jump_points(q_desired, qd_desired, qdd_desired, foot_forces, is_stance):
         cmd["q_des"] = np.array(q_desired)
@@ -190,6 +193,17 @@ def main():
     was_turning = False
     mpc_running = True
 
+    foot_contact_fz = np.zeros(4)
+    leg_touched_down = [False, False, False, False]
+    fz_alpha = 0.3
+    contact_force_threshold = 2.0
+
+    # Continuous per-leg handoff weight (0 = pure FOSMC swing torque,
+    # 1 = pure stance torque). Ramped instead of snapped so the
+    # FOSMC -> MPC/PD switch doesn't inject a torque step at touchdown.
+    contact_blend = np.zeros(4)
+    CONTACT_BLEND_TIME = 0.04  # seconds to fully ramp across a footfall event
+
     def mpc_worker():
         global optimal_foot_forces
         while mpc_running:
@@ -208,7 +222,7 @@ def main():
                     w_init=state["w_act"],
                     foot_positions=state["foot_positions"],
                     stance_schedule=state["stance_schedule"],
-                    p_ref=np.array([state["p_ref_xy"][0], state["p_ref_xy"][1], state["z_off"]]),
+                    p_ref=np.array([state["p_ref_xy"][0], state["p_ref_xy"][1], float(state["z_off"]) - 2.5]), # type: ignore[arg-type] 
                     v_ref=np.array([0.0, state["target_vy"], 0.0]),
                     rpy_ref=np.array([state["rpy_act"][0], state["rpy_act"][1], state["target_yaw"]]),
                     w_ref=np.array([0.0, 0.0, state["yaw_rate"]])
@@ -268,50 +282,76 @@ def main():
                     logic.current_yaw = continous_yaw
                     # logic.current_yaw = m.atan2(siny_cosp, cosy_cosp)
 
-                    # --- FACING DIRECTION DEBUG ---
-                    if step_counter % (decimation_steps * 25) == 0:
-                        mat = np.zeros(9)
-                        mujoco.mju_quat2Mat(mat, data.qpos[3:7])
-                        mat = mat.reshape(3, 3)
-                        
-                        # Assuming local +Y is the front face of your new URDF
-                        local_front = np.array([0.0, 1.0, 0.0])
-                        global_front = mat @ local_front
-                        
-                        print(f"\n=== FACING DIRECTION ===")
-                        print(f"Global Front Vector -> X: {global_front[0]:.3f}, Y: {global_front[1]:.3f}, Z: {global_front[2]:.3f}")
-                        print(f"Current Yaw (rad): {logic.current_yaw:.3f}")
-                        print("========================\n")
-                    # ------------------------------
+                    # # --- FACING DIRECTION DEBUG ---
+                    # if step_counter % (decimation_steps * 25) == 0:
+                    #     mat = np.zeros(9)
+                    #     mujoco.mju_quat2Mat(mat, data.qpos[3:7])
+                    #     mat = mat.reshape(3, 3)
+                    #
+                    #     # Assuming local +Y is the front face of your new URDF
+                    #     local_front = np.array([0.0, 1.0, 0.0])
+                    #     global_front = mat @ local_front
+                    #
+                    #     print(f"\n=== FACING DIRECTION ===")
+                    #     print(f"Global Front Vector -> X: {global_front[0]:.3f}, Y: {global_front[1]:.3f}, Z: {global_front[2]:.3f}")
+                    #     print(f"Current Yaw (rad): {logic.current_yaw:.3f}")
+                    #     print("========================\n")
+                    # # ------------------------------
 
                     logic.loop_step()
+                    raw_fz = np.array([
+                        np.linalg.norm(data.sensordata[sensor_adr[i]:sensor_adr[i] + 3])
+                        for i in range(4)
+                    ])
+                    # foot_contact_fz = (1.0 - fz_alpha) * foot_contact_fz + fz_alpha * raw_fz
+                    for i in range(4):
+                        if not cmd["is_stance"][i]:
+                            leg_touched_down[i] = False
+                        elif raw_fz[i] > contact_force_threshold:
+                            leg_touched_down[i] = True
 
-                # --- SKELETON VERIFICATION DEBUG ---
-                if step_counter % (decimation_steps * 25) == 0:  # Triggers twice a second
-                    print("\n=== SKELETON ALIGNMENT VERIFICATION ===")
-                    
-                    # 1. FOSMC's Analytical Skeleton (KinematicsLogic FK)
-                    # Grabbing the current angles for the Front Left (FL) leg[cite: 44]
-                    t1 = m.degrees(logic.current_q[0])
-                    t2 = m.degrees(logic.current_q[1])
-                    t3 = m.degrees(logic.current_q[2])
-                    
-                    # Calculating where the math thinks the foot is[cite: 40]
-                    analytical_fl = logic.kinematics.fk('FL', t1, t2, t3)
-                    fosmc_pos = np.array([analytical_fl[0, 3], analytical_fl[1, 3], analytical_fl[2, 3]])
-                    
-                    # 2. MPC's Physical Skeleton (MuJoCo/Pinocchio)
-                    # Grabbing the absolute world coordinates of the foot and the base[cite: 44]
-                    fl_foot_world = data.xpos[foot_ids[0]]
-                    base_world = data.qpos[0:3]
-                    
-                    # Finding the physical foot position relative to the body center
-                    mpc_pos = fl_foot_world - base_world
-                    
-                    print(f"FOSMC (Analytical FL) -> X: {fosmc_pos[0]:.3f}, Y: {fosmc_pos[1]:.3f}, Z: {fosmc_pos[2]:.3f}")
-                    print(f"MPC   (Physical FL)   -> X: {mpc_pos[0]:.3f}, Y: {mpc_pos[1]:.3f}, Z: {mpc_pos[2]:.3f}")
-                    print("=======================================\n")
-                # -----------------------------------
+                    for i in range(4):
+                        if not logic.walking and not logic.turning and logic.jump_state == "":
+                            # Idle standing: trust the schedule directly (unchanged behavior)
+                            target = 1.0
+                        elif logic.walking or logic.turning:
+                            target = 1.0 if leg_touched_down[i] else 0.0
+                        else:
+                            # Jumping: unchanged behavior, no contact gating
+                            target = 1.0 if cmd["is_stance"][i] else 0.0
+
+                        step = logic.dt / CONTACT_BLEND_TIME
+                        if contact_blend[i] < target:
+                            contact_blend[i] = min(target, contact_blend[i] + step)
+                        else:
+                            contact_blend[i] = max(target, contact_blend[i] - step)
+
+                # # --- SKELETON VERIFICATION DEBUG ---
+                # if step_counter % (decimation_steps * 25) == 0:  # Triggers twice a second
+                #     print("\n=== SKELETON ALIGNMENT VERIFICATION ===")
+                #
+                #     # 1. FOSMC's Analytical Skeleton (KinematicsLogic FK)
+                #     # Grabbing the current angles for the Front Left (FL) leg[cite: 44]
+                #     t1 = m.degrees(logic.current_q[0])
+                #     t2 = m.degrees(logic.current_q[1])
+                #     t3 = m.degrees(logic.current_q[2])
+                #
+                #     # Calculating where the math thinks the foot is[cite: 40]
+                #     analytical_fl = logic.kinematics.fk('FL', t1, t2, t3)
+                #     fosmc_pos = np.array([analytical_fl[0, 3], analytical_fl[1, 3], analytical_fl[2, 3]])
+                #
+                #     # 2. MPC's Physical Skeleton (MuJoCo/Pinocchio)
+                #     # Grabbing the absolute world coordinates of the foot and the base[cite: 44]
+                #     fl_foot_world = data.xpos[foot_ids[0]]
+                #     base_world = data.qpos[0:3]
+                #
+                #     # Finding the physical foot position relative to the body center
+                #     mpc_pos = fl_foot_world - base_world
+                #
+                #     print(f"FOSMC (Analytical FL) -> X: {fosmc_pos[0]:.3f}, Y: {fosmc_pos[1]:.3f}, Z: {fosmc_pos[2]:.3f}")
+                #     print(f"MPC   (Physical FL)   -> X: {mpc_pos[0]:.3f}, Y: {mpc_pos[1]:.3f}, Z: {mpc_pos[2]:.3f}")
+                #     print("=======================================\n")
+                # # -----------------------------------
 
                 if step_counter % mpc_decimation == 0:
                     # Update variables
@@ -335,6 +375,12 @@ def main():
                             t_future = logic.t + (k * mpc.dt)
                             phase_future = (omega * t_future) % (2.0 * m.pi)
                             k_stance = [((phase_future + logic.phase_offsets[leg]) % (2.0 * m.pi)) < stance_limit for leg in LEG_NAMES]
+                            if k == 0:
+                                # "Right now" is measurable. Don't let the QP budget
+                                # weight onto a foot that hasn't actually landed —
+                                # future ticks stay on the forecast, since contact
+                                # there can't be sensed in advance.
+                                k_stance = [k_stance[i] and leg_touched_down[i] for i in range(4)]
                             planned_stance_schedule.append(k_stance)
 
                     target_vy = 0.0
@@ -371,8 +417,6 @@ def main():
                         q_act[idx] = data.qpos[joint_info[j]['qpos_adr']]
                         qd_act[idx] = data.qvel[joint_info[j]['qvel_adr']]
                         idx += 1
-
-                planned_stance = cmd["is_stance"] if (logic.walking or logic.turning or logic.jump_state != "") else [True, True, True, True]
 
                 qdd_des_full = np.zeros(model.nv)
                 pd_torques = np.zeros(model.nv)
@@ -432,7 +476,6 @@ def main():
                 jacobians = dyn.get_foot_jacobians(q_pin)
 
                 for i in range(4):
-                  if planned_stance[i]:
                     F_i = optimal_foot_forces[3 * i : 3 * i + 3]
                     # Extract only the 12 actuated joints (columns 6 to 18)
                     J_joints = jacobians[i][:, 6:]
@@ -445,13 +488,29 @@ def main():
                             idx_v = dyn.model.joints[pin_id].idx_v - 6
                             adr = joint_info[j]['qvel_adr']
                             tau_ff[adr] += tau_joints_pin[idx_v]
-                for leg in LEG_NAMES:
+
+                idx = 0
+                for i, leg in enumerate(LEG_NAMES):
+                    w = contact_blend[i]  # 0 = full swing (FOSMC), 1 = full stance (MPC+PD)
                     for j in JOINT_NAMES[leg]:
                         info = joint_info[j]
                         adr = info['qvel_adr']
-                        
-                        final_torque = tau_ff[adr] + pd_torques[adr]
+
+                        pos_err = q_des_interp_arr[idx] - q_act_arr[idx]
+                        vel_err = qd_des_interp_arr[idx] - qd_act_arr[idx]
+                        pd_correction = cmd["kp"] * pos_err + cmd["kd"] * vel_err
+                        SWING_TAPER_START = 0.85
+                        SWING_TAPER_MIN = 0.35
+                        sf = cmd["swing_fraction"][i]
+                        if sf > SWING_TAPER_START:
+                            taper = 1.0 - (1.0 - SWING_TAPER_MIN) * (sf - SWING_TAPER_START) / (1.0 - SWING_TAPER_START)
+                        else:
+                            taper = 1.0
+                        swing_torque = pd_torques[adr] * taper
+
+                        final_torque = (1.0 - w) * swing_torque + w * tau_ff[adr] + (w ** 2) * pd_correction
                         data.ctrl[info['actuator_id']] = np.clip(final_torque, -1500.0, 1500.0)
+                        idx += 1
 
                 mujoco.mj_step(model, data)
                 current_time = time.time()

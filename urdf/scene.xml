@@ -48,7 +48,7 @@
               <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
               <joint name="bl_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
               <geom type="mesh" rgba="1 0 0 1" mesh="QUAD_BL_LEG_C" />
-              <body name="bl_tip_link" pos="0 0 -1.515">
+              <body name="bl_tip_link" pos="0 0 -1.5">
                 <geom name="bl_foot_collision" type="sphere" size="0.02" condim="4" friction="1.0 0.01 0.001" rgba="0.8 0.2 0.2 1"/>
                 <site name="bl_foot_site" pos="0 0 0" size="0.01" />
               </body>
@@ -67,7 +67,7 @@
               <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
               <joint name="br_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
               <geom type="mesh" rgba="0 1 0 1" mesh="QUAD_BR_LEG_C" />
-              <body name="br_tip_link" pos="0 0 -1.515">
+              <body name="br_tip_link" pos="0 0 -1.5">
                 <geom name="br_foot_collision" type="sphere" size="0.02" condim="4" friction="1.0 0.01 0.001" rgba="0.8 0.2 0.2 1"/>
                 <site name="br_foot_site" pos="0 0 0" size="0.01" />
               </body>
@@ -86,7 +86,7 @@
               <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
               <joint name="tl_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
               <geom type="mesh" rgba="0 0 1 1" mesh="QUAD_TL_LEG_C" />
-              <body name="tl_tip_link" pos="0 0 -1.515">
+              <body name="tl_tip_link" pos="0 0 -1.5">
                 <geom name="tl_foot_collision" type="sphere" size="0.02" condim="4" friction="1.0 0.01 0.001" rgba="0.8 0.2 0.2 1"/>
                 <site name="tl_foot_site" pos="0 0 0" size="0.01"/>
               </body>
@@ -105,7 +105,7 @@
               <inertial pos="0 0 0" mass="0.4" diaginertia="0.136 0.081 0.065" />
               <joint name="tr_leg_joint" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" actuatorfrcrange="-100 100" damping="10" frictionloss="1" />
               <geom type="mesh" rgba="1 0 1 1" mesh="QUAD_TR_LEG_C" />
-              <body name="tr_tip_link" pos="0 0 -1.515">
+              <body name="tr_tip_link" pos="0 0 -1.5">
                 <geom name="tr_foot_collision" type="sphere" size="0.02" condim="4" friction="1.0 0.01 0.001" rgba="0.8 0.2 0.2 1"/>
                 <site name="tr_foot_site" pos="0 0 0" size="0.01"/>
               </body>

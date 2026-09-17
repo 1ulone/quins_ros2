@@ -46,6 +46,8 @@ class GaitLogic():
         self.target_yaw = 0.0
         self.yaw_rate = 0.0
 
+        self.fosmc_gain = 0.15
+
         # NOTE: Inverse Dynamics Parameters (Velocity & Acceleration)
         self.current_q = np.zeros(12)
         self.current_q_dot = np.zeros(12)
@@ -94,24 +96,21 @@ class GaitLogic():
         self.z_off = 2.7
         self.step_len = 2.0
         self.step_h = 0.75
-        self.sc_yaw = 0.9
+        self.sc_yaw = 0.0
 
         # NOTE: JUMP Tune Parameters
         self.y_crouch = 1.0
         self.y_thrust = 3.8
         self.y_flight = 1.8
-        self.x_thrust = 0.5
         self.x_flight =-1.5
         self.x_catch = -1.5
         self.prepare_time = 0.8
-        self.front_thrust_time = 0.15
         self.back_thrust_time = 0.15
         self.flight_time = 0.05
         self.landing_time = 0.5
         self.catch_time = 0.1
         self.x_stabilize = 1.5
         self.back_thrust = 1.5
-        self.pitch_threshold = 0.0
 
         self.current_state = "TUNING"
         self.duty_factor = 0.5 
@@ -232,6 +231,9 @@ class GaitLogic():
                     'BL': m.pi, 
                 }
 
+    def update_fosmc_params(self, msg: float):
+        self.fosmc_gain = msg
+
     def update_wt_params(self, msg: list):
         # NOTE: just sets the Walk Tune Param into a new Value from msg
         self.gait_freq = msg[0]
@@ -246,18 +248,15 @@ class GaitLogic():
         self.y_crouch = msg[0]
         self.y_thrust = msg[1] 
         self.y_flight = msg[2] 
-        self.x_thrust = msg[3]
-        self.x_flight = msg[4]
-        self.x_catch = msg[5]
-        self.prepare_time = msg[6] 
-        self.front_thrust_time = msg[7] 
-        self.back_thrust_time = msg[8] 
-        self.flight_time = msg[9]
-        self.landing_time = msg[10]
-        self.catch_time = msg[11]
-        self.x_stabilize = msg[12]
-        self.back_thrust = msg[13]
-        self.pitch_threshold = msg[14]
+        self.x_flight = msg[3]
+        self.x_catch = msg[4]
+        self.prepare_time = msg[5] 
+        self.back_thrust_time = msg[6] 
+        self.flight_time = msg[7]
+        self.landing_time = msg[8]
+        self.catch_time = msg[9]
+        self.x_stabilize = msg[10]
+        self.back_thrust = msg[11]
 
     def update_phase_offsets(self, msg: list):
         # NOTE: just sets the Phase Offsets into a new Value from msg
@@ -435,6 +434,7 @@ class GaitLogic():
         # NOTE: Initialize an empty lists for the target joints angles and stances
         q_desired, q_dot_desired, q_ddot_desired = [], [], []
         is_stance_list = []
+        swing_fraction_list = []
         points = []
 
         # NOTE: get yaw error
@@ -444,8 +444,15 @@ class GaitLogic():
         for leg in LEG_NAMES:
             # NOTE: leg specific phase shift 
             leg_phase = (phase_now + self.phase_offsets[leg]) % (2.0 * m.pi)
-            is_stance = (leg_phase < stance_limit) # check if leg is in the stance phase
-            is_stance_list.append(is_stance) # record and set the starting step
+            is_stance = (leg_phase < stance_limit)
+            is_stance_list.append(is_stance)
+
+            if is_stance:
+                swing_frac = 0.0
+            else:
+                swing_phase_len_local = 2.0 * m.pi * (1.0 - self.duty_factor)
+                swing_frac = (leg_phase - stance_limit) / swing_phase_len_local
+            swing_fraction_list.append(swing_frac)
 
             active_step_len = base_step_len
 
@@ -559,6 +566,7 @@ class GaitLogic():
             "accelerations": q_ddot_desired,
             "foot_forces": foot_forces.tolist(),
             "is_stance": is_stance_list,
+            "swing_fraction": swing_fraction_list, 
             "time_offset": 0.0
         })
 
@@ -671,7 +679,6 @@ class GaitLogic():
         x_idle = self.x_off
         x_thrust = self.x_off + self.back_thrust 
         x_stabilize = self.x_off + self.x_stabilize
-        x_rev_thrust = self.x_off - self.x_thrust
         x_flight = self.x_off + self.x_flight
         x_catch = self.x_off + self.x_catch
 
