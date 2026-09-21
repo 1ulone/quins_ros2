@@ -1,3 +1,0 @@
-#!/home/ulone/ros2_ws/src/quins_ros2/.venv/bin/python3
-from cmeel.run import cmeel_run
-cmeel_run()
