@@ -23,6 +23,7 @@
         <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="32" height="32" />
         <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1="0.1 0.2 0.3" rgb2="0.2 0.3 0.4" />
         <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance="0.2" />
+        <!-- <hfield name="terrain_hfield" file="../heightmap.png" size="50 50 1 0.1"/> -->
     </asset>
     <default>
     <joint damping="0.05" frictionloss="0.01" />
@@ -31,6 +32,7 @@
 <worldbody>
         <light pos="0 0 5" dir="0 0 -1" directional="true" />
         <geom name="floor" type="plane" pos="0 0 -2.5" size="100 100 0.1" material="grid" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1" />
+        <!-- <geom name="uneven_floor" type="hfield" hfield="terrain_hfield" pos="0 0 -2.5" material="grid" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1" /> -->
     
     <body name="dummy" pos="0 0 1.5">
       <body name="base_link">

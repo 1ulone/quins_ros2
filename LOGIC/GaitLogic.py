@@ -149,6 +149,11 @@ class GaitLogic():
             case "WALK": 
                 # NOTE: create a timed process for a walk process
                 self.gait_freq = 1.0
+                
+                # Save previous offsets for smooth interpolation
+                self.start_x_off = getattr(self, 'x_off_used', 0.0)
+                self.start_z_off = getattr(self, 'z_off_used', 2.7)
+                
                 self.x_off = 0.0
                 self.z_off = 2.5
                 self.step_len = 1.0
@@ -158,7 +163,8 @@ class GaitLogic():
                 self.t = 0.0
                 self.walking = True
                 self.duty_factor = 0.5
-                self.z_off_used = self.z_off 
+                self.z_off_used = self.start_z_off 
+                self.x_off_used = self.start_x_off
                 self.target_yaw = self.current_yaw
                 self.phase_offsets = {
                     'FL': 0.0, # (0 / 360 degree)
@@ -177,6 +183,10 @@ class GaitLogic():
 
             case "CRAWL":
                 self.gait_freq = 2.0
+                
+                self.start_x_off = getattr(self, 'x_off_used', 0.0)
+                self.start_z_off = getattr(self, 'z_off_used', 2.7)
+                
                 self.x_off = 0.35
                 self.z_off = 1.8
                 self.step_len = 0.8
@@ -185,11 +195,15 @@ class GaitLogic():
 
                 self.t = 0.0
                 self.walking = True
-                self.z_off_used = self.z_off 
+                self.z_off_used = self.start_z_off 
+                self.x_off_used = self.start_x_off
                 self.target_yaw = self.current_yaw
             case "RUN":
-                
                 self.gait_freq = 2.75
+                
+                self.start_x_off = getattr(self, 'x_off_used', 0.0)
+                self.start_z_off = getattr(self, 'z_off_used', 2.7)
+                
                 self.x_off = 0.75
                 self.z_off = 2.5
                 self.step_len = 3.0
@@ -198,7 +212,8 @@ class GaitLogic():
 
                 self.t = 0.0
                 self.walking = True
-                self.z_off_used = self.z_off
+                self.z_off_used = self.start_z_off
+                self.x_off_used = self.start_x_off
                 self.target_yaw = self.current_yaw
                 self.duty_factor = 0.50
 
@@ -209,27 +224,31 @@ class GaitLogic():
                     'BL': m.pi, # (270 degree)
                 }
             case "TURN":
-                self.gait_freq = 1.5     # Faster stepping to maintain dynamic balance while pivoting
-                self.x_off = 0.0        # Standard resting X offset
-                self.z_off = 2.5         # Standard resting Z height
-                self.step_len = 0.0      # Zero forward displacement
-                self.step_h = 1.0        # Normal step height for ground clearance
-                self.sc_yaw = 0.5        # Arc multiplier for the turn_trajectory_controller
+                self.gait_freq = 1.0     # Slower, more deliberate stepping
+                
+                self.start_x_off = getattr(self, 'x_off_used', 0.0)
+                self.start_z_off = getattr(self, 'z_off_used', 2.7)
+                
+                self.x_off = 0.0        
+                self.z_off = 2.5         
+                self.step_len = 0.0      
+                self.step_h = 0.25        
+                self.sc_yaw = 0.5        
 
                 self.t = 0.0
-                self.turning = True      # Must be True so loop_step() triggers walk_process()
-                self.duty_factor = 0.5   # Standard trot timing
-                self.z_off_used = self.z_off
+                self.turning = True      
+                self.duty_factor = 0.50  # 3 legs on the ground at all times
+                self.z_off_used = self.start_z_off
+                self.x_off_used = self.start_x_off
                 
-                # Snap target_yaw to current_yaw initially so it doesn't violently whip around on transition
                 self.target_yaw = self.current_yaw 
 
-                # Alternating diagonal pairs for a stable trot-in-place
+                # Walk sequence: 90-degree phase separation
                 self.phase_offsets = {
-                    'FL': 0.0, 
-                    'BR': 0.0, 
-                    'FR': m.pi, 
-                    'BL': m.pi, 
+                    'FL': 0.0, # (0 / 360 degree)
+                    'BR': m.pi * 3, # (90 degree)
+                    'FR': m.pi, # (180 degree)
+                    'BL': m.pi * 2, # (270 degree)
                 }
 
     def update_wt_params(self, msg: list):
@@ -379,6 +398,67 @@ class GaitLogic():
             sys.stdout.flush()
 
         return (x, y, z), (x_dot, y_dot, z_dot), (x_ddot, y_ddot, z_ddot)
+
+    def turn_trajectory(self, phase, angular_sweep, ix, iy):
+        z, z_dot, z_ddot = 0.0, 0.0, 0.0
+        
+        stance_phase_end = 2.0 * m.pi * self.duty_factor
+        swing_phase_len = 2.0 * m.pi * (1.0 - self.duty_factor)
+        omega = 2.0 * m.pi * self.gait_freq
+        
+        # Base radius and angle of the resting foot relative to body center
+        r = m.sqrt(ix**2 + iy**2)
+        base_angle = m.atan2(iy, ix)
+        
+        if phase < stance_phase_end:
+            # Stance: Foot stays planted on the ground, pushing the body
+            ds_dt = omega / stance_phase_end
+            fraction = phase / stance_phase_end
+            
+            angle_offset = (0.5 - fraction) * angular_sweep
+            angle_dot = -ds_dt * angular_sweep
+            angle_ddot = 0.0
+            
+            z, z_dot, z_ddot = 0.0, 0.0, 0.0
+        else:
+            # Swing: Foot arcs forward through the air to the new position
+            ds_dt = omega / swing_phase_len
+            s = (phase - stance_phase_end) / swing_phase_len
+            
+            # Quintic interpolation for smooth angular acceleration
+            c_s = 10.0 * s**3 - 15.0 * s**4 + 6.0 * s**5
+            dc_ds = 30.0 * s**2 - 60.0 * s**3 + 30.0 * s**4
+            d2c_ds2 = 60.0 * s - 180.0 * s**2 + 120.0 * s**3
+            
+            angle_offset = (-0.5 + c_s) * angular_sweep
+            angle_dot = dc_ds * ds_dt * angular_sweep
+            angle_ddot = d2c_ds2 * (ds_dt**2) * angular_sweep
+            
+            # Vertical lift
+            z = 64.0 * self.step_h * (s**3) * ((1.0 - s)**3)
+            dz_ds = 64.0 * self.step_h * (3.0 * s**2 - 12.0 * s**3 + 15.0 * s**4 - 6.0 * s**5)
+            d2z_ds2 = 64.0 * self.step_h * (6.0 * s - 36.0 * s**2 + 60.0 * s**3 - 30.0 * s**4)
+            z_dot = dz_ds * ds_dt
+            z_ddot = d2z_ds2 * (ds_dt**2)
+            
+        # Calculate absolute position on the arc
+        current_angle = base_angle + angle_offset
+        x = r * m.cos(current_angle)
+        y = r * m.sin(current_angle)
+        
+        # Subtract resting position to return the offset expected by your IK
+        dx = x - ix
+        dy = y - iy
+        
+        # Rotational Velocities
+        dx_dot = -r * m.sin(current_angle) * angle_dot
+        dy_dot = r * m.cos(current_angle) * angle_dot
+        
+        # Rotational Accelerations
+        dx_ddot = -r * m.cos(current_angle) * (angle_dot**2) - r * m.sin(current_angle) * angle_ddot
+        dy_ddot = -r * m.sin(current_angle) * (angle_dot**2) + r * m.cos(current_angle) * angle_ddot
+        
+        return (dx, dy, z), (dx_dot, dy_dot, z_dot), (dx_ddot, dy_ddot, z_ddot)
 
     def setup_transition(self, target_s, target_t, target_k, duration=1.0):
         self.transitioning = True
@@ -581,43 +661,33 @@ class GaitLogic():
 
         # Anchor target yaw to current yaw to prevent MPC runaway torque spikes
         self.target_yaw = self.current_yaw + (self.yaw_rate * self.dt)
+            
+        # The total angle the leg sweeps per step.
+        # Positive yaw rate requires the feet to push the ground in reverse (CW),
+        # which the trajectory controller naturally handles when given a positive sweep.
+        angular_sweep = self.yaw_rate * (self.duty_factor / self.gait_freq)
 
         for leg in LEG_NAMES:
             leg_phase = (phase_now + self.phase_offsets[leg]) % (2.0 * m.pi)
             is_stance = (leg_phase < stance_limit)
             is_stance_list.append(is_stance)
 
-            # ix, iy, iz are retrieved directly from the resting pose
             ix, iy, iz = self.kinematics.get_init_pos(leg)
             
-            # Get 1D normalized trajectory (pos_norm[0] goes -0.5 to 0.5 during stance)
-            pos_norm, vel_norm, acc_norm = self.trajectory_controller(leg_phase, 1.0)
+            # Call the dedicated turn trajectory controller you already have at line 301
+            pos, vel, acc = self.turn_trajectory(leg_phase, angular_sweep, ix, iy)
             
-            # The total angular sweep amplitude needed to cancel the body's turn
-            angular_amplitude = self.yaw_rate * (self.duty_factor / self.gait_freq)
-            
-            # Corrected linear mapping for your specific coordinate frame (-X Forward, -Z Right).
-            # A positive yaw rotates the body Clockwise. 
-            # Therefore, Left legs must sweep Backward (+X), and Front legs must sweep Left (+Z).
-            dx_sweep = -angular_amplitude * iy
-            dy_sweep = angular_amplitude * ix
-            
-            # Apply the normalized 1D path directly
-            tx = ix + (pos_norm[0] * dx_sweep)
-            ty = iy + (pos_norm[0] * dy_sweep) 
-            tz = -self.z_off_used + pos_norm[1]
+            # Absolute target foot coordinates
+            tx = ix + pos[0]
+            ty = iy + pos[1] 
+            tz = -self.z_off_used + pos[2] 
+
+            # Direct mapping: X and Y are horizontal, Z is vertical lift
+            cart_vel = np.array([vel[0], vel[1], vel[2]])
+            cart_acc = np.array([acc[0], acc[1], acc[2]])
 
             theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
             q_desired.extend([theta1, theta2, theta3])
-            
-            # Scale velocities and accelerations identically
-            vx = vel_norm[0] * dx_sweep
-            vy = vel_norm[0] * dy_sweep
-            ax = acc_norm[0] * dx_sweep
-            ay = acc_norm[0] * dy_sweep
-
-            cart_vel = np.array([vx, vy, -vel_norm[1]])
-            cart_acc = np.array([ax, ay, -acc_norm[1]])
 
             # Replaced finite difference with exact analytical Jacobian
             J_analytical = self.kinematics.get_jacobian(leg, theta1, theta2, theta3)

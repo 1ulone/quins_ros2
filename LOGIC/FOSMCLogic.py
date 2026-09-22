@@ -48,10 +48,11 @@ class FOSMC:
         self.Z_c_dim = self.dof     
         
         # Expanded RBF centers to cover full joint range (-pi to pi)
-        self.c_a = np.random.uniform(-3.14, 3.14, (self.num_hidden, self.Z_a_dim))
+        centers_1d = np.linspace(-3.14, 3.14, self.num_hidden)
+        self.c_a = np.tile(centers_1d.reshape(-1, 1), (1, self.Z_a_dim))
         self.b_a = np.ones(self.num_hidden) * 2.0
-        
-        self.c_c = np.random.uniform(-3.14, 3.14, (self.num_hidden, self.Z_c_dim))
+
+        self.c_c = np.tile(centers_1d.reshape(-1, 1), (1, self.Z_c_dim))
         self.b_c = np.ones(self.num_hidden) * 2.0
         
         self.prev_psi_c = np.zeros((self.num_hidden, 1))
