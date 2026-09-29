@@ -58,15 +58,21 @@ class FOSMC:
         self.prev_psi_c = np.zeros((self.num_hidden, 1))
         self.boundary_thickness = 0.01
 
+    def update_gains(self, Ke1, Ke2, Ks, Kr):
+        self.Ke1 = np.diag([Ke1] * self.dof)
+        self.Ke2 = np.diag([Ke2] * self.dof)
+        self.Ks = np.diag([Ks] * self.dof)
+        self.Kr = np.diag([Kr] * self.dof)
+
     def rbf(self, z, centers, widths):
         z_expanded = np.tile(z, (self.num_hidden, 1))
         dist_sq = np.sum((z_expanded - centers) ** 2, axis=1)
         return np.exp(-dist_sq / (2 * widths ** 2)).reshape(-1, 1)
 
     def boundary_layer(self, s):
-        # Restored original discontinuous logic to maintain baseline rigidity
+        # Eq. 51 boundary_layer: sign(s) outside, smooth s / (|s| + delta)
         hs = np.sign(s)
-        ss = np.sign(np.abs(s) / (np.abs(s) + self.boundary_thickness)) * np.sign(s)
+        ss = s / (np.abs(s) + self.boundary_thickness)
         return np.where(np.abs(s) >= self.boundary_thickness, hs, ss)
 
     def compute(self, q, q_dot, q_d, q_dot_d):

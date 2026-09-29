@@ -1,6 +1,7 @@
-import time
+from dataclasses import replace
 import math as m
 import numpy as np
+from LOGIC.GaitPlanner import GAIT_TABLE, GaitPlanner, JumpParams, StandPlanner, JumpPlanner
 from LOGIC.KinematicsLogic import KinematicsLogic
 from pathlib import Path
 
@@ -32,6 +33,14 @@ class GaitLogic():
         urdf_path = str(script_dir.parent/'urdf'/'quadruped.urdf')
 
         self.kinematics = KinematicsLogic(urdf_path)
+        self.planner = None
+        self.stand_planner = StandPlanner()
+        self.state_start_time = None
+        self.sim_time = 0.0
+        self.nominal_feet = {leg: self.kinematics.get_init_pos(leg)[0:2] for leg in LEG_NAMES}
+        self.x_off_used, self.z_off_used = 0.0, 2.7
+        self.start_x_off, self.start_z_off = 0.0, 2.7
+
         self.callbacks = callbacks if callbacks else {}
 
         self.control_rate = 50.0 
@@ -83,7 +92,8 @@ class GaitLogic():
         self.jump_qd_history = np.zeros(12)
 
         self.transitioning = False
-        self.transition_start_time = 0.0
+        self.transition_elapsed = 0.0
+        self.robot_mass = 12.2
         self.transition_duration = 1.0
         self.transition_initial = {}
         self.transition_target = (0.0, 0.0, 0.0)
@@ -136,129 +146,50 @@ class GaitLogic():
         self.transitioning = False
         self.current_state = msg
 
+        self.state_start_time = None
+        self.planner = None
+
         match msg:
-            case "TUNING": 
+            case "TUNING":
                 # NOTE: handled on GUI
                 pass
-            case "CROUCH": 
-                # NOTE: just sends a target to lerp into
+            case "CROUCH":
                 self.setup_transition(0.00, 1.30, -2.70)
-            case "IDLE": 
-                # NOTE: just sends a target to lerp into
-                self.setup_transition(0.00, 0.45, -0.90)
-            case "WALK": 
-                # NOTE: create a timed process for a walk process
-                self.gait_freq = 1.0
-                
-                # Save previous offsets for smooth interpolation
-                self.start_x_off = getattr(self, 'x_off_used', 0.0)
-                self.start_z_off = getattr(self, 'z_off_used', 2.7)
-                
-                self.x_off = 0.0
-                self.z_off = 2.5
-                self.step_len = 1.0
-                self.step_h = 0.75
-                self.sc_yaw = 0.0
+            case "IDLE":
+                self.setup_transition(0.00, 0.45, -0.60)
+            case "WALK" | "CRAWL" | "RUN" | "TURN":
+                self.planner = GaitPlanner(replace(GAIT_TABLE[msg]), self.nominal_feet)
+                self.x_off, self.z_off = self.planner.p.x_off, self.planner.p.z_off
 
-                self.t = 0.0
-                self.walking = True
-                self.duty_factor = 0.5
-                self.z_off_used = self.start_z_off 
-                self.x_off_used = self.start_x_off
+                self.start_x_off, self.start_z_off = self.x_off_used, self.z_off_used
+
+                self.walking = msg != "TURN"
+                self.turning = msg == "TURN"
                 self.target_yaw = self.current_yaw
-                self.phase_offsets = {
-                    'FL': 0.0, # (0 / 360 degree)
-                    'BR': 0.0, # (90 degree)
-                    'FR': m.pi, # (180 degree)
-                    'BL': m.pi, # (270 degree)
-                }
             case "JUMP":
-                # NOTE: create a timed process for the jump process
-                self.setup_transition(0.00, 0.45, -0.90)
-                self.t = 0.0
+                self.setup_transition(0.00, -0.45, -0.60)
+                self.planner = JumpPlanner(JumpParams(
+                    x_off=self.x_off, z_off=self.z_off,
+                    y_crouch=self.y_crouch, y_thrust=self.y_thrust, y_flight=self.y_flight,
+                    x_flight=self.x_flight, x_catch=self.x_catch,
+                    x_stabilize=self.x_stabilize, back_thrust=self.back_thrust,
+                    prepare_time=self.prepare_time, back_thrust_time=self.back_thrust_time,
+                    flight_time=self.flight_time, catch_time=self.catch_time,
+                    landing_time=self.landing_time,
+                ))
                 self.jump_state = "PREPARE"
-                self.graph_t = 0.0
                 self.jump_q_history = np.copy(self.current_q)
                 self.jump_qd_history = np.zeros(12)
 
-            case "CRAWL":
-                self.gait_freq = 2.0
-                
-                self.start_x_off = getattr(self, 'x_off_used', 0.0)
-                self.start_z_off = getattr(self, 'z_off_used', 2.7)
-                
-                self.x_off = 0.35
-                self.z_off = 1.8
-                self.step_len = 0.8
-                self.step_h = 0.5
-                self.sc_yaw = 0.0
-
-                self.t = 0.0
-                self.walking = True
-                self.z_off_used = self.start_z_off 
-                self.x_off_used = self.start_x_off
-                self.target_yaw = self.current_yaw
-            case "RUN":
-                self.gait_freq = 2.75
-                
-                self.start_x_off = getattr(self, 'x_off_used', 0.0)
-                self.start_z_off = getattr(self, 'z_off_used', 2.7)
-                
-                self.x_off = 0.75
-                self.z_off = 2.5
-                self.step_len = 3.0
-                self.step_h = 2.0
-                self.sc_yaw = 0.0
-
-                self.t = 0.0
-                self.walking = True
-                self.z_off_used = self.start_z_off
-                self.x_off_used = self.start_x_off
-                self.target_yaw = self.current_yaw
-                self.duty_factor = 0.50
-
-                self.phase_offsets = {
-                    'FL': 0.0, # (0 / 360 degree)
-                    'BR': m.pi, # (90 degree)
-                    'FR': 0.0, # (180 degree)
-                    'BL': m.pi, # (270 degree)
-                }
-            case "TURN":
-                self.gait_freq = 1.0     # Slower, more deliberate stepping
-                
-                self.start_x_off = getattr(self, 'x_off_used', 0.0)
-                self.start_z_off = getattr(self, 'z_off_used', 2.7)
-                
-                self.x_off = 0.0        
-                self.z_off = 2.5         
-                self.step_len = 0.0      
-                self.step_h = 0.25        
-                self.sc_yaw = 0.5        
-
-                self.t = 0.0
-                self.turning = True      
-                self.duty_factor = 0.50  # 3 legs on the ground at all times
-                self.z_off_used = self.start_z_off
-                self.x_off_used = self.start_x_off
-                
-                self.target_yaw = self.current_yaw 
-
-                # Walk sequence: 90-degree phase separation
-                self.phase_offsets = {
-                    'FL': 0.0, # (0 / 360 degree)
-                    'BR': m.pi * 3, # (90 degree)
-                    'FR': m.pi, # (180 degree)
-                    'BL': m.pi * 2, # (270 degree)
-                }
 
     def update_wt_params(self, msg: list):
         # NOTE: just sets the Walk Tune Param into a new Value from msg
-        self.gait_freq = msg[0]
+
         self.x_off = msg[1]
         self.z_off = msg[2]
-        self.step_len = msg[3]
-        self.step_h = msg[4]
-        self.sc_yaw = msg[5]
+        if isinstance(self.planner, GaitPlanner):
+            p = self.planner.p
+            p.freq, p.x_off, p.z_off, p.step_len, p.step_h, p.sc_yaw = msg[0:6]
 
     def update_jt_params(self, msg: list):
         # NOTE: just sets the Jump Tune Param into a new Value from msg
@@ -287,6 +218,11 @@ class GaitLogic():
             'BL': msg[3],
         }
 
+        if isinstance(self.planner, GaitPlanner):
+            self.planner.p.offsets = {
+                leg: (msg[i] / (2.0 * m.pi)) % 1.0 for i, leg in enumerate(['FL', 'BR', 'FR', 'BL'])
+            }
+
     def update_gamepad_params(self, msg: list):
         if not self.walking:
             return
@@ -302,6 +238,9 @@ class GaitLogic():
         scale = 3.0 if self.current_state == "RUN" else 1.0
         self.step_len = forward_dir * scale 
 
+        if isinstance(self.planner, GaitPlanner):
+            self.planner.p.step_len = self.step_len
+
         yaw_turn_rate = 0.02
         self.target_yaw += rx * yaw_turn_rate
 
@@ -310,159 +249,9 @@ class GaitLogic():
         # NOTE: Raw Tuning just sends a theta value from msg (per coxa, tibia, femur)
         self.send_theta(msg[0], msg[1], msg[2])
 
-    def trajectory_controller(self, phase, step_len):
-        z, z_dot, z_ddot = 0.0, 0.0, 0.0
-        # NOTE: z value will always be 0.0, (depth if the legs is viewed as a 2d leg)
-
-        stance_phase_end = 2.0 * m.pi * self.duty_factor
-        swing_phase_len = 2.0 * m.pi * (1.0 - self.duty_factor)
-        omega = 2.0 * m.pi * self.gait_freq
-
-        # print(f"duty fact : {self.duty_factor}, stance len : {stance_phase_end}, swing phase : {swing_phase_len} ")
-
-        if phase < stance_phase_end:
-            # NOTE: stance phase : 
-            # foot is on the ground moving backward relative to body
-            # - fraction goes from 0 -> 1
-            # - x goes from -step_len/2 to step_len/2 ([-] is somehow forward)
-            # - y = 0 we want the leg to stay on ground
-
-            ds_dt = omega / stance_phase_end
-            fraction = phase / stance_phase_end 
-
-            x = -(step_len / 2.0) + (fraction * step_len)
-            x_dot = (step_len * ds_dt)
-            x_ddot = 0.0
-
-            y, y_dot, y_ddot = 0.0, 0.0, 0.0
-        else: # NOTE: swing phase : foot is off ground arc-ing forward
-            # - fraction goes from 0 -> 1
-            # - x goes from +step_len/2 to -step_len/2
-            # - y follows a half-sine arc : 0 -> step_h -> 0
-
-            ds_dt = omega / swing_phase_len
-            s = (phase - stance_phase_end) / swing_phase_len
-
-            v = step_len * (swing_phase_len / stance_phase_end)
-            c = step_len + v
-
-            x = ((step_len / 2.0) + (v * s) - (10.0 * c * s**3) + (15.0 * c * s**4) - (6.0 * c * s**5))
-            dx_ds = (v - 30.0 * c * (s**2) + 60.0 * c * (s**3) - 30.0 * c * (s**4))
-            d2x_ds2 = (-60.0 * c * s + 180.0 * c * (s**2) - 120.0 * c * (s**3))
-            x_dot = dx_ds * ds_dt
-            x_ddot = d2x_ds2 * (ds_dt**2)
-
-            y = 64.0 * self.step_h * (s**3) * ((1.0 - s)**3)
-            dy_ds = 64.0 * self.step_h * (3.0 * s**2 - 12.0 * s**3 + 15.0 * s**4 - 6.0  * s**5)
-            d2y_ds2 = 64.0 * self.step_h * (6.0 * s - 36.0 * s**2 + 60.0 * s**3 - 30.0 * s**4)
-            y_dot = dy_ds * ds_dt
-            y_ddot = d2y_ds2 * (ds_dt**2)
-
-        return (x, y, z), (x_dot, y_dot, z_dot), (x_ddot, y_ddot, z_ddot)
-
-    def run_trajectory_controller(self, phase, step_len, leg):
-        z, x_dot, y_dot, z_dot, x_ddot, y_ddot, z_ddot = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-
-        stance_phase_end = 2.0 * m.pi * self.duty_factor
-        swing_phase_len = 2.0 * m.pi * (1.0 - self.duty_factor)
-        target_x = 0.0
-
-        # Asymmetric Stride: Front legs catch (reach forward), Back legs push (sweep back)
-        if leg in ['BL', 'BR']:
-            x_start = (step_len * 0.8)
-            x_end = (step_len * 0.2)
-        else:
-            x_start = (step_len * 0.2)
-            x_end = (step_len * 0.8)
-
-        if phase < stance_phase_end:
-            fraction = phase / stance_phase_end 
-            x = x_start + fraction * (x_end - x_start)
-            y = 0.0 
-        else: 
-            s = (phase - stance_phase_end) / swing_phase_len
-            target_x = -x_end + (s * (x_end - x_start))
-            
-            if s < 0.15:
-                blend = s / 0.15
-                x = (1.0 - blend) * x_end + blend * target_x
-            else:
-                x = target_x
-                
-            y = 64.0 * self.step_h * (s**3) * ((1.0 - s)**3)
-
-        # The requested debug print, flushed immediately
-        if leg == 'FL' and phase >= stance_phase_end:
-            import sys
-            print(f"[DEBUG RUN - FL] phase: {phase:.2f} | x: {x:.3f} | target_x: {target_x:.3f}")
-            sys.stdout.flush()
-
-        return (x, y, z), (x_dot, y_dot, z_dot), (x_ddot, y_ddot, z_ddot)
-
-    def turn_trajectory(self, phase, angular_sweep, ix, iy):
-        z, z_dot, z_ddot = 0.0, 0.0, 0.0
-        
-        stance_phase_end = 2.0 * m.pi * self.duty_factor
-        swing_phase_len = 2.0 * m.pi * (1.0 - self.duty_factor)
-        omega = 2.0 * m.pi * self.gait_freq
-        
-        # Base radius and angle of the resting foot relative to body center
-        r = m.sqrt(ix**2 + iy**2)
-        base_angle = m.atan2(iy, ix)
-        
-        if phase < stance_phase_end:
-            # Stance: Foot stays planted on the ground, pushing the body
-            ds_dt = omega / stance_phase_end
-            fraction = phase / stance_phase_end
-            
-            angle_offset = (0.5 - fraction) * angular_sweep
-            angle_dot = -ds_dt * angular_sweep
-            angle_ddot = 0.0
-            
-            z, z_dot, z_ddot = 0.0, 0.0, 0.0
-        else:
-            # Swing: Foot arcs forward through the air to the new position
-            ds_dt = omega / swing_phase_len
-            s = (phase - stance_phase_end) / swing_phase_len
-            
-            # Quintic interpolation for smooth angular acceleration
-            c_s = 10.0 * s**3 - 15.0 * s**4 + 6.0 * s**5
-            dc_ds = 30.0 * s**2 - 60.0 * s**3 + 30.0 * s**4
-            d2c_ds2 = 60.0 * s - 180.0 * s**2 + 120.0 * s**3
-            
-            angle_offset = (-0.5 + c_s) * angular_sweep
-            angle_dot = dc_ds * ds_dt * angular_sweep
-            angle_ddot = d2c_ds2 * (ds_dt**2) * angular_sweep
-            
-            # Vertical lift
-            z = 64.0 * self.step_h * (s**3) * ((1.0 - s)**3)
-            dz_ds = 64.0 * self.step_h * (3.0 * s**2 - 12.0 * s**3 + 15.0 * s**4 - 6.0 * s**5)
-            d2z_ds2 = 64.0 * self.step_h * (6.0 * s - 36.0 * s**2 + 60.0 * s**3 - 30.0 * s**4)
-            z_dot = dz_ds * ds_dt
-            z_ddot = d2z_ds2 * (ds_dt**2)
-            
-        # Calculate absolute position on the arc
-        current_angle = base_angle + angle_offset
-        x = r * m.cos(current_angle)
-        y = r * m.sin(current_angle)
-        
-        # Subtract resting position to return the offset expected by your IK
-        dx = x - ix
-        dy = y - iy
-        
-        # Rotational Velocities
-        dx_dot = -r * m.sin(current_angle) * angle_dot
-        dy_dot = r * m.cos(current_angle) * angle_dot
-        
-        # Rotational Accelerations
-        dx_ddot = -r * m.cos(current_angle) * (angle_dot**2) - r * m.sin(current_angle) * angle_ddot
-        dy_ddot = -r * m.sin(current_angle) * (angle_dot**2) + r * m.cos(current_angle) * angle_ddot
-        
-        return (dx, dy, z), (dx_dot, dy_dot, z_dot), (dx_ddot, dy_ddot, z_ddot)
-
     def setup_transition(self, target_s, target_t, target_k, duration=1.0):
         self.transitioning = True
-        self.transition_start_time = time.time()
+        self.transition_elapsed = 0.0
         self.transition_duration = duration
         self.transition_target = (target_s, target_t, target_k)
         
@@ -471,426 +260,152 @@ class GaitLogic():
             for leg, val in self.phi.items()
         }
 
-    def process_transition(self):
+    def process_transition(self, t):
         if not self.transitioning:
             return
 
-        elapsed = time.time() - self.transition_start_time
-        fraction = min(elapsed / self.transition_duration, 1.0)
-
+        fraction = min(t / self.transition_duration, 1.0)
+        
         target_s, target_t, target_k = self.transition_target
-        current_angles = []
+        current_angle = []
 
         for leg_key, leg_dict in self.phi.items():
             init_s, init_t, init_k = self.transition_initial[leg_key]
-            
+
             leg_dict["shoulder"] = init_s + fraction * (target_s - init_s)
             leg_dict["thigh"] = init_t + fraction * (target_t - init_t)
             leg_dict["leg"] = init_k + fraction * (target_k - init_k)
-            
-            current_angles.extend([leg_dict["shoulder"], leg_dict["thigh"], leg_dict["leg"]])
 
+            current_angle.extend([leg_dict["shoulder"], leg_dict["thigh"], leg_dict["leg"]])
+        
         if "transition_cb" in self.callbacks:
-            self.callbacks["transition_cb"](current_angles)
+            self.callbacks["transition_cb"](current_angle)
 
         if fraction >= 1.0:
             self.transitioning = False
+            self.state_start_time = self.sim_time
 
-    def walk_process(self):
-        # NOTE: Angular Frequency
-        # rate of change of a phase angle with respect to time in rotational
-        # or a periodic motion, it's general equation are :
-        # w = 2*pi*f = 2pi/T
-        omega = 2.0 * m.pi * self.gait_freq
+    def gait_process(self, t):
+        # NOTE: WALK | CRAWL | RUN | TURN uses this process
+        planner = self.planner
+        assert isinstance(planner, GaitPlanner)
+        p = planner.p
 
-        # NOTE: Create a linear ramp multiplier from 0.0 to 1.0 over the first 1s
-        # to scale the base step length
-        ramp_duration = 1.0
-        ramp_factor = min(self.t / ramp_duration, 1.0)
-        base_step_len = self.step_len * ramp_factor
+        # NOTE: 1 second startup transition blend
+        ramp = min(t / 1.0, 1.0)
+        planner.stride_scale = ramp
+        self.x_off_used = self.start_x_off + ramp * (p.x_off - self.start_x_off)
+        self.z_off_used = self.start_z_off + ramp * (p.z_off - self.start_z_off)
 
-        # NOTE: Get the Modulo of the phase angle
-        phase_now = (omega * self.t) % (2.0 * m.pi)
+        # NOTE: on turning
+        if self.turning:
+            if abs(self.yaw_rate) < 0.1:
+                self.yaw_rate = p.sc_yaw
+            planner.yaw_rate = self.yaw_rate
+            # NOTE: Anchoring target yaw to the current yaw
+            # to prevent MPC runaway torque spikes
+            self.target_yaw = self.current_yaw + (self.yaw_rate * self.dt)
 
-        # NOTE: Initialize an empty lists for the target joints angles and stances
-        q_desired, q_dot_desired, q_ddot_desired = [], [], []
-        is_stance_list = []
-        points = []
-
-        # NOTE: get yaw error
-        yaw_error = (self.target_yaw - self.current_yaw + m.pi) % (2.0 * m.pi) - m.pi
-        stance_limit = 2.0 * m.pi * self.duty_factor
-
+        q_desired, q_dot_desired = [], []
         for leg in LEG_NAMES:
-            # NOTE: leg specific phase shift 
-            leg_phase = (phase_now + self.phase_offsets[leg]) % (2.0 * m.pi)
-            is_stance = (leg_phase < stance_limit) # check if leg is in the stance phase
-            is_stance_list.append(is_stance) # record and set the starting step
+            ix, iy, iz = self.kinematics.get_init_pos(leg) # Get foot initial pos
+            dx, dy, dz = planner.foot_offset(leg, t) # get foot offset on planar plane
 
-            active_step_len = base_step_len
-
-            # NOTE: Retrieves the static nominal resting position of the leg first
-            ix, iy, iz = self.kinematics.get_init_pos(leg)
-
-            # NOTE: Calculate the cartesian foot trajectory offset for the current phase
-            if self.current_state == "RUN":
-                pos, vel, acc = self.run_trajectory_controller(leg_phase, active_step_len, leg)
-            else:
-                pos, vel, acc = self.trajectory_controller(leg_phase, active_step_len)
-
-            # NOTE: Calculate the absolute target foot coordinates
-            tx = ix + self.x_off 
-            ty = iy + pos[0]  # Corrected to align with the negative velocity mapping
-            tz = -self.z_off_used + pos[1]
-
-            # NOTE: Calculate Inverse Kinematics to find Theta
+            tx = ix + self.x_off_used + dx
+            ty = iy + dy
+            tz = -self.z_off_used + dz
             theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
-            q_desired.extend([theta1, theta2, theta3]) # appends theta for graph 
+            q_desired.extend([theta1, theta2, theta3])
 
-            if self.current_state == "RUN":
-                # Shrink window to 0.04s (2 ticks) to restore aggressive sweeping power
-                lookahead_window = 0.04 
-                
-                q_curr = np.array([theta1, theta2, theta3])
-                
-                def get_future_ik(time_offset):
-                    p_fut = (omega * (self.t + time_offset)) % (2.0 * m.pi)
-                    lp_fut = (p_fut + self.phase_offsets[leg]) % (2.0 * m.pi)
-                    pos_fut, _, _ = self.run_trajectory_controller(lp_fut, active_step_len, leg)
-                    tx_fut = ix + self.x_off
-                    ty_fut = iy - pos_fut[0] 
-                    tz_fut = -self.z_off_used + pos_fut[1]
-                    return np.array(self.kinematics.ik(leg, tx_fut, ty_fut, tz_fut))
-
-                q_next1 = get_future_ik(lookahead_window)
-                q_next2 = get_future_ik(2.0 * lookahead_window)
-
-                diff_1 = q_next1 - q_curr
-                diff_1 = (diff_1 + m.pi) % (2.0 * m.pi) - m.pi
-                q_dot = diff_1 / lookahead_window
-
-                diff_2 = q_next2 - q_next1
-                diff_2 = (diff_2 + m.pi) % (2.0 * m.pi) - m.pi
-                q_dot_next = diff_2 / lookahead_window
-
-                q_ddot = (q_dot_next - q_dot) / lookahead_window
-                
-                # Target the exact symptoms from the video:
-                # 1. Kill the Motor 1 (shoulder) twitch by clamping its velocity tighter
-                q_dot[0] = np.clip(q_dot[0], -10.0, 10.0)
-                
-                # 2. Let Motor 2 and 3 (thigh/calf) output max power to push the dog
-                q_dot[1] = np.clip(q_dot[1], -40.0, 40.0)
-                q_dot[2] = np.clip(q_dot[2], -40.0, 40.0)
-
-                q_ddot = np.clip(q_ddot, -1500.0, 1500.0)          
-            else:
-                # WALK remains untouched using the analytical Jacobian
-                cart_vel = np.array([0.0, vel[0], vel[1]])
-                cart_acc = np.array([0.0, acc[0], acc[1]])
-
-                # Replaced finite difference with exact analytical Jacobian
-                J_analytical = self.kinematics.get_jacobian(leg, theta1, theta2, theta3)
-                damp = 1e-6
-                J_inv = J_analytical.T @ np.linalg.inv(J_analytical @ J_analytical.T + damp * np.eye(3))
-
-                q_dot = J_inv @ cart_vel
-                q_ddot = J_inv @ cart_acc
-                q_ddot = np.clip(q_ddot, -1500.0, 1500.0)
-
+            # NOTE: planner foot velocity into joint velocity (damped J^-1)
+            j = self.kinematics.get_jacobian(leg, theta1, theta2, theta3)
+            j_inv = j.T @ np.linalg.inv(j @ j.T + 1e-6 * np.eye(3))
+            q_dot = np.clip(j_inv @ np.array(planner.foot_vel(leg, t)), -40.0, 40.0)
             q_dot_desired.extend(q_dot.tolist())
-            q_ddot_desired.extend(q_ddot.tolist())
-            
-            # NOTE: cache the calculated angle into the leg dict
+
+            # NOTE: cache the angle, transitions start from here
             phi_key = LEG_TO_PHI[leg]
             self.phi[phi_key]["shoulder"] = theta1
             self.phi[phi_key]["thigh"] = theta2
             self.phi[phi_key]["leg"] = theta3
 
-        # NOTE: for graph, track starts here
         if "graph" in self.callbacks:
-            self.callbacks["graph"]([
-                float(self.t),
-                float(q_desired[1]),
-                float(self.current_q[1])
-            ])
-
-        # NOTE: Initialize the foot force matrix and Counts the active stance legs
-        foot_forces = np.zeros((4, 3))
-        stance_count = sum(is_stance_list)
-
-        # NOTE: Calculate the basic static weight distribution 
-        if stance_count > 0:
-            base_weight_per_foot = (self.robot_mass * 9.81) / stance_count
-            for leg_idx, leg_name in enumerate(LEG_NAMES):
-                if is_stance_list[leg_idx]:
-                    leg_phase = (phase_now + self.phase_offsets[leg_name]) % (2.0 * m.pi)
-                    stance_fraction = leg_phase / stance_limit
-                    dynamic_multiplier = 1.0 + m.sin(stance_fraction * m.pi)
-                    
-                    if self.current_state == "RUN":
-                        dynamic_multiplier *= 1.75 # Extra peak force to achieve flight phase
-
-                    foot_forces[leg_idx, 2] = base_weight_per_foot * dynamic_multiplier
-
-        points.append({
-            "positions": q_desired,
-            "velocities": q_dot_desired,
-            "accelerations": q_ddot_desired,
-            "foot_forces": foot_forces.tolist(),
-            "is_stance": is_stance_list,
-            "time_offset": 0.0
-        })
-
-        if "walk_points" in self.callbacks:
-            self.callbacks["walk_points"](points)
-
-        self.t += self.dt # increment the time mod (t)
-
-    def turn_process(self):
-        omega = 2.0 * m.pi * self.gait_freq
-        phase_now = (omega * self.t) % (2.0 * m.pi)
-        stance_limit = 2.0 * m.pi * self.duty_factor
-
-        q_desired, q_dot_desired, q_ddot_desired = [], [], []
-        is_stance_list = []
-        foot_forces = np.zeros((4, 3))
-
-        if abs(self.yaw_rate) < 0.1:
-            self.yaw_rate = 0.5
-
-        # Anchor target yaw to current yaw to prevent MPC runaway torque spikes
-        self.target_yaw = self.current_yaw + (self.yaw_rate * self.dt)
-            
-        # The total angle the leg sweeps per step.
-        # Positive yaw rate requires the feet to push the ground in reverse (CW),
-        # which the trajectory controller naturally handles when given a positive sweep.
-        angular_sweep = self.yaw_rate * (self.duty_factor / self.gait_freq)
-
-        for leg in LEG_NAMES:
-            leg_phase = (phase_now + self.phase_offsets[leg]) % (2.0 * m.pi)
-            is_stance = (leg_phase < stance_limit)
-            is_stance_list.append(is_stance)
-
-            ix, iy, iz = self.kinematics.get_init_pos(leg)
-            
-            # Call the dedicated turn trajectory controller you already have at line 301
-            pos, vel, acc = self.turn_trajectory(leg_phase, angular_sweep, ix, iy)
-            
-            # Absolute target foot coordinates
-            tx = ix + pos[0]
-            ty = iy + pos[1] 
-            tz = -self.z_off_used + pos[2] 
-
-            # Direct mapping: X and Y are horizontal, Z is vertical lift
-            cart_vel = np.array([vel[0], vel[1], vel[2]])
-            cart_acc = np.array([acc[0], acc[1], acc[2]])
-
-            theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
-            q_desired.extend([theta1, theta2, theta3])
-
-            # Replaced finite difference with exact analytical Jacobian
-            J_analytical = self.kinematics.get_jacobian(leg, theta1, theta2, theta3)
-            damp = 1e-6
-            J_inv = J_analytical.T @ np.linalg.inv(J_analytical @ J_analytical.T + damp * np.eye(3))
-
-            q_dot = J_inv @ cart_vel
-            q_ddot = J_inv @ cart_acc
-            
-            q_dot_desired.extend(np.clip(q_dot, -20.0, 20.0).tolist())
-            q_ddot_desired.extend(np.clip(q_ddot, -1500.0, 1500.0).tolist())
-
-        # Calculate Stance Forces for MPC
-        stance_count = sum(is_stance_list)
-        if stance_count > 0:
-            base_weight_per_foot = (self.robot_mass * 9.81) / stance_count
-            for leg_idx, leg_name in enumerate(LEG_NAMES):
-                if is_stance_list[leg_idx]:
-                    leg_phase = (phase_now + self.phase_offsets[leg_name]) % (2.0 * m.pi)
-                    stance_fraction = leg_phase / stance_limit
-                    dynamic_multiplier = 1.0 + m.sin(stance_fraction * m.pi)
-                    foot_forces[leg_idx, 2] = base_weight_per_foot * dynamic_multiplier
-
-        if self.t % 0.5 < self.dt:
-            print(f"\n--- DEBUG TURN ---")
-            print(f"Time: {self.t:.2f} | Yaw Rate: {self.yaw_rate:.2f}")
-            print(f"Target Yaw: {self.target_yaw:.2f} | Current Yaw: {self.current_yaw:.2f}")
-            print(f"FL Stance: {is_stance_list[0]} | FR Stance: {is_stance_list[1]}")
-            print(f"------------------\n")
-
+            self.callbacks["graph"]([float(t), float(q_desired[1]), float(self.current_q[1])])
+        # NOTE: The MPC gets node 0 of the same schedule
+        node0 = planner.horizon(t, 1, self.dt, self.robot_mass)
         points = [{
             "positions": q_desired,
             "velocities": q_dot_desired,
-            "accelerations": q_ddot_desired,
-            "foot_forces": foot_forces.tolist(),
-            "is_stance": is_stance_list,
+            "foot_forces": node0["fc_guess"][0],
+            "is_stance": node0["stance"][0],
             "time_offset": 0.0
         }]
 
         if "walk_points" in self.callbacks:
             self.callbacks["walk_points"](points)
 
-        self.t += self.dt
+    def jump_process(self, t):
+        jp = self.planner
+        assert isinstance(jp, JumpPlanner)
+        name = jp.jump_phase(t)
 
-    def jump_process(self):
-        y_idle = self.z_off
-        y_crouch = self.y_crouch
-        y_thrust = self.y_thrust
-        y_flight = self.y_flight
+        # NOTE: Event 1, PREPARE -> THRUST once prepare_time has passed
+        # and the crouch height is actually reached
+        if name == "PREPARE" and t >= jp.p.prepare_time:
+            fk = self.kinematics.fk('FL', m.degrees(self.current_q[0]), m.degrees(self.current_q[1]), m.degrees(self.current_q[2]))
+            if abs(abs(fk[1, 3]) - jp.p.y_crouch) < 0.1:
+                jp.start_phase("THRUST", t)
+                name = "THRUST"
 
-        x_idle = self.x_off
-        x_thrust = self.x_off + self.back_thrust 
-        x_stabilize = self.x_off + self.x_stabilize
-        x_rev_thrust = self.x_off - self.x_thrust
-        x_flight = self.x_off + self.x_flight
-        x_catch = self.x_off + self.x_catch
+        # NOTE: Event 2, early touchdown during DESCENT jumps to LANDING
+        if name == "DESCENT" and (t - jp.starts["DESCENT"]) > 0.05 and np.mean(self.filtered_fz) > 2.0:
+            jp.start_phase("LANDING", t)
+            name = "LANDING"
 
-        current_x = x_idle
-        current_y = y_idle
+        if jp.finished(t):
+            self.update_state("IDLE")
+            return
 
-        avg_fz = np.mean(self.filtered_fz)
-        contact_threshold = 2.0
-        
-        foot_forces = np.zeros((4, 3))
-        is_stance = [False, False, False, False]
-        base_weight = (self.robot_mass * 9.81) / 4.0
+        self.jump_state = name
 
-        t1 = self.prepare_time
-        t2 = t1 + self.back_thrust_time
-        t3 = t2 + self.flight_time
-        t4 = t3 + self.catch_time
-
-        # Fast-forward override
-        if self.jump_state == "DESCENT" and (self.t - t3) > 0.05 and avg_fz > contact_threshold:
-            self.t = t4
-            self.jump_state = "LANDING"
-
-        # 1. Lock active state to prevent boundary whiplash in Central Difference
-        active_state = self.jump_state
-        t_start = 0.0
-        duration = 1.0
-
-        if active_state == "PREPARE":
-            t_start = 0.0
-            duration = self.prepare_time
-        elif active_state == "THRUST":
-            t_start = t1
-            duration = self.back_thrust_time
-        elif active_state == "FLIGHT":
-            t_start = t2
-            duration = self.flight_time
-        elif active_state == "DESCENT":
-            t_start = t3
-            duration = self.catch_time
-        elif active_state == "LANDING":
-            t_start = t4
-            duration = self.landing_time
-
+        # NOTE: IK at t - dt, t, t + dt with the phase locked, so the
+        # central difference never mixes two phases' curves
         q_eval = []
-        current_y_actual = 0.0
-
-        for step in [-1, 0, 1]:
-            t_eval = self.t + step * self.dt
-            fraction = (t_eval - t_start) / duration 
-            # DO NOT CLIP FRACTION. Allow math to extrapolate tangents naturally.
-            
-            match active_state:
-                case "PREPARE":
-                    s = 3.0 * (fraction**2) - 2.0 * (fraction**3) 
-                    current_y = y_idle + s * (y_crouch - y_idle) 
-                    current_x = x_idle + s * (x_stabilize - x_idle) 
-                    if step == 0:
-                        is_stance = [True, True, True, True]
-                        for i in range(4): foot_forces[i, 2] = base_weight
-                        t_fk1, t_fk2, t_fk3 = m.degrees(self.current_q[0]), m.degrees(self.current_q[1]), m.degrees(self.current_q[2])
-                        fk_matrix = self.kinematics.fk('FL', t_fk1, t_fk2, t_fk3) 
-                        current_y_actual = abs(fk_matrix[1, 3])
-
-                case "THRUST":
-                    s = fraction ** 2
-                    current_y = y_crouch + s * (y_thrust - y_crouch)
-                    current_x = x_stabilize + s * (x_thrust - x_stabilize)
-                    if step == 0:
-                        is_stance = [True, True, True, True]
-                        for i in range(4): foot_forces[i, 2] = base_weight * 2.5 
-                        
-                case "FLIGHT":
-                    s = fraction 
-                    current_y = y_thrust + s * (y_flight - y_thrust)
-                    current_x = x_thrust + s * (x_flight - x_thrust)
-                    if step == 0: is_stance = [False, False, False, False]
-
-                case "DESCENT":
-                    s = 3.0 * (fraction**2) - 2.0 * (fraction**3)
-                    current_y = y_flight 
-                    current_x = x_flight + s * (x_catch - x_flight)
-                    if step == 0: is_stance = [False, False, False, False]
-
-                case "LANDING":
-                    s = 3.0 * (fraction**2) - 2.0 * (fraction**3)
-                    current_y = y_flight + s * (y_idle - y_flight)
-                    current_x = x_catch + s * (x_idle - x_catch)
-                    if step == 0:
-                        is_stance = [True, True, True, True]
-                        for i in range(4): foot_forces[i, 2] = base_weight * 1.5
-
-            q_desired = []
+        for t_eval in (t - self.dt, t, t + self.dt):
+            x, y = jp.posture(name, t_eval)
+            q = []
             for leg in LEG_NAMES:
                 ix, iy, iz = self.kinematics.get_init_pos(leg)
-                tx, ty, tz = ix + current_x, current_y, iz 
-                theta1, theta2, theta3 = self.kinematics.ik(leg, tx, ty, tz)
-                q_desired.extend([theta1, theta2, theta3])
-                
-            q_eval.append(np.array(q_desired))
+                q.extend(self.kinematics.ik(leg, ix + x, y, iz))
+            q_eval.append(np.array(q))
 
-        # Predictive Central Difference Array Matrix 
         q_d = q_eval[1]
         qd_d = (q_eval[2] - q_eval[0]) / (2.0 * self.dt)
-        qdd_d = (q_eval[2] - 2.0 * q_eval[1] + q_eval[0]) / (self.dt**2)
-        qdd_d = np.clip(qdd_d, -1500.0, 1500.0)
-
-        if self.jump_state == "THRUST":
-            print(f"[DEBUG] t: {self.t:.3f} | q_d (pos): {q_d[1]:.3f} | qd_d (vel): {qd_d[1]:.3f} | qdd_d (accel): {qdd_d[1]:.3f}")
-
-        # Handle state transitions based on absolute time
-        match self.jump_state:
-            case "PREPARE":
-                if self.t >= t1 and abs(current_y_actual - y_crouch) < 0.1:
-                    self.jump_state = "THRUST"
-            case "THRUST":
-                if self.t >= t2:
-                    self.jump_state = "FLIGHT"
-            case "FLIGHT":
-                if self.t >= t3:
-                    self.jump_state = "DESCENT"
-            case "DESCENT":
-                # Descent fast-forward is handled at top of loop
-                if self.t >= t4:
-                    self.jump_state = "LANDING"
-            case "LANDING":
-                if self.t >= (t4 + self.landing_time):
-                    self.update_state("IDLE")
-                    return
 
         if "graph" in self.callbacks:
-            self.callbacks["graph"]([
-                float(self.graph_t),
-                float(q_d[1]),
-                float(self.current_q[1])
-            ])
+            self.callbacks["graph"]([float(t), float(q_d[1]), float(self.current_q[1])])
 
+        # NOTE: node 0 of the same schedule the MPC gets
+        node0 = jp.horizon(t, 1, self.dt, self.robot_mass)
         if "jump_points" in self.callbacks:
-            self.callbacks["jump_points"](q_d.tolist(), qd_d.tolist(), qdd_d.tolist(), foot_forces.tolist(), is_stance)
+            self.callbacks["jump_points"](q_d.tolist(), qd_d.tolist(), node0["fc_guess"][0], node0["stance"][0])
 
-        self.t += self.dt
-        self.graph_t += self.dt
+    def loop_step(self, sim_time):
+        self.sim_time = sim_time
+        if self.state_start_time is None:
+            self.state_start_time = sim_time
 
-    def loop_step(self):
+        t = sim_time - self.state_start_time
+        self.t = t
+
         if self.transitioning:
-            self.process_transition()
-        elif self.turning:
-            self.turn_process()
-        elif self.walking:
-            self.walk_process()
+            self.process_transition(t)
+        elif self.walking or self.turning:
+            self.gait_process(t)
         elif self.jump_state != "":
-            self.jump_process()
+            self.jump_process(t)
+
+    def mpc_horizon(self, sim_time, n, dt):
+        if self.transitioning or self.planner is None or self.state_start_time is None:
+            return self.stand_planner.horizon(0.0, n, dt, self.robot_mass)
+        return self.planner.horizon(sim_time - self.state_start_time, n, dt, self.robot_mass)

@@ -9,16 +9,21 @@ import mujoco.viewer
 import math as m
 import numpy as np
 
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(current_dir))
+sys.stdout.reconfigure(line_buffering=True)
 
+from LOGIC.GaitPlanner import GaitPlanner
 from LOGIC.GaitLogic import GaitLogic, LEG_NAMES, JOINT_NAMES
 from LOGIC.FOSMCLogic import FOSMC
 from LOGIC.MpcLogic import WholeBodyMPC 
 from ROS.BaseGUI import GUI
 from pathlib import Path
 
-NOMINAL_STANCE = np.tile([0.0, 0.45, -0.90], 4)
+NOMINAL_STANCE = np.tile([0.0, 0.60, -1.10], 4)
+SYNC_MPC = True
+USE_FOSMC = False
 
 def main():
     # ---------------- 1. Setup Mujoco Environment ----------------
@@ -46,18 +51,36 @@ def main():
     foot_body_names = ['tl_tip_link', 'tr_tip_link', 'bl_tip_link', 'br_tip_link']
     foot_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name) for name in foot_body_names]   
 
+    # IDLE test init: start in NOMINAL_STANCE, feet just clear of the floor.
+    # Raise the base in small steps until nothing touches, so no floor height or foot radius is assumed.
+    START_AT_NOMINAL = True
+    if START_AT_NOMINAL:
+        idx = 0
+        for leg in LEG_NAMES:
+            for j in JOINT_NAMES[leg]:
+                data.qpos[joint_info[j]['qpos_adr']] = NOMINAL_STANCE[idx]
+                idx += 1
+        mujoco.mj_forward(model, data)
+        lowest_foot = min(data.xpos[fid][2] for fid in foot_ids)
+        data.qpos[2] -= lowest_foot            # coarse: foot origins roughly at z = 0
+        mujoco.mj_forward(model, data)
+        for _ in range(1000):                   # fine: lift 0.01 per step until no contact
+            if data.ncon == 0:
+                break
+            data.qpos[2] += 0.01
+            mujoco.mj_forward(model, data)
+        print(f"[init] base z = {data.qpos[2]:.3f}, contacts = {data.ncon}", flush=True)
+
+    z_nom = float(data.qpos[2])
     # sensor_names = ['tl_foot_force_sensor', 'tr_foot_force_sensor', 'bl_foot_force_sensor', 'br_foot_force_sensor']
     # sensor_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SENSOR, name) for name in sensor_names]
     # ---------------- 2. Setup Logic & UI ----------------
     
     cmd = {
-        "q_des": np.zeros(12),
+        "q_des": np.tile([0.0, 0.45, -0.60], 4),
         "qd_des": np.zeros(12),
-        "qdd_des": np.zeros(12),
         "foot_forces": np.zeros((4, 3)),
         "is_stance": [False, False, False, False],
-        "kp": 600.0,
-        "kd": 25.0
     }
 
     graph_queue = queue.Queue()
@@ -67,21 +90,18 @@ def main():
         pt = points_data[0] 
         cmd["q_des"] = np.array(pt["positions"])
         cmd["qd_des"] = np.array(pt["velocities"])
-        cmd["qdd_des"] = np.array(pt["accelerations"])
         cmd["is_stance"] = pt["is_stance"]
         cmd["foot_forces"] = pt["foot_forces"]
 
-    def handle_jump_points(q_desired, qd_desired, qdd_desired, foot_forces, is_stance):
+    def handle_jump_points(q_desired, qd_desired, foot_forces, is_stance):
         cmd["q_des"] = np.array(q_desired)
         cmd["qd_des"] = np.array(qd_desired)
-        cmd["qdd_des"] = np.array(qdd_desired)
         cmd["foot_forces"] = np.array(foot_forces)
         cmd["is_stance"] = is_stance
 
     def handle_transition(current_angles):
         cmd["q_des"] = np.array(current_angles)
         cmd["qd_des"] = np.zeros(12)
-        cmd["qdd_des"] = np.zeros(12)
         
     def handle_raw_tune(raw_angles):
         coxa, femur, tibia = raw_angles
@@ -90,7 +110,6 @@ def main():
             positions.extend([coxa, femur, tibia])
         cmd["q_des"] = np.array(positions)
         cmd["qd_des"] = np.zeros(12)
-        cmd["qdd_des"] = np.zeros(12)
         
     def handle_graph_push(graph_data):
         graph_queue.put(graph_data)
@@ -103,6 +122,12 @@ def main():
         "graph": handle_graph_push
     })
 
+    shared_mpc_weights = [100.0, 25.0, 0.04, 4.4e-7, 0.0004]
+
+    # def handle_mpc_params(weights):
+    #     for i in range(5):
+    #         shared_mpc_weights[i] = weights[i]
+
     def start_gui():
         gui = GUI({
             "state": logic.update_state,
@@ -111,6 +136,8 @@ def main():
             "jt_params": logic.update_jt_params,
             "raw_tune": logic.raw_tune,
             "gamepad": logic.update_gamepad_params,
+            # "fosmc_params": lambda gains: fosmc.update_gains(*gains),
+            # "mpc_params": handle_mpc_params,
         })
         gui.setup()
         
@@ -143,10 +170,10 @@ def main():
         dt=model.opt.timestep,
         lam=0.5,
         alpha=1.5,
-        Ke1=20.0,
-        Ke2=4.0,
-        Ks=20.0,
-        Kr=6.0,
+        Ke1=0.5,
+        Ke2=0.5,
+        Ks=5.0,
+        Kr=2.0,
         gamma_c=0.01,
         gamma_a=0.01
     )
@@ -159,7 +186,7 @@ def main():
     last_render_time = time.time()
 
     joints_name_list = [j for leg in LEG_NAMES for j in JOINT_NAMES[leg]]
-    mpc = WholeBodyMPC(urdf_path, joints_name_list, n=3, dt=0.02)
+    mpc = WholeBodyMPC(urdf_path, joints_name_list, n=14, dt=0.04)
 
     physics_hz = int(1.0 / model.opt.timestep)
     mpc_hz = 50
@@ -181,14 +208,14 @@ def main():
         "q_des": np.zeros(12),
         "qd_des": np.zeros(12),
         "foot_positions": [np.zeros(3) for _ in range(4)],
-        "stance_schedule": [[True, True, True, True] for _ in range(mpc.n)],
-        "swing_vz_ref": [[0.0, 0.0, 0.0, 0.0] for _ in range(mpc.n)],
+        "horizon": logic.mpc_horizon(data.time, mpc.n, mpc.dt),
         "z_off": 2.5,
         "target_vx": 0.0,
         "target_vy": 0.0,
         "target_yaw": 0.0,
         "yaw_rate": 0.0,
-        "p_ref_xy": np.zeros(2)
+        "p_ref_xy": np.zeros(2),
+        "t_snap": data.time
     }
     
     qj0_init = np.zeros(12)
@@ -206,10 +233,10 @@ def main():
         "tau_traj": np.zeros((mpc.nj, mpc.n)),                      # (12, 3): no torque yet
         "qj_traj": np.tile(qj0_init.reshape(-1, 1), (1, mpc.n + 1)), # (12, 4): hold current pose
         "v_traj": np.zeros((mpc.nj, mpc.n + 1)),                    # (12, 4): zero velocity
-        "solve_time": time.time(),
+        "t0": data.time,
+        "failed_t": -1.0,
     }
 
-    planned_stance_schedule = []
     turn_anchor_xy = np.zeros(2)
     was_turning = False
     mpc_running = True
@@ -218,17 +245,36 @@ def main():
     mpc_debug = {"solve_count": 0, "last_solve_t": time.time(), "last_exc": None}
 
     def mpc_worker():
+        last_solve_t = -1.0
+        def solve_summary(t_snap, stance_arr, tag):
+            try:
+                st_ = mpc.opti.stats()
+            except Exception:
+                st_ = {}
+            legs = ("FL", "FR", "BL", "BR")
+            sched = np.array(stance_arr, dtype=bool)
+            pattern = " ".join(legs[i] + ":" + "".join("S" if s else "w" for s in sched[i]) for i in range(4))
+            print(
+                f"[mpc t={t_snap:.2f} {tag} iters={st_.get('iter_count')} status={st_.get('return_status')}]"
+                f"wall={st_.get('t_wall_total', float('nan')):.3f}s N={st_.get('N')} | {pattern}"
+            , flush=True)
         while mpc_running:
             start_t = time.time()
             
             # Safely copy current state
             with mpc_lock:
                 state = {k: np.copy(v) if isinstance(v, np.ndarray) else (list(v) if isinstance(v, list) else v) for k, v in shared_mpc_state.items()}
+
+            if SYNC_MPC and state["t_snap"] <= last_solve_t: # type: ignore
+                time.sleep(0.001)
+                continue
                 
             try:
                 v0 = np.concatenate([state["v_act"], state["w_act"], state["vj_act"]])
-                stance_arr = np.array(state["stance_schedule"]).T
-                swing_vz = np.array(state["swing_vz_ref"]).T
+                stance_arr = np.array(state["horizon"]["stance"]).T # type: ignore
+                swing_vz = np.array(state["horizon"]["swing_vz"]).T # type: ignore
+                vz_active = np.array(state["horizon"]["vz_active"]).T # type: ignore
+                fc_guess = np.array(state["horizon"]["fc_guess"]).reshape(mpc.n, 12).T # type: ignore
 
                 # Directly use the corrected velocities passed from the main loop
                 v_base_des = np.array([
@@ -238,31 +284,51 @@ def main():
                     state["yaw_rate"]
                 ])
 
-                # Log BEFORE calling solve -- if this call hangs, this is the last
-                # thing printed, and it tells us exactly which input caused it,
-                # instead of only ever seeing output from calls that succeeded.
-                print(f"[mpc_worker] attempting solve: p0={state['p_act']} "
-                      f"qj0_finite={np.all(np.isfinite(state['qj_act']))} "
-                      f"v0_finite={np.all(np.isfinite(v0))} "
-                      f"stance={stance_arr.tolist()}", flush=True)
+                yaw = float(state["rpy_act"][2])
+                R_des = np.array([[np.cos(yaw), -np.sin(yaw), 0.0],
+                                  [np.sin(yaw),  np.cos(yaw), 0.0],
+                                  [0.0,          0.0,         1.0]])
+
                 tau_traj, qj_traj, v_traj = mpc.solve(
-                    p0=state["p_act"], R0=state["R_act"], qj0=state["qj_act"], v0=v0,
-                    q_nom=NOMINAL_STANCE, v_base_des=v_base_des,
-                    swing_vz_schedule=swing_vz, stance_schedule=stance_arr
+                    p0=state["p_act"],
+                    R0=state["R_act"],
+                    qj0=state["qj_act"],
+                    v0=v0,
+                    z_des=z_nom,
+                    R_des=R_des,
+                    q_nom=NOMINAL_STANCE,
+                    v_base_des=v_base_des,
+                    swing_vz_schedule=swing_vz,
+                    stance_schedule=stance_arr,
+                    mpc_weights=shared_mpc_weights,
+                    vz_active_schedule=vz_active,
+                    fc_guess=fc_guess,
                 )
-                print(f"[mpc_worker] solve returned", flush=True)
-                with mpc_lock:
-                    mpc_output["tau_traj"] = tau_traj
-                    mpc_output["qj_traj"] = qj_traj
-                    mpc_output["v_traj"] = v_traj
-                    mpc_output["solve_time"] = time.time() # type: ignore  
+                # print(f"[mpc_worker] solve returned", flush=True)
+                solve_summary(state["t_snap"], stance_arr, "ACPT" if mpc.last_solve_accepted else ("OK  " if mpc.last_solve_fresh else "SKIP"))
+
+                if mpc.last_solve_fresh:
+                    with mpc_lock:
+                        mpc_output["tau_traj"] = tau_traj
+                        mpc_output["qj_traj"] = qj_traj
+                        mpc_output["v_traj"] = v_traj
+                        mpc_output["t0"] = state["t_snap"]
+                    last_solve_t = state["t_snap"]
+
                 now = time.time()
                 mpc_debug["solve_count"] += 1
                 mpc_debug["last_solve_t"] = now
                 mpc_debug["last_exc"] = None
             except Exception as e:
-                # DEBUG: record instead of silently swallowing, so the main loop can print it
                 mpc_debug["last_exc"] = repr(e)
+                solve_summary(
+                    state["t_snap"],
+                    np.array(state["horizon"]["stance"]).T, # type: ignore[index] 
+                    "FAIL" 
+                )
+                last_solve_t = state["t_snap"]
+                with mpc_lock:
+                    mpc_output["failed_t"] = state["t_snap"]
                 
             # Enforce the ~50Hz control rate
             elapsed = time.time() - start_t
@@ -320,91 +386,34 @@ def main():
                     continous_yaw += delta_yaw
                     prev_raw_yaw = raw_yaw
                     logic.current_yaw = continous_yaw
-                    # logic.current_yaw = m.atan2(siny_cosp, cosy_cosp)
 
-                    logic.loop_step()
-
-                # # --- SKELETON VERIFICATION DEBUG ---
-                # if step_counter % (decimation_steps * 25) == 0:  # Triggers twice a second
-                #     print("\n=== SKELETON ALIGNMENT VERIFICATION ===")
-                #
-                #     # 1. FOSMC's Analytical Skeleton (KinematicsLogic FK)
-                #     # Grabbing the current angles for the Front Left (FL) leg[cite: 44]
-                #     t1 = m.degrees(logic.current_q[0])
-                #     t2 = m.degrees(logic.current_q[1])
-                #     t3 = m.degrees(logic.current_q[2])
-                #
-                #     # Calculating where the math thinks the foot is[cite: 40]
-                #     analytical_fl = logic.kinematics.fk('FL', t1, t2, t3)
-                #     fosmc_pos = np.array([analytical_fl[0, 3], analytical_fl[1, 3], analytical_fl[2, 3]])
-                #
-                #     # 2. MPC's Physical Skeleton (MuJoCo/Pinocchio)
-                #     # Grabbing the absolute world coordinates of the foot and the base[cite: 44]
-                #     fl_foot_world = data.xpos[foot_ids[0]]
-                #     base_world = data.qpos[0:3]
-                #
-                #     # Finding the physical foot position relative to the body center
-                #     mpc_pos = fl_foot_world - base_world
-                #
-                #     print(f"FOSMC (Analytical FL) -> X: {fosmc_pos[0]:.3f}, Y: {fosmc_pos[1]:.3f}, Z: {fosmc_pos[2]:.3f}")
-                #     print(f"MPC   (Physical FL)   -> X: {mpc_pos[0]:.3f}, Y: {mpc_pos[1]:.3f}, Z: {mpc_pos[2]:.3f}")
-                #     print("=======================================\n")
-                # # -----------------------------------
+                    logic.loop_step(data.time)
 
                 if step_counter % mpc_decimation == 0:
                     # Update variables
-                    p_act = data.qpos[0:3]
-                    v_act = data.qvel[0:3]
-                    w_act = data.qvel[3:6]
+                    p_act = data.qpos[0:3].copy()
+                    v_act = data.qvel[0:3].copy()
+                    w_act = data.qvel[3:6].copy()
                     
                     qw, qx, qy, qz = data.qpos[3:7]
                     sinp = 2.0 * (qw * qy - qz * qx)
                     current_pitch = m.asin(np.clip(sinp, -1.0, 1.0))
                     rpy_act = np.array([logic.current_roll, current_pitch, logic.current_yaw])
-                    foot_positions = [data.xpos[fid] for fid in foot_ids]
+                    foot_positions = [data.xpos[fid].copy() for fid in foot_ids]
 
                     R_act = np.zeros(9)
                     mujoco.mju_quat2Mat(R_act, data.qpos[3:7])
                     R_act = R_act.reshape(3, 3)
 
-                    planned_stance_schedule = []
-                    planned_swing_vz = []
-                    if not logic.walking and not logic.turning and logic.jump_state == "":
-                        planned_stance_schedule = [[True, True, True, True] for _ in range(mpc.n)]
-                        planned_swing_vz = [[0.0, 0.0, 0.0, 0.0] for _ in range(mpc.n)]
-                    else:
-                        omega = 2.0 * m.pi * logic.gait_freq
-                        stance_limit = 2.0 * m.pi * logic.duty_factor
-                        swing_phase_len = 2.0 * m.pi * (1.0 - logic.duty_factor)
-                        ds_dt = omega / swing_phase_len if swing_phase_len > 0.0 else 0.0
-                        for k in range(mpc.n):
-                            t_future = logic.t + (k * mpc.dt)
-                            phase_future = (omega * t_future) % (2.0 * m.pi)
-                            k_stance = []
-                            k_swing_vz = []
-                            for leg in LEG_NAMES:
-                                leg_phase = (phase_future + logic.phase_offsets[leg]) % (2.0 * m.pi)
-                                is_stance = leg_phase < stance_limit
-                                k_stance.append(is_stance)
-                                if is_stance:
-                                    k_swing_vz.append(0.0)
-                                else:
-                                    # Same quintic profile as GaitLogic.trajectory_controller's
-                                    # y/y_dot (eq. 6's v_ref_z), so the constraint matches the
-                                    # gait already being commanded instead of inventing a new one.
-                                    s = (leg_phase - stance_limit) / swing_phase_len
-                                    y_dot = 64.0 * logic.step_h * (3.0*s**2 - 12.0*s**3 + 15.0*s**4 - 6.0*s**5) * ds_dt
-                                    k_swing_vz.append(y_dot)
-                            planned_stance_schedule.append(k_stance)
-                            planned_swing_vz.append(k_swing_vz)
+                    horizon = logic.mpc_horizon(data.time, mpc.n, mpc.dt)
+                    w_act = R_act @ w_act
 
                     target_vy = 0.0
                     target_vx = 0.0
-                    if logic.walking or logic.current_state == "RUN":
-                        ramp_duration = 1.0
-                        ramp_factor = min(logic.t / ramp_duration, 1.0)
-                        active_step_len = logic.step_len * ramp_factor
-                        target_vy = -((active_step_len * logic.gait_freq) / logic.duty_factor)
+                    if logic.walking and isinstance(logic.planner, GaitPlanner):
+                        gp = logic.planner.p
+                        active_step_len = gp.step_len * logic.planner.stride_scale
+                        target_vy = -((active_step_len * gp.freq) / gp.duty)
                     elif logic.turning:
                         kp_pos = 1.5
                         target_vx = np.clip(kp_pos * (turn_anchor_xy[0] - p_act[0]), -0.2, 0.2)
@@ -413,6 +422,7 @@ def main():
                     # Mailbox Drop-off: Hand data to the background thread
                     with mpc_lock:
                         shared_mpc_state["p_act"] = p_act
+                        shared_mpc_state["t_snap"] = data.time
                         shared_mpc_state["R_act"] = R_act
                         shared_mpc_state["v_act"] = v_act
                         shared_mpc_state["rpy_act"] = rpy_act
@@ -422,8 +432,7 @@ def main():
                         shared_mpc_state["q_des"] = cmd["q_des"]
                         shared_mpc_state["qd_des"] = cmd["qd_des"]
                         shared_mpc_state["foot_positions"] = foot_positions
-                        shared_mpc_state["stance_schedule"] = planned_stance_schedule
-                        shared_mpc_state["swing_vz_ref"] = planned_swing_vz
+                        shared_mpc_state["horizon"] = horizon
                         shared_mpc_state["z_off"] = logic.z_off
                         shared_mpc_state["target_vx"] = target_vx
                         shared_mpc_state["target_vy"] = target_vy
@@ -435,16 +444,21 @@ def main():
                         else:
                             shared_mpc_state["p_ref_xy"] = turn_anchor_xy if logic.turning else p_act[0:2]
 
+                    if SYNC_MPC:
+                        snap_t = data.time
+                        while mpc_running:
+                            with mpc_lock:
+                                if mpc_output["t0"] >= snap_t or mpc_output["failed_t"] >= snap_t:
+                                    break
+                            time.sleep(0.001)
+
                 with mpc_lock:
                     tau_traj = np.copy(mpc_output["tau_traj"])
                     qj_traj = np.copy(mpc_output["qj_traj"])
                     v_traj = np.copy(mpc_output["v_traj"])
-                    solve_time = mpc_output["solve_time"]
+                    t0 = mpc_output["t0"]
 
-                # Interpolate the stored horizon by elapsed wall-clock time since it
-                # was solved (paper's 80Hz-solve / 500Hz-interpolate pattern), instead
-                # of freezing on one node until the next solve replaces it wholesale.
-                k_f = np.clip((time.time() - solve_time) / mpc.dt, 0.0, mpc.n)
+                k_f = np.clip((data.time - t0) / mpc.dt, 0.0, mpc.n)
                 k0 = int(np.floor(k_f))
                 k1 = min(k0 + 1, mpc.n)
                 frac = k_f - k0
@@ -454,22 +468,11 @@ def main():
                 tau0 = tau_traj[:, min(k0, mpc.n - 1)]
                 tau0 = np.nan_to_num(tau0, nan=0.0, posinf=1500.0, neginf=-1500.0)
 
-                # Gravity comp computed fresh RIGHT NOW from live q_act -- does not
-                # go through mpc_lock, does not depend on the async solve's cadence
-                # or success, cannot be stale. This is what stops the sinking; tau0
-                # from the MPC is still what handles stepping/balance on top of it.
-                R_act_now = np.zeros(9)
-                mujoco.mju_quat2Mat(R_act_now, data.qpos[3:7])
-                R_act_now = R_act_now.reshape(3, 3)
-                tau_grav = mpc.gravity_compensation(data.qpos[0:3], R_act_now, q_act)
-                tau_grav = np.nan_to_num(tau_grav, nan=0.0, posinf=1500.0, neginf=-1500.0)
-                tau0 = tau0 + tau_grav
-
                 pd_torques_arr = fosmc.compute(
                     q=q_act,
                     q_dot=qd_act,
-                    q_d=cmd["q_des"],
-                    q_dot_d=cmd["qd_des"]
+                    q_d=q_des_mpc,
+                    q_dot_d=qd_des_mpc
                 )
                 pd_torques_arr = np.nan_to_num(pd_torques_arr, nan=0.0, posinf=1500.0, neginf=-1500.0)
 
@@ -478,7 +481,7 @@ def main():
                 for leg in LEG_NAMES:
                     for j in JOINT_NAMES[leg]:
                         info = joint_info[j]
-                        final_torque = tau0[idx] + pd_torques_arr[idx]
+                        final_torque = tau0[idx] + (pd_torques_arr[idx] if USE_FOSMC else 0.0)
                         clipped = np.clip(final_torque, -1500.0, 1500.0)
                         data.ctrl[info['actuator_id']] = clipped
                         applied_torque[idx] = clipped
@@ -495,6 +498,7 @@ def main():
                     print(f"cmd['is_stance']              : {cmd['is_stance']}")
                     print(f"q_act        : {np.round(q_act, 3)}")
                     print(f"q_des (mpc)  : {np.round(q_des_mpc, 3)}   <- converges to NOMINAL_STANCE {NOMINAL_STANCE}, not cmd['q_des']")
+                    print(f"q plan end   : {np.round(qj_traj[:, -1], 3)}   <- where the MPC sends the joints by node n")
                     with mpc_lock:
                         _target_vy = shared_mpc_state["target_vy"]
                     print(f"base v_y actual: {data.qvel[1]:.4f}   base v_y commanded: {_target_vy:.4f}")

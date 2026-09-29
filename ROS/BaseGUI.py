@@ -258,146 +258,236 @@ class GUI:
         apply_btn = tk.Button(wt_group, text="Apply", command=apply_entry)
         apply_btn.grid(row=2, column=0, columnspan=3, sticky='nsew')
 
-        jt_group = ttk.LabelFrame(grid_container, text="JUMP TUNING PARAMS", padding=15)
-        jt_group.grid(row=3, column=0, columnspan=2)
+        # --- FOSMC TUNING PARAMS ---
+        fosmc_group = ttk.LabelFrame(grid_container, text="FOSMC GAINS", padding=15)
+        fosmc_group.grid(row=2, column=0, columnspan=2)
 
-        yc_frame = ttk.Frame(jt_group)
-        yc_frame.grid(row=0, column=0)
-        tk.Label(yc_frame, text="Y Crouch").pack()
-        yc = tk.StringVar(value=str(0.8))
-        tk.Entry(yc_frame, textvariable=yc).pack()
+        ke1_frame = ttk.Frame(fosmc_group)
+        ke1_frame.grid(row=0, column=0)
+        tk.Label(ke1_frame, text="Ke1 (Error)").pack()
+        ke1_var = tk.StringVar(value="5.0")
+        tk.Entry(ke1_frame, textvariable=ke1_var).pack()
 
-        yt_frame = ttk.Frame(jt_group)
-        yt_frame.grid(row=0, column=1)
-        tk.Label(yt_frame, text="Y Thrust").pack()
-        yt = tk.StringVar(value=str(5.0))
-        tk.Entry(yt_frame, textvariable=yt).pack()
+        ke2_frame = ttk.Frame(fosmc_group)
+        ke2_frame.grid(row=0, column=1)
+        tk.Label(ke2_frame, text="Ke2 (Frac Error)").pack()
+        ke2_var = tk.StringVar(value="5.0")
+        tk.Entry(ke2_frame, textvariable=ke2_var).pack()
 
-        yf_frame = ttk.Frame(jt_group)
-        yf_frame.grid(row=0, column=2)
-        tk.Label(yf_frame, text="Y Flight").pack()
-        yf = tk.StringVar(value=str(1.0))
-        tk.Entry(yf_frame, textvariable=yf).pack()
+        ks_frame = ttk.Frame(fosmc_group)
+        ks_frame.grid(row=1, column=0)
+        tk.Label(ks_frame, text="Ks (Sliding)").pack()
+        ks_var = tk.StringVar(value="5.0")
+        tk.Entry(ks_frame, textvariable=ks_var).pack()
 
-        xt_frame = ttk.Frame(jt_group)
-        xt_frame.grid(row=1, column=0)
-        tk.Label(xt_frame, text="X Thrust").pack()
-        xt = tk.StringVar(value=str(2.5))
-        tk.Entry(xt_frame, textvariable=xt).pack()
+        kr_frame = ttk.Frame(fosmc_group)
+        kr_frame.grid(row=1, column=1)
+        tk.Label(kr_frame, text="Kr (Robust)").pack()
+        kr_var = tk.StringVar(value="1.0")
+        tk.Entry(kr_frame, textvariable=kr_var).pack()
 
-        xf_frame = ttk.Frame(jt_group)
-        xf_frame.grid(row=1, column=1)
-        tk.Label(xf_frame, text="X Flight").pack()
-        xf = tk.StringVar(value=str(0.0))
-        tk.Entry(xf_frame, textvariable=xf).pack()
-
-        xc_frame = ttk.Frame(jt_group)
-        xc_frame.grid(row=1, column=2)
-        tk.Label(xc_frame, text="X Catch").pack()
-        xc = tk.StringVar(value=str(-1.5))
-        tk.Entry(xc_frame, textvariable=xc).pack()
-
-        pt_frame = ttk.Frame(jt_group)
-        pt_frame.grid(row=2, column=0)
-        tk.Label(pt_frame, text="Prepare Time").pack()
-        pt = tk.StringVar(value=str(1.0))
-        tk.Entry(pt_frame, textvariable=pt).pack()
-
-        ftt_frame = ttk.Frame(jt_group)
-        ftt_frame.grid(row=2, column=1)
-        tk.Label(ftt_frame, text="Front Thrust Time").pack()
-        ftt = tk.StringVar(value=str(1.0))
-        tk.Entry(ftt_frame, textvariable=ftt).pack()
-
-        btt_frame = ttk.Frame(jt_group)
-        btt_frame.grid(row=2, column=2)
-        tk.Label(btt_frame, text="Back Thrust Time").pack()
-        btt = tk.StringVar(value=str(0.5))
-        tk.Entry(btt_frame, textvariable=btt).pack()
-
-        ft_frame = ttk.Frame(jt_group)
-        ft_frame.grid(row=3, column=0)
-        tk.Label(ft_frame, text="Flight Time").pack()
-        ft = tk.StringVar(value=str(0.15))
-        tk.Entry(ft_frame, textvariable=ft).pack()
-
-        lt_frame = ttk.Frame(jt_group)
-        lt_frame.grid(row=3, column=1)
-        tk.Label(lt_frame, text="Landing Time").pack()
-        lt = tk.StringVar(value=str(0.5))
-        tk.Entry(lt_frame, textvariable=lt).pack()
-
-        ct_frame = ttk.Frame(jt_group)
-        ct_frame.grid(row=3, column=2)
-        tk.Label(ct_frame, text="Catch Time").pack()
-        ct = tk.StringVar(value=str(0.1))
-        tk.Entry(ct_frame, textvariable=ct).pack()
-
-        stl_frame = ttk.Frame(jt_group)
-        stl_frame.grid(row=4, column=0)
-        tk.Label(stl_frame, text="Stabilize leg").pack()
-        stl = tk.StringVar(value=str(0.5))
-        tk.Entry(stl_frame, textvariable=stl).pack()
-
-        bt_frame = ttk.Frame(jt_group)
-        bt_frame.grid(row=4, column=2)
-        tk.Label(bt_frame, text="Back Thrust Specific").pack()
-        bt = tk.StringVar(value=str(2.5))
-        tk.Entry(bt_frame, textvariable=bt).pack()
-
-        ptr_frame = ttk.Frame(jt_group)
-        ptr_frame.grid(row=5, column=0)
-        tk.Label(ptr_frame, text="Pitch Threshold").pack()
-        ptr = tk.StringVar(value=str(-0.6))
-        tk.Entry(ptr_frame, textvariable=ptr).pack()
-
-        jparam_data = [
-            float(yc.get()),
-            float(yt.get()),
-            float(yf.get()),
-            float(xt.get()),
-            float(xf.get()),
-            float(xc.get()),
-            float(pt.get()),
-            float(ftt.get()),
-            float(btt.get()),
-            float(ft.get()),
-            float(lt.get()),
-            float(ct.get()),
-            float(stl.get()),
-            float(bt.get()),
-            float(ptr.get()),
-        ]
-        if self.callbacks.get("jt_params"):
-            self.callbacks["jt_params"](jparam_data)
-
-        def apply_jump_entry(event=None):
+        def apply_fosmc_entry(event=None):
             try:
-                jparam_data = [
-                    float(yc.get()),
-                    float(yt.get()),
-                    float(yf.get()),
-                    float(xt.get()),
-                    float(xf.get()),
-                    float(xc.get()),
-                    float(pt.get()),
-                    float(ftt.get()),
-                    float(btt.get()),
-                    float(ft.get()),
-                    float(lt.get()),
-                    float(ct.get()),
-                    float(stl.get()),
-                    float(bt.get()),
-                    float(ptr.get()),
-                ]
-                if self.callbacks.get("jt_params"):
-                    self.callbacks["jt_params"](jparam_data)
+                gains = [float(ke1_var.get()), float(ke2_var.get()), 
+                         float(ks_var.get()), float(kr_var.get())]
+                if self.callbacks.get("fosmc_params"):
+                    self.callbacks['fosmc_params'](gains)
             except ValueError:
                 pass
 
-        j_apply_btn = tk.Button(jt_group, text="Apply JP", command=apply_jump_entry)
-        j_apply_btn.grid(row=4, column=1)
+        fosmc_apply_btn = tk.Button(fosmc_group, text="Apply FOSMC", command=apply_fosmc_entry)
+        fosmc_apply_btn.grid(row=2, column=0, columnspan=2, sticky='nsew')
 
+        # --- MPC TUNING PARAMS ---
+        mpc_group = ttk.LabelFrame(grid_container, text="MPC WEIGHTS", padding=15)
+        mpc_group.grid(row=3, column=0, columnspan=2)
+
+        qj_frame = ttk.Frame(mpc_group)
+        qj_frame.grid(row=0, column=0)
+        tk.Label(qj_frame, text="Joint Tracking").pack()
+        qj_var = tk.StringVar(value="50.0")
+        tk.Entry(qj_frame, textvariable=qj_var).pack()
+
+        vb_frame = ttk.Frame(mpc_group)
+        vb_frame.grid(row=0, column=1)
+        tk.Label(vb_frame, text="Base Velocity").pack()
+        vb_var = tk.StringVar(value="20.0")
+        tk.Entry(vb_frame, textvariable=vb_var).pack()
+
+        vj_frame = ttk.Frame(mpc_group)
+        vj_frame.grid(row=1, column=0)
+        tk.Label(vj_frame, text="Joint Velocity").pack()
+        vj_var = tk.StringVar(value="0.01")
+        tk.Entry(vj_frame, textvariable=vj_var).pack()
+
+        tau_frame = ttk.Frame(mpc_group)
+        tau_frame.grid(row=1, column=1)
+        tk.Label(tau_frame, text="Torque Penalty").pack()
+        tau_var = tk.StringVar(value="0.001")
+        tk.Entry(tau_frame, textvariable=tau_var).pack()
+
+        a_frame = ttk.Frame(mpc_group)
+        a_frame.grid(row=2, column=0)
+        tk.Label(a_frame, text="Accel Penalty").pack()
+        a_var = tk.StringVar(value="0.00001")
+        tk.Entry(a_frame, textvariable=a_var).pack()
+
+        def apply_mpc_entry(event=None):
+            try:
+                weights = [float(qj_var.get()), float(vb_var.get()), 
+                           float(vj_var.get()), float(tau_var.get()), float(a_var.get())]
+                if self.callbacks.get("mpc_params"):
+                    self.callbacks['mpc_params'](weights)
+            except ValueError:
+                pass
+
+        mpc_apply_btn = tk.Button(mpc_group, text="Apply MPC", command=apply_mpc_entry)
+        mpc_apply_btn.grid(row=2, column=1, sticky='nsew')
+
+        # Ensure jt_group is shifted down to row 4
+        # jt_group = ttk.LabelFrame(grid_container, text="JUMP TUNING PARAMS", padding=15)
+        # jt_group.grid(row=4, column=0, columnspan=2)
+        #
+        # jt_group = ttk.LabelFrame(grid_container, text="JUMP TUNING PARAMS", padding=15)
+        # jt_group.grid(row=3, column=0, columnspan=2)
+        #
+        # yc_frame = ttk.Frame(jt_group)
+        # yc_frame.grid(row=0, column=0)
+        # tk.Label(yc_frame, text="Y Crouch").pack()
+        # yc = tk.StringVar(value=str(0.8))
+        # tk.Entry(yc_frame, textvariable=yc).pack()
+        #
+        # yt_frame = ttk.Frame(jt_group)
+        # yt_frame.grid(row=0, column=1)
+        # tk.Label(yt_frame, text="Y Thrust").pack()
+        # yt = tk.StringVar(value=str(5.0))
+        # tk.Entry(yt_frame, textvariable=yt).pack()
+        #
+        # yf_frame = ttk.Frame(jt_group)
+        # yf_frame.grid(row=0, column=2)
+        # tk.Label(yf_frame, text="Y Flight").pack()
+        # yf = tk.StringVar(value=str(1.0))
+        # tk.Entry(yf_frame, textvariable=yf).pack()
+        #
+        # xt_frame = ttk.Frame(jt_group)
+        # xt_frame.grid(row=1, column=0)
+        # tk.Label(xt_frame, text="X Thrust").pack()
+        # xt = tk.StringVar(value=str(2.5))
+        # tk.Entry(xt_frame, textvariable=xt).pack()
+        #
+        # xf_frame = ttk.Frame(jt_group)
+        # xf_frame.grid(row=1, column=1)
+        # tk.Label(xf_frame, text="X Flight").pack()
+        # xf = tk.StringVar(value=str(0.0))
+        # tk.Entry(xf_frame, textvariable=xf).pack()
+        #
+        # xc_frame = ttk.Frame(jt_group)
+        # xc_frame.grid(row=1, column=2)
+        # tk.Label(xc_frame, text="X Catch").pack()
+        # xc = tk.StringVar(value=str(-1.5))
+        # tk.Entry(xc_frame, textvariable=xc).pack()
+        #
+        # pt_frame = ttk.Frame(jt_group)
+        # pt_frame.grid(row=2, column=0)
+        # tk.Label(pt_frame, text="Prepare Time").pack()
+        # pt = tk.StringVar(value=str(1.0))
+        # tk.Entry(pt_frame, textvariable=pt).pack()
+        #
+        # ftt_frame = ttk.Frame(jt_group)
+        # ftt_frame.grid(row=2, column=1)
+        # tk.Label(ftt_frame, text="Front Thrust Time").pack()
+        # ftt = tk.StringVar(value=str(1.0))
+        # tk.Entry(ftt_frame, textvariable=ftt).pack()
+        #
+        # btt_frame = ttk.Frame(jt_group)
+        # btt_frame.grid(row=2, column=2)
+        # tk.Label(btt_frame, text="Back Thrust Time").pack()
+        # btt = tk.StringVar(value=str(0.5))
+        # tk.Entry(btt_frame, textvariable=btt).pack()
+        #
+        # ft_frame = ttk.Frame(jt_group)
+        # ft_frame.grid(row=3, column=0)
+        # tk.Label(ft_frame, text="Flight Time").pack()
+        # ft = tk.StringVar(value=str(0.15))
+        # tk.Entry(ft_frame, textvariable=ft).pack()
+        #
+        # lt_frame = ttk.Frame(jt_group)
+        # lt_frame.grid(row=3, column=1)
+        # tk.Label(lt_frame, text="Landing Time").pack()
+        # lt = tk.StringVar(value=str(0.5))
+        # tk.Entry(lt_frame, textvariable=lt).pack()
+        #
+        # ct_frame = ttk.Frame(jt_group)
+        # ct_frame.grid(row=3, column=2)
+        # tk.Label(ct_frame, text="Catch Time").pack()
+        # ct = tk.StringVar(value=str(0.1))
+        # tk.Entry(ct_frame, textvariable=ct).pack()
+        #
+        # stl_frame = ttk.Frame(jt_group)
+        # stl_frame.grid(row=4, column=0)
+        # tk.Label(stl_frame, text="Stabilize leg").pack()
+        # stl = tk.StringVar(value=str(0.5))
+        # tk.Entry(stl_frame, textvariable=stl).pack()
+        #
+        # bt_frame = ttk.Frame(jt_group)
+        # bt_frame.grid(row=4, column=2)
+        # tk.Label(bt_frame, text="Back Thrust Specific").pack()
+        # bt = tk.StringVar(value=str(2.5))
+        # tk.Entry(bt_frame, textvariable=bt).pack()
+        #
+        # ptr_frame = ttk.Frame(jt_group)
+        # ptr_frame.grid(row=5, column=0)
+        # tk.Label(ptr_frame, text="Pitch Threshold").pack()
+        # ptr = tk.StringVar(value=str(-0.6))
+        # tk.Entry(ptr_frame, textvariable=ptr).pack()
+        #
+        # jparam_data = [
+        #     float(yc.get()),
+        #     float(yt.get()),
+        #     float(yf.get()),
+        #     float(xt.get()),
+        #     float(xf.get()),
+        #     float(xc.get()),
+        #     float(pt.get()),
+        #     float(ftt.get()),
+        #     float(btt.get()),
+        #     float(ft.get()),
+        #     float(lt.get()),
+        #     float(ct.get()),
+        #     float(stl.get()),
+        #     float(bt.get()),
+        #     float(ptr.get()),
+        # ]
+        # if self.callbacks.get("jt_params"):
+        #     self.callbacks["jt_params"](jparam_data)
+        #
+        # def apply_jump_entry(event=None):
+        #     try:
+        #         jparam_data = [
+        #             float(yc.get()),
+        #             float(yt.get()),
+        #             float(yf.get()),
+        #             float(xt.get()),
+        #             float(xf.get()),
+        #             float(xc.get()),
+        #             float(pt.get()),
+        #             float(ftt.get()),
+        #             float(btt.get()),
+        #             float(ft.get()),
+        #             float(lt.get()),
+        #             float(ct.get()),
+        #             float(stl.get()),
+        #             float(bt.get()),
+        #             float(ptr.get()),
+        #         ]
+        #         if self.callbacks.get("jt_params"):
+        #             self.callbacks["jt_params"](jparam_data)
+        #     except ValueError:
+        #         pass
+        #
+        # j_apply_btn = tk.Button(jt_group, text="Apply JP", command=apply_jump_entry)
+        # j_apply_btn.grid(row=4, column=1)
+        #
         def tuning_process(val):
             s = float(shoulder_slider.get())
             t = float(thigh_slider.get())
