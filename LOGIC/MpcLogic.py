@@ -11,12 +11,12 @@ def skew(v):
     )
 
 def so3_exp(omega, dt):
-    """Rotation matrix for holding angular velocity omega constant over dt (Rodrigues' formula)."""
     w = omega * dt
-    theta = cs.sqrt(cs.sumsqr(w) + 1e-9)  # eps INSIDE the sqrt -- keeps the derivative finite at w=0
+    theta = cs.sqrt(cs.sumsqr(w) + 1e-9)  
     axis = w / theta
     K = skew(axis)
     return cs.MX.eye(3) + cs.sin(theta) * K + (1 - cs.cos(theta)) * (K @ K)
+
 
 
 class WholeBodyMPC:
@@ -54,10 +54,6 @@ class WholeBodyMPC:
         self._build_solver()
 
     def _build_dynamics_functions(self):
-        # adam builds its expressions in SX. Opti's variables are MX.
-        # Fix: build each dynamics quantity as an SX-based Function ONCE here.
-        # A Function built from SX accepts MX arguments later -- that's what
-        # lets this get called inside the Opti graph without the type error.
         nj = self.nj
         w_H_b_sx = cs.SX.sym('w_H_b', 4, 4)
         q_sx = cs.SX.sym('q', nj)
@@ -79,7 +75,6 @@ class WholeBodyMPC:
         opti = cs.Opti()
         n, nj, nv = self.n, self.nj, self.nv
 
-        # ---- Parameters (not decision variables, so they do not affect the stage structure) ----
         p0_p = opti.parameter(3)
         R0_p = opti.parameter(3, 3)
         qj0_p = opti.parameter(nj)
@@ -99,9 +94,6 @@ class WholeBodyMPC:
         self._tau_w_p = opti.parameter()
         self._a_w_p = opti.parameter()
 
-        # ---- Decision variables, declared stage by stage: x_0, u_0, x_1, u_1, ..., x_n ----
-        # state   x_k = (p, R, qj, v)
-        # control u_k = (a, tau_j, Fc)
         p, R, qj, v = [], [], [], []
         a, tau_j, Fc = [], [], []
         for k in range(n + 1):
@@ -115,10 +107,9 @@ class WholeBodyMPC:
                 Fc.append(opti.variable(12))
 
         eps = 1e-3
-        no_slip_M = 50.0  # big-M slack: only relevant while a foot is swinging
+        no_slip_M = 50.0
         cost = 0
 
-        # ---- Constraint bookkeeping (DIAGNOSTIC): remember which rows of g belong to which group ----
         self._con_groups = []
         def sub(name, k, expr):
             start = opti.ng
@@ -134,9 +125,6 @@ class WholeBodyMPC:
         sub("init_v", 0, v[0] == v0_p)
 
         for k in range(n):
-            # ---- Gap-closing (dynamics) FIRST: x_{k+1} == f(x_k, u_k) ----
-            # Fatrop's auto structure detection needs, per stage k, the gap-closing
-            # constraint before the path constraints of that stage.
             sub("dyn_p", k, p[k + 1] == p[k] + v[k][0:3] * self.dt)
             sub("dyn_R", k, R[k + 1] == so3_exp(v[k][3:6], self.dt) @ R[k])
             sub("dyn_qj", k, qj[k + 1] == qj[k] + v[k][6:] * self.dt)
@@ -152,20 +140,17 @@ class WholeBodyMPC:
             M = self.M_fun(w_H_b, qj[k])
             h = self.h_fun(w_H_b, qj[k], v_base_k, v_joints_k)
 
-            # ---- Path constraints of stage k (only x_k, u_k) ----
             contact_wrench = cs.MX.zeros(nv)
             for i, foot in enumerate(self.foot_names):
                 Ji = self.J_fun[foot](w_H_b, qj[k])  # 6 x nv
                 Fi = Fc[k][3 * i: 3 * i + 3]
                 contact_wrench += Ji[0:3, :].T @ Fi
 
-                # No-slip / swing only on predicted nodes (v[0] is the measured v0)
                 if k > 0:
                     st = stance_p[i, k]
                     foot_vel = Ji[0:3, :] @ v[k]
                     sub(f"noslip_{legs[i]}", k, opti.bounded(-no_slip_M * (1 - st), foot_vel, no_slip_M * (1 - st)))
 
-                    # Swing constraint, eq. 6 (hard while swinging and vz_active = 1)
                     swing_slack = no_slip_M * (1 - vz_active_p[i, k] * (1 - st))
                     sub(f"swingvz_{legs[i]}", k, opti.bounded(-swing_slack, foot_vel[2] - swing_vz_p[i, k], swing_slack))
 
@@ -176,8 +161,6 @@ class WholeBodyMPC:
             for i in range(4):
                 Fi = Fc[k][3 * i: 3 * i + 3]
                 st = stance_p[i, k]
-                # sub(f"fz_lo_{legs[i]}", k, Fi[2] >= 0.0)
-                # sub(f"fz_hi_{legs[i]}", k, Fi[2] <= self.fz_max * st)
                 sub(f"fz_{legs[i]}", k, opti.bounded(0.0, Fi[2], self.fz_max *st))
                 sub(f"fric_{legs[i]}", k, Fi[0] <= self.mu * Fi[2] + eps)
                 sub(f"fric_{legs[i]}", k, Fi[0] >= -self.mu * Fi[2] - eps)
