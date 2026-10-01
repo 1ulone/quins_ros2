@@ -23,7 +23,7 @@ from pathlib import Path
 
 NOMINAL_STANCE = np.tile([0.0, 0.60, -1.10], 4)
 SYNC_MPC = True
-USE_FOSMC = False
+USE_FOSMC = False 
 
 def main():
     # ---------------- 1. Setup Mujoco Environment ----------------
@@ -124,7 +124,7 @@ def main():
         "graph": handle_graph_push
     })
 
-    shared_mpc_weights = [100.0, 25.0, 0.04, 4.4e-7, 0.0004]
+    shared_mpc_weights = [100.0, 250.0, 0.04, 4.4e-7, 0.0004]
 
     # def handle_mpc_params(weights):
     #     for i in range(5):
@@ -344,6 +344,8 @@ def main():
 
     try:
         with mujoco.viewer.launch_passive(model, data) as viewer:
+            viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+            viewer.cam.trackbodyid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'base_link')
             while viewer.is_running():
                 step_start = time.time()
                 
@@ -519,7 +521,7 @@ def main():
                     scuff_steps[:] = 0
                     print("=======================\n")
 
-                mujoco.mj_step(model, data)
+                # mujoco.mj_step(model, data)
                 # DEBUG: floor contact while the schedule says the foot is swinging
                 if data.ncon > 0:
                     contact_bodies = np.concatenate([model.geom_bodyid[data.contact.geom1], model.geom_bodyid[data.contact.geom2]])

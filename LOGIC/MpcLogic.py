@@ -144,7 +144,8 @@ class WholeBodyMPC:
             for i, foot in enumerate(self.foot_names):
                 Ji = self.J_fun[foot](w_H_b, qj[k])  # 6 x nv
                 Fi = Fc[k][3 * i: 3 * i + 3]
-                contact_wrench += Ji[0:3, :].T @ Fi
+                # contact_wrench += Ji[0:3, :].T @ Fi
+                contact_wrench += stance_p[i, k] * (Ji[0:3, :].T @ Fi)
 
                 if k > 0:
                     st = stance_p[i, k]
@@ -161,7 +162,8 @@ class WholeBodyMPC:
             for i in range(4):
                 Fi = Fc[k][3 * i: 3 * i + 3]
                 st = stance_p[i, k]
-                sub(f"fz_{legs[i]}", k, opti.bounded(0.0, Fi[2], self.fz_max *st))
+                relax = self.fz_max * (1 - st)
+                sub(f"fz_{legs[i]}", k, opti.bounded(-relax, Fi[2], self.fz_max))
                 sub(f"fric_{legs[i]}", k, Fi[0] <= self.mu * Fi[2] + eps)
                 sub(f"fric_{legs[i]}", k, Fi[0] >= -self.mu * Fi[2] - eps)
                 sub(f"fric_{legs[i]}", k, Fi[1] <= self.mu * Fi[2] + eps)
@@ -185,17 +187,19 @@ class WholeBodyMPC:
         cost += self.base_R_w * cs.sumsqr(R[n] - R_des_p)
 
         opti.minimize(cost)
-
-        opti.solver("fatrop", {
+        
+        self._solver_opts = {
             "expand": True,                   # MX graph -> SX: much cheaper Hessian/Jacobian evaluations
             "structure_detection": "auto",    # let Fatrop see the x_k / u_k stage structure
             "fatrop.print_level": 0,
             "print_time": False,
             "record_time": True,
-            "fatrop.max_iter": 30,
+            "fatrop.max_iter": 100,           # now actually applied; solves finish in about 20 to 30
             "fatrop.tol": 1e-3,
             "fatrop.mu_init": 0.1,
-        })
+        }
+        opti.solver("fatrop", self._solver_opts)
+        self._struct_sig = None
 
         self.opti = opti
         # Horizon-shaped expressions for reading results (same shapes as before)
@@ -256,8 +260,9 @@ class WholeBodyMPC:
         z_des=None,
         R_des=None,
     ):
-        self.last_solve_fresh = False
-        self.last_solve_accepted = False
+        self.last_solve_fresh = False 
+        self.last_solve_accepted = False 
+
         if hasattr(self, "_solve_thread") and self._solve_thread.is_alive():
             if hasattr(self, "_last"):
                 return self._last
@@ -265,6 +270,13 @@ class WholeBodyMPC:
                     np.tile(np.array(qj0, dtype=float).reshape(-1, 1), (1, self.n + 1)),
                     np.zeros((self.nj, self.n + 1)))
 
+
+        st_arr = np.asarray(stance_schedule, dtype=float)
+        va_arr = np.ones((4, self.n)) if vz_active_schedule is None else np.asarray(vz_active_schedule, dtype=float)
+        sig = tuple((int(st_arr[:, k].sum()), int(((1 - st_arr[:, k]) * va_arr[:, k]).sum())) for k in range(self.n))
+        if self._struct_sig is not None and sig != self._struct_sig:
+            self.opti.solver("fatrop", self._solver_opts)
+        self._struct_sig = sig
         self.opti.set_value(self._p0_p, p0)
         self.opti.set_value(self._R0_p, R0)
         self.opti.set_value(self._qj0_p, qj0)
@@ -322,7 +334,10 @@ class WholeBodyMPC:
                 result["exc"] = e
         self._solve_thread = threading.Thread(target=_run_solve, daemon=True)
         self._solve_thread.start()
-        self._solve_thread.join(timeout=60.0)
+        first_solve = not getattr(self, "_jit_ready", False)
+        self._solve_thread.join(timeout=None if first_solve else 60.0)
+        if not self._solve_thread.is_alive():
+            self._jit_ready = True
         if self._solve_thread.is_alive():
             print("[WholeBodyMPC] solve TIMED OUT (>60s), abandoning this attempt", flush=True)
             print(f"  [hang inputs] p0={np.round(p0_arr, 4)}  max|v0|={np.max(np.abs(v0_arr)):.3f}\n"
@@ -355,6 +370,10 @@ class WholeBodyMPC:
                 self._last = (tau_traj, qj_traj, v_traj)
                 self.last_solve_fresh = True
                 self.last_solve_accepted = True
+                if not getattr(self, "_diag_done", False):   # DIAGNOSTIC: first non-converged solve only
+                    self._diag_done = True
+                    print(f"[diag] full stats: {self.opti.stats()}", flush=True)
+                    self.constraint_report(top=10)
                 return tau_traj, qj_traj, v_traj
             self.constraint_report()
             raise result["exc"]

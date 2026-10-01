@@ -84,7 +84,7 @@ GAIT_TABLE = {
             'BL': 0.5,
         },
         path="WALK",
-        step_len=1.0,
+        step_len=0.5,
         step_h=0.75,
         x_off=0.0,
         z_off=2.5,
