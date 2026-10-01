@@ -49,7 +49,9 @@ def main():
             }
 
     foot_body_names = ['tl_tip_link', 'tr_tip_link', 'bl_tip_link', 'br_tip_link']
-    foot_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name) for name in foot_body_names]   
+    foot_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name) for name in foot_body_names]
+    hip_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name) for name in ['tl_thigh_link', 'tr_thigh_link', 'bl_thigh_link', 'br_thigh_link']]
+    scuff_steps = np.zeros(4, dtype=int)
 
     # IDLE test init: start in NOMINAL_STANCE, feet just clear of the floor.
     # Raise the base in small steps until nothing touches, so no floor height or foot radius is assumed.
@@ -506,8 +508,25 @@ def main():
                     print(f"pd (fosmc fb): {np.round(pd_torques_arr, 2)}")
                     print(f"applied ctrl : {np.round(applied_torque, 2)}")
                     print(f"base pos     : {np.round(data.qpos[0:3], 4)}  base quat: {np.round(data.qpos[3:7], 4)}")
+                    R_dbg = np.zeros(9)
+                    mujoco.mju_quat2Mat(R_dbg, data.qpos[3:7])
+                    R_dbg = R_dbg.reshape(3, 3)
+                    qw_, qx_, qy_, qz_ = data.qpos[3:7]
+                    pitch_dbg = m.degrees(m.atan2(2.0 * (qw_ * qx_ + qy_ * qz_), 1.0 - 2.0 * (qx_ * qx_ + qy_ * qy_)))
+                    foot_y_rel = [float((R_dbg.T @ (data.xpos[f] - data.xpos[h]))[1]) for f, h in zip(foot_ids, hip_ids)]
+                    print(f"pitch (deg, + = nose down): {pitch_dbg:.2f} | foot y rel hip (+ = behind) FL FR BL BR: {np.round(foot_y_rel, 2)}")
+                    print(f"swing-phase floor contact (2 ms steps since last print) FL FR BL BR: {scuff_steps}")
+                    scuff_steps[:] = 0
                     print("=======================\n")
 
+                mujoco.mj_step(model, data)
+                # DEBUG: floor contact while the schedule says the foot is swinging
+                if data.ncon > 0:
+                    contact_bodies = np.concatenate([model.geom_bodyid[data.contact.geom1], model.geom_bodyid[data.contact.geom2]])
+                    touching = np.isin(foot_ids, contact_bodies)
+                    for i in range(4):
+                        if touching[i] and not cmd["is_stance"][i]:
+                            scuff_steps[i] += 1
                 mujoco.mj_step(model, data)
                 current_time = time.time()
                 if (current_time - last_render_time) > 0.016:

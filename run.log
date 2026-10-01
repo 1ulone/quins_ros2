@@ -1,0 +1,739 @@
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+[init] base z = 2.481, contacts = 0
+[INPUT] No Gamepad detected
+Unknown tag "{http://www.ros.org/wiki/xacro}arg" in /robot[@name='mjbots_quad']
+Unknown tag "mujoco" in /robot[@name='mjbots_quad']
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 0 | time since last solve: 0.22s | last exception: None
+GaitLogic state: TUNING | walking=False turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [ 0.    0.45 -0.6   0.    0.45 -0.6   0.    0.45 -0.6   0.    0.45 -0.6 ]
+cmd['is_stance']              : [False, False, False, False]
+q_act        : [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1]
+q_des (mpc)  : [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1]   <- where the MPC sends the joints by node n
+base v_y actual: 0.0000   base v_y commanded: 0.0000
+tau0 (mpc ff): [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+pd (fosmc fb): [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+applied ctrl : [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+base pos     : [0.     0.     2.4809]  base quat: [1. 0. 0. 0.]
+pitch (deg, + = nose down): 0.00 | foot y rel hip (+ = behind) FL FR BL BR: [0.   0.   0.01 0.01]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 0 0 0]
+=======================
+
+  [con report] largest |multiplier| (name, node, max|lam|, max viol, min width):
+    init_p         k=0  lam=7.12e+04 viol=0.00e+00 width=0.0e+00
+    dyn_p          k=0  lam=6.63e+04 viol=0.00e+00 width=0.0e+00
+    dyn_p          k=1  lam=6.13e+04 viol=2.98e-19 width=0.0e+00
+    dyn_p          k=2  lam=5.63e+04 viol=1.73e-18 width=0.0e+00
+    dyn_p          k=3  lam=5.14e+04 viol=6.94e-18 width=0.0e+00
+    dyn_p          k=4  lam=4.65e+04 viol=1.58e-30 width=0.0e+00
+    dyn_p          k=5  lam=4.17e+04 viol=1.58e-30 width=0.0e+00
+    dyn_p          k=6  lam=3.69e+04 viol=3.47e-18 width=0.0e+00
+  [con report] largest violation:
+    rnea_base      k=1  lam=9.77e-01 viol=8.76e-01 width=0.0e+00
+    rnea_base      k=4  lam=1.88e+00 viol=7.90e-01 width=0.0e+00
+    rnea_base      k=2  lam=4.99e-01 viol=7.66e-01 width=0.0e+00
+    rnea_base      k=8  lam=1.38e+00 viol=3.96e-01 width=0.0e+00
+    rnea_base      k=9  lam=6.37e-02 viol=3.58e-01 width=0.0e+00
+    rnea_tau       k=1  lam=6.70e-01 viol=2.80e-01 width=0.0e+00
+    rnea_tau       k=4  lam=1.81e+00 viol=2.47e-01 width=0.0e+00
+    rnea_tau       k=2  lam=3.67e-01 viol=1.64e-01 width=0.0e+00
+[mpc t=0.00 FAIL iters=31 status=1]wall=0.765s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.04 OK   iters=9 status=0]wall=0.210s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.08 OK   iters=6 status=0]wall=0.140s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.12 OK   iters=5 status=0]wall=0.116s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.16 OK   iters=5 status=0]wall=0.118s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.20 OK   iters=5 status=0]wall=0.116s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.24 OK   iters=5 status=0]wall=0.118s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.28 OK   iters=5 status=0]wall=0.116s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.32 OK   iters=5 status=0]wall=0.118s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.36 OK   iters=5 status=0]wall=0.123s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.40 OK   iters=5 status=0]wall=0.120s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.44 OK   iters=5 status=0]wall=0.123s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.48 OK   iters=5 status=0]wall=0.119s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.52 OK   iters=5 status=0]wall=0.116s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.56 OK   iters=5 status=0]wall=0.132s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.60 OK   iters=5 status=0]wall=0.116s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.64 OK   iters=5 status=0]wall=0.118s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.68 OK   iters=5 status=0]wall=0.116s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.72 OK   iters=5 status=0]wall=0.112s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.76 OK   iters=5 status=0]wall=0.122s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.80 OK   iters=5 status=0]wall=0.119s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.84 OK   iters=5 status=0]wall=0.116s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.88 OK   iters=5 status=0]wall=0.115s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.92 OK   iters=5 status=0]wall=0.116s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=0.96 OK   iters=5 status=0]wall=0.111s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.00 OK   iters=5 status=0]wall=0.118s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 25 | time since last solve: 0.00s | last exception: None
+GaitLogic state: IDLE | walking=False turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [ 0.     0.414 -0.552  0.     0.414 -0.552  0.     0.414 -0.552  0.
+  0.414 -0.552]
+cmd['is_stance']              : [False, False, False, False]
+q_act        : [ 0.     0.602 -1.096 -0.     0.602 -1.096 -0.002  0.608 -1.065  0.002
+  0.608 -1.065]
+q_des (mpc)  : [ 0.     0.602 -1.096 -0.     0.602 -1.096 -0.002  0.608 -1.065  0.002
+  0.608 -1.065]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 0.     0.603 -1.1   -0.     0.603 -1.1   -0.002  0.607 -1.066  0.002
+  0.607 -1.066]   <- where the MPC sends the joints by node n
+base v_y actual: -0.0069   base v_y commanded: 0.0000
+tau0 (mpc ff): [-16.02   0.13  19.31  16.02   0.13  19.31 -16.33  -1.61  18.5   16.33
+  -1.61  18.5 ]
+pd (fosmc fb): [-0.    0.01 -0.06  0.    0.01 -0.06  0.   -0.01 -0.02 -0.   -0.01 -0.02]
+applied ctrl : [-16.02   0.13  19.31  16.02   0.13  19.31 -16.33  -1.61  18.5   16.33
+  -1.61  18.5 ]
+base pos     : [-0.     -0.0186  2.4745]  base quat: [ 1.      0.0016 -0.      0.    ]
+pitch (deg, + = nose down): 0.19 | foot y rel hip (+ = behind) FL FR BL BR: [0.02 0.02 0.07 0.07]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 0 2 2]
+=======================
+
+[mpc t=1.04 OK   iters=5 status=0]wall=0.117s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.08 OK   iters=5 status=0]wall=0.114s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.12 OK   iters=5 status=0]wall=0.113s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.16 OK   iters=5 status=0]wall=0.120s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.20 OK   iters=5 status=0]wall=0.114s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.24 OK   iters=5 status=0]wall=0.116s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.28 OK   iters=5 status=0]wall=0.122s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.32 OK   iters=5 status=0]wall=0.114s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.36 OK   iters=5 status=0]wall=0.115s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.40 OK   iters=5 status=0]wall=0.121s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.44 OK   iters=5 status=0]wall=0.117s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.48 OK   iters=5 status=0]wall=0.116s N=15 | FL:SSSSSSSSSSSSSS FR:SSSSSSSSSSSSSS BL:SSSSSSSSSSSSSS BR:SSSSSSSSSSSSSS
+[mpc t=1.52 ACPT iters=58 status=1]wall=1.350s N=15 | FL:SSSSSSSSSSSSSw FR:wwwwwwwwwwwwwS BL:wwwwwwwwwwwwwS BR:SSSSSSSSSSSSSw
+[mpc t=1.56 ACPT iters=43 status=1]wall=0.964s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=1.60 ACPT iters=49 status=1]wall=1.089s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=1.64 ACPT iters=71 status=1]wall=1.534s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=1.68 ACPT iters=110 status=1]wall=2.382s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=1.72 ACPT iters=95 status=1]wall=2.087s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=1.76 ACPT iters=135 status=1]wall=2.982s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=1.80 ACPT iters=165 status=1]wall=3.617s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=1.84 ACPT iters=130 status=1]wall=2.922s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=1.88 ACPT iters=122 status=1]wall=2.708s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=1.92 ACPT iters=106 status=1]wall=2.347s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=1.96 ACPT iters=99 status=1]wall=2.166s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=2.00 ACPT iters=113 status=1]wall=2.604s N=15 | FL:SwwwwwwwwwwwwS FR:wSSSSSSSSSSSSw BL:wSSSSSSSSSSSSw BR:SwwwwwwwwwwwwS
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 50 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.538 -0.834  0.     0.35  -0.832 -0.     0.318 -0.773  0.
+  0.503 -0.774]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [ 0.012  0.608 -1.034 -0.007  0.534 -1.288 -0.004  0.57  -1.256  0.015
+  0.622 -1.019]
+q_des (mpc)  : [ 0.012  0.608 -1.034 -0.007  0.534 -1.288 -0.004  0.57  -1.256  0.015
+  0.622 -1.019]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 0.     0.574 -1.167 -0.007  0.675 -1.192  0.006  0.7   -1.177 -0.005
+  0.605 -1.123]   <- where the MPC sends the joints by node n
+base v_y actual: -0.4616   base v_y commanded: -0.9600
+tau0 (mpc ff): [-50.25  50.06 100.    -4.42   7.72  10.57  22.52   3.45  12.45  47.58
+   2.79  51.81]
+pd (fosmc fb): [ 0.79  0.94  0.63 -2.12 -2.37 -2.14  2.09 -2.4  -2.13  0.76  0.47  2.08]
+applied ctrl : [-50.25  50.06 100.    -4.42   7.72  10.57  22.52   3.45  12.45  47.58
+   2.79  51.81]
+base pos     : [ 0.0437 -0.0942  2.505 ]  base quat: [ 1.0e+00 -2.7e-03  3.2e-03  2.0e-04]
+pitch (deg, + = nose down): -0.31 | foot y rel hip (+ = behind) FL FR BL BR: [ 0.11 -0.38 -0.26  0.17]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 0 0 0]
+=======================
+
+[mpc t=2.04 ACPT iters=476 status=1]wall=10.966s N=15 | FL:wwwwwwwwwwwwwS FR:SSSSSSSSSSSSSw BL:SSSSSSSSSSSSSw BR:wwwwwwwwwwwwwS
+[mpc t=2.08 ACPT iters=526 status=1]wall=11.192s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=2.12 ACPT iters=1001 status=1]wall=21.909s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=2.16 ACPT iters=216 status=1]wall=4.705s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=2.20 ACPT iters=464 status=1]wall=9.861s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=2.24 ACPT iters=356 status=1]wall=7.649s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=2.28 ACPT iters=114 status=1]wall=2.583s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=2.32 ACPT iters=67 status=1]wall=1.524s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=2.36 ACPT iters=74 status=1]wall=1.689s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=2.40 ACPT iters=83 status=1]wall=1.825s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=2.44 ACPT iters=94 status=1]wall=2.078s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=2.48 ACPT iters=47 status=1]wall=1.021s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=2.52 ACPT iters=47 status=1]wall=1.028s N=15 | FL:wSSSSSSSSSSSSw FR:SwwwwwwwwwwwwS BL:SwwwwwwwwwwwwS BR:wSSSSSSSSSSSSw
+[mpc t=2.56 ACPT iters=89 status=1]wall=1.957s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=2.60 ACPT iters=1001 status=1]wall=21.400s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=2.64 ACPT iters=1001 status=1]wall=22.201s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=2.68 ACPT iters=1001 status=1]wall=21.805s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=2.72 ACPT iters=1001 status=1]wall=22.060s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=2.76 ACPT iters=1001 status=1]wall=22.673s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=2.80 ACPT iters=1001 status=1]wall=22.241s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=2.84 ACPT iters=428 status=1]wall=9.501s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=2.88 ACPT iters=132 status=1]wall=3.021s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=2.92 ACPT iters=106 status=1]wall=2.341s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=2.96 ACPT iters=129 status=1]wall=2.809s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=3.00 ACPT iters=358 status=1]wall=7.979s N=15 | FL:Swwwwwwwwwwwww FR:wSSSSSSSSSSSSS BL:wSSSSSSSSSSSSS BR:Swwwwwwwwwwwww
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 75 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [-0.036  0.746 -0.856 -0.003  0.552 -1.309  0.012  0.749 -1.095 -0.006
+  0.7   -0.741]
+q_des (mpc)  : [-0.036  0.746 -0.856 -0.003  0.552 -1.309  0.012  0.749 -1.095 -0.006
+  0.7   -0.741]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 1.100e-02  5.860e-01 -1.239e+00 -1.200e-02  8.680e-01 -1.153e+00
+ -1.000e-03  8.360e-01 -8.260e-01 -8.000e-03  5.700e-01 -1.255e+00]   <- where the MPC sends the joints by node n
+base v_y actual: -2.0315   base v_y commanded: -2.0000
+tau0 (mpc ff): [ -58.34 -100.     15.21  -36.01   58.47   19.75   52.54  100.      5.97
+   29.52  -53.84   24.53]
+pd (fosmc fb): [ 0.74 -2.38  2.4  -2.05  0.84 -2.18  0.19  2.18 -2.18 -0.07 -2.07 -2.07]
+applied ctrl : [ -58.34 -100.     15.21  -36.01   58.47   19.75   52.54  100.      5.97
+   29.52  -53.84   24.53]
+base pos     : [-0.0167 -1.5764  2.5244]  base quat: [ 0.9999  0.0076 -0.0044 -0.007 ]
+pitch (deg, + = nose down): 0.87 | foot y rel hip (+ = behind) FL FR BL BR: [ 0.71 -0.36  0.39  0.77]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 2 2 0]
+=======================
+
+[mpc t=3.04 ACPT iters=435 status=1]wall=9.704s N=15 | FL:wwwwwwwwwwwwwS FR:SSSSSSSSSSSSSw BL:SSSSSSSSSSSSSw BR:wwwwwwwwwwwwwS
+[mpc t=3.08 ACPT iters=1001 status=1]wall=21.346s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=3.12 ACPT iters=1001 status=1]wall=22.662s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=3.16 ACPT iters=1001 status=1]wall=22.173s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=3.20 ACPT iters=1001 status=1]wall=22.380s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=3.24 ACPT iters=1001 status=1]wall=22.354s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=3.28 ACPT iters=1001 status=1]wall=22.433s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=3.32 ACPT iters=1001 status=1]wall=22.350s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=3.36 ACPT iters=515 status=1]wall=11.891s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=3.40 ACPT iters=231 status=1]wall=5.209s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=3.44 ACPT iters=334 status=1]wall=7.382s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=3.48 ACPT iters=309 status=1]wall=7.264s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=3.52 ACPT iters=200 status=1]wall=4.464s N=15 | FL:wSSSSSSSSSSSSw FR:SwwwwwwwwwwwwS BL:SwwwwwwwwwwwwS BR:wSSSSSSSSSSSSw
+[mpc t=3.56 ACPT iters=1001 status=1]wall=22.285s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=3.60 ACPT iters=734 status=1]wall=16.104s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=3.64 ACPT iters=1001 status=1]wall=21.955s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=3.68 ACPT iters=1001 status=1]wall=21.793s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=3.72 ACPT iters=1001 status=1]wall=22.259s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=3.76 ACPT iters=1001 status=1]wall=22.727s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=3.80 ACPT iters=1001 status=1]wall=22.413s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=3.84 ACPT iters=823 status=1]wall=18.503s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=3.88 ACPT iters=106 status=1]wall=2.319s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=3.92 ACPT iters=1001 status=1]wall=22.011s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=3.96 ACPT iters=355 status=1]wall=7.685s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=4.00 ACPT iters=245 status=1]wall=5.334s N=15 | FL:Swwwwwwwwwwwww FR:wSSSSSSSSSSSSS BL:wSSSSSSSSSSSSS BR:Swwwwwwwwwwwww
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 100 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [-0.034  0.731 -0.829 -0.005  0.773 -1.077  0.022  0.961 -1.135 -0.033
+  0.695 -0.651]
+q_des (mpc)  : [-0.034  0.731 -0.829 -0.005  0.773 -1.077  0.022  0.961 -1.135 -0.033
+  0.695 -0.651]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 0.016  0.602 -1.259 -0.003  0.865 -0.82   0.003  0.918 -0.644 -0.003
+  0.649 -1.257]   <- where the MPC sends the joints by node n
+base v_y actual: -2.0248   base v_y commanded: -2.0000
+tau0 (mpc ff): [ -26.2  -100.    -21.01  -51.83   97.48    3.22   35.72   67.64   -7.9
+   39.54 -100.    -22.08]
+pd (fosmc fb): [-2.07 -2.32  2.19  2.12 -2.31 -2.2   0.79  2.11 -2.67 -0.93 -2.13 -1.03]
+applied ctrl : [ -26.2  -100.    -21.01  -51.83   97.48    3.22   35.72   67.64   -7.9
+   39.54 -100.    -22.08]
+base pos     : [-0.0905 -3.7132  2.5101]  base quat: [ 0.9999  0.013  -0.0033  0.0082]
+pitch (deg, + = nose down): 1.49 | foot y rel hip (+ = behind) FL FR BL BR: [0.71 0.47 0.82 0.89]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [3 2 2 3]
+=======================
+
+[mpc t=4.04 ACPT iters=1001 status=1]wall=22.264s N=15 | FL:wwwwwwwwwwwwwS FR:SSSSSSSSSSSSSw BL:SSSSSSSSSSSSSw BR:wwwwwwwwwwwwwS
+[mpc t=4.08 ACPT iters=1001 status=1]wall=22.662s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=4.12 ACPT iters=243 status=1]wall=5.346s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=4.16 ACPT iters=1001 status=1]wall=22.489s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=4.20 ACPT iters=1001 status=1]wall=22.948s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=4.24 ACPT iters=1001 status=1]wall=22.218s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=4.28 ACPT iters=1001 status=1]wall=22.599s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=4.32 ACPT iters=1001 status=1]wall=22.099s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=4.36 ACPT iters=1001 status=1]wall=22.518s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=4.40 ACPT iters=421 status=1]wall=9.462s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=4.44 ACPT iters=639 status=1]wall=14.174s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=4.48 ACPT iters=153 status=1]wall=3.313s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=4.52 ACPT iters=1001 status=1]wall=22.813s N=15 | FL:wSSSSSSSSSSSSw FR:SwwwwwwwwwwwwS BL:SwwwwwwwwwwwwS BR:wSSSSSSSSSSSSw
+[mpc t=4.56 ACPT iters=1001 status=1]wall=21.473s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=4.60 ACPT iters=1001 status=1]wall=21.447s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=4.64 ACPT iters=1001 status=1]wall=21.757s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=4.68 ACPT iters=1001 status=1]wall=22.044s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=4.72 ACPT iters=1001 status=1]wall=22.479s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=4.76 ACPT iters=1001 status=1]wall=22.551s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=4.80 ACPT iters=1001 status=1]wall=22.593s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=4.84 ACPT iters=1001 status=1]wall=22.371s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=4.88 ACPT iters=1001 status=1]wall=22.759s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=4.92 ACPT iters=1001 status=1]wall=21.916s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=4.96 ACPT iters=1001 status=1]wall=21.005s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=5.00 ACPT iters=1001 status=1]wall=21.359s N=15 | FL:Swwwwwwwwwwwww FR:wSSSSSSSSSSSSS BL:wSSSSSSSSSSSSS BR:Swwwwwwwwwwwww
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 125 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [-0.179  0.625 -0.503 -0.002  0.369 -1.406  0.057  1.234 -1.29  -0.076
+  0.63  -0.157]
+q_des (mpc)  : [-0.179  0.625 -0.503 -0.002  0.369 -1.406  0.057  1.234 -1.29  -0.076
+  0.63  -0.157]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 0.013  0.707 -1.119 -0.04   0.864 -1.271 -0.013  0.923 -0.144  0.005
+  0.977 -1.052]   <- where the MPC sends the joints by node n
+base v_y actual: -2.3954   base v_y commanded: -2.0000
+tau0 (mpc ff): [ 100.    -65.5   -48.73  -59.87   99.68   21.16   19.04   23.2   -35.11
+  -77.79 -100.    -87.63]
+pd (fosmc fb): [-0.87 -2.76  2.21  2.15  2.09 -2.15  2.18  2.37 -3.65 -2.25 -3.64  4.24]
+applied ctrl : [ 100.    -65.5   -48.73  -59.87   99.68   21.16   19.04   23.2   -35.11
+  -77.79 -100.    -87.63]
+base pos     : [-0.2394 -5.8212  2.3854]  base quat: [0.9975 0.063  0.0021 0.0321]
+pitch (deg, + = nose down): 7.23 | foot y rel hip (+ = behind) FL FR BL BR: [ 0.94 -0.83  1.15  1.45]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [2 1 0 3]
+=======================
+
+[mpc t=5.04 ACPT iters=1001 status=1]wall=22.123s N=15 | FL:wwwwwwwwwwwwwS FR:SSSSSSSSSSSSSw BL:SSSSSSSSSSSSSw BR:wwwwwwwwwwwwwS
+[mpc t=5.08 ACPT iters=1001 status=1]wall=22.533s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=5.12 ACPT iters=1001 status=1]wall=21.212s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=5.16 ACPT iters=1001 status=1]wall=22.450s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=5.20 ACPT iters=1001 status=1]wall=23.104s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=5.24 ACPT iters=1001 status=1]wall=22.468s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=5.28 ACPT iters=1001 status=1]wall=22.746s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=5.32 ACPT iters=1001 status=1]wall=21.780s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=5.36 ACPT iters=1001 status=1]wall=21.942s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=5.40 ACPT iters=1001 status=1]wall=22.847s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=5.44 ACPT iters=1001 status=1]wall=21.180s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=5.48 ACPT iters=1001 status=1]wall=21.367s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=5.52 ACPT iters=1001 status=1]wall=21.961s N=15 | FL:wSSSSSSSSSSSSw FR:SwwwwwwwwwwwwS BL:SwwwwwwwwwwwwS BR:wSSSSSSSSSSSSw
+[mpc t=5.56 ACPT iters=1001 status=1]wall=24.919s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=5.60 ACPT iters=1001 status=1]wall=22.366s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=5.64 ACPT iters=1001 status=1]wall=22.090s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=5.68 ACPT iters=1001 status=1]wall=22.302s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=5.72 ACPT iters=1001 status=1]wall=22.036s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=5.76 ACPT iters=1001 status=1]wall=21.360s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=5.80 ACPT iters=1001 status=1]wall=21.798s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=5.84 ACPT iters=1001 status=1]wall=21.487s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=5.88 ACPT iters=1001 status=1]wall=21.337s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=5.92 ACPT iters=1001 status=1]wall=23.411s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=5.96 ACPT iters=1001 status=1]wall=21.803s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=6.00 ACPT iters=1001 status=1]wall=22.134s N=15 | FL:Swwwwwwwwwwwww FR:wSSSSSSSSSSSSS BL:wSSSSSSSSSSSSS BR:Swwwwwwwwwwwww
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 150 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [-0.323  1.224 -1.028  0.041  0.998 -0.723  0.014  2.335 -1.806  0.004
+  1.274 -0.826]
+q_des (mpc)  : [-0.323  1.224 -1.028  0.041  0.998 -0.723  0.014  2.335 -1.806  0.004
+  1.274 -0.826]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 0.033  1.274 -0.975 -0.045  1.045 -0.053 -0.015  1.781 -1.368  0.026
+  1.276 -0.709]   <- where the MPC sends the joints by node n
+base v_y actual: -0.3769   base v_y commanded: -2.0000
+tau0 (mpc ff): [  50.2   -49.87  -10.73   10.62  -33.45  -39.64  -91.53  -76.79  -69.66
+  100.   -100.    -44.93]
+pd (fosmc fb): [-3.07  3.08 -2.56 -4.4   4.47 -4.73 -4.32  3.5  -2.82 -2.77  2.07  2.8 ]
+applied ctrl : [  50.2   -49.87  -10.73   10.62  -33.45  -39.64  -91.53  -76.79  -69.66
+  100.   -100.    -44.93]
+base pos     : [-0.7811 -8.0652  1.4235]  base quat: [ 0.9845  0.1382 -0.0751  0.0777]
+pitch (deg, + = nose down): 15.32 | foot y rel hip (+ = behind) FL FR BL BR: [1.51 1.5  1.72 1.9 ]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 3 0 0]
+=======================
+
+[mpc t=6.04 ACPT iters=1001 status=1]wall=23.690s N=15 | FL:wwwwwwwwwwwwwS FR:SSSSSSSSSSSSSw BL:SSSSSSSSSSSSSw BR:wwwwwwwwwwwwwS
+[mpc t=6.08 ACPT iters=1001 status=1]wall=23.361s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=6.12 ACPT iters=1001 status=1]wall=25.056s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=6.16 ACPT iters=1001 status=1]wall=22.598s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=6.20 ACPT iters=1001 status=1]wall=22.245s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=6.24 ACPT iters=1001 status=1]wall=22.977s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=6.28 ACPT iters=1001 status=1]wall=22.742s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=6.32 ACPT iters=1001 status=1]wall=21.719s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=6.36 ACPT iters=1001 status=1]wall=23.560s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=6.40 ACPT iters=1001 status=1]wall=24.473s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=6.44 ACPT iters=1001 status=1]wall=22.779s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=6.48 ACPT iters=1001 status=1]wall=21.976s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=6.52 ACPT iters=1001 status=1]wall=21.015s N=15 | FL:wSSSSSSSSSSSSw FR:SwwwwwwwwwwwwS BL:SwwwwwwwwwwwwS BR:wSSSSSSSSSSSSw
+[mpc t=6.56 ACPT iters=1001 status=1]wall=23.035s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=6.60 ACPT iters=1001 status=1]wall=22.506s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=6.64 ACPT iters=1001 status=1]wall=21.793s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=6.68 ACPT iters=1001 status=1]wall=22.522s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=6.72 ACPT iters=1001 status=1]wall=21.611s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=6.76 ACPT iters=1001 status=1]wall=22.128s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=6.80 ACPT iters=1001 status=1]wall=20.995s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=6.84 ACPT iters=1001 status=1]wall=22.265s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=6.88 ACPT iters=1001 status=1]wall=22.504s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=6.92 ACPT iters=1001 status=1]wall=22.691s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=6.96 ACPT iters=1001 status=1]wall=22.504s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=7.00 ACPT iters=1001 status=1]wall=21.823s N=15 | FL:Swwwwwwwwwwwww FR:wSSSSSSSSSSSSS BL:wSSSSSSSSSSSSS BR:Swwwwwwwwwwwww
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 175 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [-0.148  0.65  -0.295 -0.073  0.538 -0.805  0.166  1.443 -1.427 -0.154
+  0.644 -0.051]
+q_des (mpc)  : [-0.148  0.65  -0.295 -0.073  0.538 -0.805  0.166  1.443 -1.427 -0.154
+  0.644 -0.051]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [-0.     1.237 -0.857 -0.011  0.774 -0.131 -0.072  1.084  0.067  0.054
+  1.286 -0.51 ]   <- where the MPC sends the joints by node n
+base v_y actual: -2.3921   base v_y commanded: -2.0000
+tau0 (mpc ff): [  12.47   97.95   37.55  -19.42   33.25   -4.3    34.95   -4.72  -39.62
+  -42.84 -100.   -100.  ]
+pd (fosmc fb): [ 2.42 -2.82  3.56  3.86  4.66 -5.81 -2.39  4.13 -4.9   2.31 -3.45  4.61]
+applied ctrl : [  12.47   97.95   37.55  -19.42   33.25   -4.3    34.95   -4.72  -39.62
+  -42.84 -100.   -100.  ]
+base pos     : [-0.736  -9.6536  1.9761]  base quat: [ 0.9852  0.1207 -0.034   0.1167]
+pitch (deg, + = nose down): 13.35 | foot y rel hip (+ = behind) FL FR BL BR: [1.31 0.28 1.31 1.62]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 0 0 0]
+=======================
+
+[mpc t=7.04 ACPT iters=1001 status=1]wall=22.653s N=15 | FL:wwwwwwwwwwwwwS FR:SSSSSSSSSSSSSw BL:SSSSSSSSSSSSSw BR:wwwwwwwwwwwwwS
+[mpc t=7.08 ACPT iters=1001 status=1]wall=22.162s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=7.12 ACPT iters=1001 status=1]wall=25.166s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=7.16 ACPT iters=1001 status=1]wall=22.436s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=7.20 ACPT iters=1001 status=1]wall=23.092s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=7.24 ACPT iters=1001 status=1]wall=22.556s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=7.28 ACPT iters=1001 status=1]wall=24.159s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=7.32 ACPT iters=1001 status=1]wall=21.073s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=7.36 ACPT iters=1001 status=1]wall=22.424s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=7.40 ACPT iters=1001 status=1]wall=24.798s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=7.44 ACPT iters=1001 status=1]wall=22.067s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=7.48 ACPT iters=1001 status=1]wall=23.357s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=7.52 ACPT iters=1001 status=1]wall=22.541s N=15 | FL:wSSSSSSSSSSSSw FR:SwwwwwwwwwwwwS BL:SwwwwwwwwwwwwS BR:wSSSSSSSSSSSSw
+[mpc t=7.56 ACPT iters=1001 status=1]wall=22.937s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=7.60 ACPT iters=1001 status=1]wall=24.301s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=7.64 ACPT iters=1001 status=1]wall=22.632s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=7.68 ACPT iters=1001 status=1]wall=22.556s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=7.72 ACPT iters=1001 status=1]wall=21.882s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=7.76 ACPT iters=1001 status=1]wall=22.351s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=7.80 ACPT iters=1001 status=1]wall=21.216s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=7.84 ACPT iters=1001 status=1]wall=21.124s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=7.88 ACPT iters=1001 status=1]wall=21.686s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=7.92 ACPT iters=1001 status=1]wall=22.102s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=7.96 ACPT iters=1001 status=1]wall=22.125s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=8.00 ACPT iters=1001 status=1]wall=22.236s N=15 | FL:Swwwwwwwwwwwww FR:wSSSSSSSSSSSSS BL:wSSSSSSSSSSSSS BR:Swwwwwwwwwwwww
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 200 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [ 2.790e-01  6.030e-01 -5.940e-01  1.000e-03  1.561e+00 -1.047e+00
+  0.000e+00  1.270e+00 -1.001e+00 -5.000e-03  1.261e+00 -1.748e+00]
+q_des (mpc)  : [ 2.790e-01  6.030e-01 -5.940e-01  1.000e-03  1.561e+00 -1.047e+00
+  0.000e+00  1.270e+00 -1.001e+00 -5.000e-03  1.261e+00 -1.748e+00]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 1.800e-02  5.360e-01 -1.356e+00 -4.000e-03  9.790e-01 -2.480e-01
+  7.000e-03  1.019e+00 -7.240e-01 -1.000e-03  5.300e-01 -1.309e+00]   <- where the MPC sends the joints by node n
+base v_y actual: -0.0423   base v_y commanded: -2.0000
+tau0 (mpc ff): [ -26.54  -26.4   -51.42   -1.74  -30.17  -39.32  -27.21  -17.09  -20.29
+   39.59 -100.     63.65]
+pd (fosmc fb): [ 2.1  -0.04 -2.07 -0.96  3.01 -3.31  2.11  2.15 -2.5  -2.05  2.25  2.06]
+applied ctrl : [ -26.54  -26.4   -51.42   -1.74  -30.17  -39.32  -27.21  -17.09  -20.29
+   39.59 -100.     63.65]
+base pos     : [ -0.5972 -11.0743   1.9672]  base quat: [ 0.9832 -0.0097  0.0619  0.1717]
+pitch (deg, + = nose down): 0.12 | foot y rel hip (+ = behind) FL FR BL BR: [0.75 2.05 1.66 0.53]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 0 0 0]
+=======================
+
+[mpc t=8.04 ACPT iters=1001 status=1]wall=24.278s N=15 | FL:wwwwwwwwwwwwwS FR:SSSSSSSSSSSSSw BL:SSSSSSSSSSSSSw BR:wwwwwwwwwwwwwS
+[mpc t=8.08 ACPT iters=1001 status=1]wall=22.139s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=8.12 ACPT iters=1001 status=1]wall=21.212s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=8.16 ACPT iters=1001 status=1]wall=20.961s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=8.20 ACPT iters=1001 status=1]wall=21.913s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=8.24 ACPT iters=1001 status=1]wall=21.895s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=8.28 ACPT iters=1001 status=1]wall=21.708s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=8.32 ACPT iters=1001 status=1]wall=21.174s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=8.36 ACPT iters=1001 status=1]wall=21.248s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=8.40 ACPT iters=1001 status=1]wall=21.293s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=8.44 ACPT iters=1001 status=1]wall=21.321s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=8.48 ACPT iters=1001 status=1]wall=21.771s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=8.52 ACPT iters=1001 status=1]wall=22.099s N=15 | FL:wSSSSSSSSSSSSw FR:SwwwwwwwwwwwwS BL:SwwwwwwwwwwwwS BR:wSSSSSSSSSSSSw
+[mpc t=8.56 ACPT iters=1001 status=1]wall=22.614s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=8.60 ACPT iters=1001 status=1]wall=22.429s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=8.64 ACPT iters=1001 status=1]wall=22.144s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=8.68 ACPT iters=1001 status=1]wall=22.170s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=8.72 ACPT iters=1001 status=1]wall=22.105s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=8.76 ACPT iters=1001 status=1]wall=22.697s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=8.80 ACPT iters=1001 status=1]wall=22.680s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=8.84 ACPT iters=1001 status=1]wall=22.434s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=8.88 ACPT iters=1001 status=1]wall=22.329s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=8.92 ACPT iters=214 status=1]wall=4.638s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=8.96 ACPT iters=166 status=1]wall=3.616s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=9.00 ACPT iters=175 status=1]wall=3.800s N=15 | FL:Swwwwwwwwwwwww FR:wSSSSSSSSSSSSS BL:wSSSSSSSSSSSSS BR:Swwwwwwwwwwwww
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 225 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [-0.042  0.281 -1.021 -0.005  1.1   -1.063  0.028  1.247 -0.974 -0.009
+  0.627 -0.966]
+q_des (mpc)  : [-0.042  0.281 -1.021 -0.005  1.1   -1.063  0.028  1.247 -0.974 -0.009
+  0.627 -0.966]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 0.018  0.727 -1.148 -0.019  0.954 -0.56  -0.021  1.128 -0.53   0.017
+  0.489 -1.253]   <- where the MPC sends the joints by node n
+base v_y actual: -0.6696   base v_y commanded: -2.0000
+tau0 (mpc ff): [ -24.1   -27.94    8.55  -18.95   26.84  -20.87   -4.26   -9.05  -20.19
+   19.68 -100.     50.84]
+pd (fosmc fb): [-0.94  0.15 -2.07  2.11  2.55 -2.74  2.25  2.42 -2.61 -1.02 -2.05  2.06]
+applied ctrl : [ -24.1   -27.94    8.55  -18.95   26.84  -20.87   -4.26   -9.05  -20.19
+   19.68 -100.     50.84]
+base pos     : [ -0.8639 -11.4097   2.5063]  base quat: [ 0.9817  0.0049 -0.0023  0.1905]
+pitch (deg, + = nose down): 0.50 | foot y rel hip (+ = behind) FL FR BL BR: [-0.66  1.22  1.65  0.26]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 1 0 0]
+=======================
+
+[mpc t=9.04 ACPT iters=191 status=1]wall=4.028s N=15 | FL:wwwwwwwwwwwwwS FR:SSSSSSSSSSSSSw BL:SSSSSSSSSSSSSw BR:wwwwwwwwwwwwwS
+[mpc t=9.08 ACPT iters=274 status=1]wall=5.949s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=9.12 ACPT iters=1001 status=1]wall=22.690s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=9.16 ACPT iters=1001 status=1]wall=22.337s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=9.20 ACPT iters=1001 status=1]wall=22.367s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=9.24 ACPT iters=1001 status=1]wall=22.213s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=9.28 ACPT iters=1001 status=1]wall=22.443s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=9.32 ACPT iters=1001 status=1]wall=22.507s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=9.36 ACPT iters=976 status=1]wall=21.832s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=9.40 ACPT iters=483 status=1]wall=10.840s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=9.44 ACPT iters=210 status=1]wall=4.615s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=9.48 ACPT iters=640 status=1]wall=14.204s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=9.52 ACPT iters=562 status=1]wall=12.661s N=15 | FL:wSSSSSSSSSSSSw FR:SwwwwwwwwwwwwS BL:SwwwwwwwwwwwwS BR:wSSSSSSSSSSSSw
+[mpc t=9.56 ACPT iters=1001 status=1]wall=21.544s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=9.60 ACPT iters=1001 status=1]wall=21.905s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=9.64 ACPT iters=1001 status=1]wall=21.873s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=9.68 ACPT iters=1001 status=1]wall=22.147s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=9.72 ACPT iters=1001 status=1]wall=22.351s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=9.76 ACPT iters=1001 status=1]wall=22.437s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=9.80 ACPT iters=1001 status=1]wall=22.414s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=9.84 ACPT iters=1001 status=1]wall=22.455s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=9.88 ACPT iters=333 status=1]wall=7.804s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=9.92 ACPT iters=403 status=1]wall=8.820s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=9.96 ACPT iters=394 status=1]wall=8.626s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=10.00 ACPT iters=260 status=1]wall=5.773s N=15 | FL:SwwwwwwwwwwwwS FR:wSSSSSSSSSSSSw BL:wSSSSSSSSSSSSw BR:SwwwwwwwwwwwwS
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 250 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [ 0.026  0.569 -0.901 -0.005  1.121 -1.094  0.02   0.997 -1.062  0.014
+  0.508 -1.088]
+q_des (mpc)  : [ 0.026  0.569 -0.901 -0.005  1.121 -1.094  0.02   0.997 -1.062  0.014
+  0.508 -1.088]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 0.004  0.597 -1.174 -0.007  1.    -0.686  0.003  1.032 -0.912 -0.003
+  0.62  -1.183]   <- where the MPC sends the joints by node n
+base v_y actual: -0.7007   base v_y commanded: -2.0000
+tau0 (mpc ff): [-37.53 -70.03 -13.49 -15.38  29.36 -19.24  20.31  37.9   -7.13   3.78
+ -63.04  46.31]
+pd (fosmc fb): [ 0.11  2.07 -2.12  0.94  2.49 -2.67  2.15  2.29 -2.26 -0.52 -0.58  2.05]
+applied ctrl : [-37.53 -70.03 -13.49 -15.38  29.36 -19.24  20.31  37.9   -7.13   3.78
+ -63.04  46.31]
+base pos     : [ -0.6018 -12.2258   2.5137]  base quat: [9.789e-01 9.000e-04 1.140e-02 2.041e-01]
+pitch (deg, + = nose down): 0.37 | foot y rel hip (+ = behind) FL FR BL BR: [ 0.2   1.22  1.   -0.2 ]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 5 0 0]
+=======================
+
+[mpc t=10.04 ACPT iters=908 status=1]wall=20.229s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=10.08 ACPT iters=1001 status=1]wall=21.965s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=10.12 ACPT iters=1001 status=1]wall=21.593s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=10.16 ACPT iters=1001 status=1]wall=21.825s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=10.20 ACPT iters=1001 status=1]wall=21.933s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=10.24 ACPT iters=1001 status=1]wall=22.424s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=10.28 ACPT iters=1001 status=1]wall=22.226s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=10.32 ACPT iters=1001 status=1]wall=22.262s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=10.36 ACPT iters=1001 status=1]wall=22.278s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=10.40 ACPT iters=1001 status=1]wall=22.515s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=10.44 ACPT iters=788 status=1]wall=17.852s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=10.48 ACPT iters=694 status=1]wall=15.602s N=15 | FL:wSSSSSSSSSSSSS FR:Swwwwwwwwwwwww BL:Swwwwwwwwwwwww BR:wSSSSSSSSSSSSS
+[mpc t=10.52 ACPT iters=1001 status=1]wall=22.677s N=15 | FL:SSSSSSSSSSSSSw FR:wwwwwwwwwwwwwS BL:wwwwwwwwwwwwwS BR:SSSSSSSSSSSSSw
+[mpc t=10.56 ACPT iters=1001 status=1]wall=21.681s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=10.60 ACPT iters=1001 status=1]wall=21.966s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=10.64 ACPT iters=1001 status=1]wall=22.083s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=10.68 ACPT iters=1001 status=1]wall=22.278s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=10.72 ACPT iters=1001 status=1]wall=21.866s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=10.76 ACPT iters=1001 status=1]wall=22.202s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=10.80 ACPT iters=1001 status=1]wall=22.132s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=10.84 ACPT iters=970 status=1]wall=21.769s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=10.88 ACPT iters=519 status=1]wall=11.589s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=10.92 ACPT iters=179 status=1]wall=3.914s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=10.96 ACPT iters=1001 status=1]wall=22.062s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=11.00 ACPT iters=472 status=1]wall=10.545s N=15 | FL:SwwwwwwwwwwwwS FR:wSSSSSSSSSSSSw BL:wSSSSSSSSSSSSw BR:SwwwwwwwwwwwwS
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 275 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [ 0.031  0.55  -0.907 -0.006  1.186 -1.088  0.025  1.191 -1.026  0.006
+  0.512 -1.108]
+q_des (mpc)  : [ 0.031  0.55  -0.907 -0.006  1.186 -1.088  0.025  1.191 -1.026  0.006
+  0.512 -1.108]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 5.000e-03  6.050e-01 -1.167e+00 -3.000e-03  1.029e+00 -6.430e-01
+ -1.000e-03  1.144e+00 -7.320e-01 -1.000e-03  6.110e-01 -1.225e+00]   <- where the MPC sends the joints by node n
+base v_y actual: -0.6432   base v_y commanded: -2.0000
+tau0 (mpc ff): [-38.66 -59.17 -10.84 -13.01  17.97 -21.2    7.04   9.09 -12.75   8.95
+ -71.96  59.63]
+pd (fosmc fb): [ 0.53  2.07 -2.17  2.06  2.59 -2.74  2.19  2.5  -2.4  -0.63 -0.68  0.97]
+applied ctrl : [-38.66 -59.17 -10.84 -13.01  17.97 -21.2    7.04   9.09 -12.75   8.95
+ -71.96  59.63]
+base pos     : [ -0.2484 -13.1121   2.5012]  base quat: [0.9773 0.0021 0.0127 0.2113]
+pitch (deg, + = nose down): 0.54 | foot y rel hip (+ = behind) FL FR BL BR: [ 0.15  1.36  1.46 -0.22]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 8 0 0]
+=======================
+
+[mpc t=11.04 ACPT iters=1001 status=1]wall=22.589s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=11.08 ACPT iters=1001 status=1]wall=22.307s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=11.12 ACPT iters=1001 status=1]wall=22.415s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=11.16 ACPT iters=1001 status=1]wall=22.468s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=11.20 ACPT iters=1001 status=1]wall=21.976s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=11.24 ACPT iters=1001 status=1]wall=22.336s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=11.28 ACPT iters=1001 status=1]wall=22.365s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=11.32 ACPT iters=1001 status=1]wall=22.406s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=11.36 ACPT iters=1001 status=1]wall=22.366s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=11.40 ACPT iters=364 status=1]wall=8.100s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=11.44 ACPT iters=515 status=1]wall=11.669s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=11.48 ACPT iters=250 status=1]wall=5.789s N=15 | FL:wSSSSSSSSSSSSS FR:Swwwwwwwwwwwww BL:Swwwwwwwwwwwww BR:wSSSSSSSSSSSSS
+[mpc t=11.52 ACPT iters=1001 status=1]wall=21.351s N=15 | FL:SSSSSSSSSSSSSw FR:wwwwwwwwwwwwwS BL:wwwwwwwwwwwwwS BR:SSSSSSSSSSSSSw
+[mpc t=11.56 ACPT iters=1001 status=1]wall=21.410s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=11.60 ACPT iters=1001 status=1]wall=21.613s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=11.64 ACPT iters=1001 status=1]wall=21.937s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=11.68 ACPT iters=1001 status=1]wall=21.735s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=11.72 ACPT iters=1001 status=1]wall=22.125s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=11.76 ACPT iters=1001 status=1]wall=22.032s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=11.80 ACPT iters=1001 status=1]wall=21.992s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=11.84 ACPT iters=1001 status=1]wall=22.075s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=11.88 ACPT iters=1001 status=1]wall=22.321s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=11.92 ACPT iters=341 status=1]wall=7.507s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=11.96 ACPT iters=274 status=1]wall=6.004s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=12.00 ACPT iters=319 status=1]wall=7.010s N=15 | FL:SwwwwwwwwwwwwS FR:wSSSSSSSSSSSSw BL:wSSSSSSSSSSSSw BR:SwwwwwwwwwwwwS
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 300 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [ 0.026  0.494 -0.912 -0.005  1.319 -1.037  0.021  1.021 -1.061  0.017
+  0.549 -1.099]
+q_des (mpc)  : [ 0.026  0.494 -0.912 -0.005  1.319 -1.037  0.021  1.021 -1.061  0.017
+  0.549 -1.099]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 0.005  0.607 -1.157 -0.003  1.118 -0.508  0.004  1.052 -0.933  0.
+  0.613 -1.204]   <- where the MPC sends the joints by node n
+base v_y actual: -0.4994   base v_y commanded: -2.0000
+tau0 (mpc ff): [-42.36 -41.43  -7.92  -4.32   0.21 -26.76  19.41  30.86  -5.99 -18.46
+ -63.43  69.48]
+pd (fosmc fb): [ 0.23  2.08 -2.16  2.08  2.76 -2.82  2.18  2.4  -2.3  -0.64 -0.85  2.09]
+applied ctrl : [-42.36 -41.43  -7.92  -4.32   0.21 -26.76  19.41  30.86  -5.99 -18.46
+ -63.43  69.48]
+base pos     : [  0.0156 -13.9215   2.516 ]  base quat: [0.9745 0.0011 0.0127 0.2242]
+pitch (deg, + = nose down): 0.45 | foot y rel hip (+ = behind) FL FR BL BR: [-0.    1.68  1.06 -0.12]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 0 0 0]
+=======================
+
+[mpc t=12.04 ACPT iters=1001 status=1]wall=22.321s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=12.08 ACPT iters=991 status=1]wall=21.638s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=12.12 ACPT iters=1001 status=1]wall=22.365s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=12.16 ACPT iters=935 status=1]wall=20.184s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=12.20 ACPT iters=1001 status=1]wall=21.987s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=12.24 ACPT iters=1001 status=1]wall=22.333s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=12.28 ACPT iters=1001 status=1]wall=22.736s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=12.32 ACPT iters=1001 status=1]wall=22.183s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=12.36 ACPT iters=1001 status=1]wall=22.382s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=12.40 ACPT iters=997 status=1]wall=22.548s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=12.44 ACPT iters=237 status=1]wall=5.162s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=12.48 ACPT iters=338 status=1]wall=7.586s N=15 | FL:wSSSSSSSSSSSSS FR:Swwwwwwwwwwwww BL:Swwwwwwwwwwwww BR:wSSSSSSSSSSSSS
+[mpc t=12.52 ACPT iters=1001 status=1]wall=22.425s N=15 | FL:SSSSSSSSSSSSSw FR:wwwwwwwwwwwwwS BL:wwwwwwwwwwwwwS BR:SSSSSSSSSSSSSw
+[mpc t=12.56 ACPT iters=1001 status=1]wall=21.689s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=12.60 ACPT iters=1001 status=1]wall=21.634s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=12.64 ACPT iters=1001 status=1]wall=21.851s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=12.68 ACPT iters=1001 status=1]wall=21.987s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=12.72 ACPT iters=1001 status=1]wall=22.348s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=12.76 ACPT iters=1001 status=1]wall=22.329s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=12.80 ACPT iters=1001 status=1]wall=22.655s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=12.84 ACPT iters=1001 status=1]wall=22.877s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=12.88 ACPT iters=230 status=1]wall=5.054s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=12.92 ACPT iters=202 status=1]wall=4.389s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=12.96 ACPT iters=192 status=1]wall=4.424s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=13.00 ACPT iters=479 status=1]wall=10.776s N=15 | FL:SwwwwwwwwwwwwS FR:wSSSSSSSSSSSSw BL:wSSSSSSSSSSSSw BR:SwwwwwwwwwwwwS
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 325 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [ 0.02   0.55  -0.927 -0.002  1.036 -1.11   0.025  1.105 -1.036  0.016
+  0.519 -1.104]
+q_des (mpc)  : [ 0.02   0.55  -0.927 -0.002  1.036 -1.11   0.025  1.105 -1.036  0.016
+  0.519 -1.104]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 3.000e-03  5.980e-01 -1.169e+00 -8.000e-03  9.290e-01 -7.720e-01
+ -1.000e-03  1.105e+00 -8.180e-01 -4.000e-03  6.180e-01 -1.185e+00]   <- where the MPC sends the joints by node n
+base v_y actual: -0.6051   base v_y commanded: -2.0000
+tau0 (mpc ff): [-34.82 -69.15 -11.53 -23.03  44.52 -13.74  11.05  19.08  -8.6   26.74
+ -77.34  40.98]
+pd (fosmc fb): [-0.12  2.07 -2.12  2.07  2.42 -2.7   2.2   2.45 -2.33 -0.67  0.1   0.49]
+applied ctrl : [-34.82 -69.15 -11.53 -23.03  44.52 -13.74  11.05  19.08  -8.6   26.74
+ -77.34  40.98]
+base pos     : [  0.2462 -14.6327   2.5086]  base quat: [ 9.677e-01 -1.000e-04  1.280e-02  2.519e-01]
+pitch (deg, + = nose down): 0.36 | foot y rel hip (+ = behind) FL FR BL BR: [ 0.12  1.02  1.27 -0.2 ]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [ 0 10  0  0]
+=======================
+
+[mpc t=13.04 ACPT iters=1001 status=1]wall=22.430s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=13.08 ACPT iters=1001 status=1]wall=22.108s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=13.12 ACPT iters=1001 status=1]wall=22.287s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=13.16 ACPT iters=1001 status=1]wall=21.944s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=13.20 ACPT iters=1001 status=1]wall=22.410s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=13.24 ACPT iters=1001 status=1]wall=22.222s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=13.28 ACPT iters=1001 status=1]wall=22.308s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=13.32 ACPT iters=1001 status=1]wall=22.523s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=13.36 ACPT iters=1001 status=1]wall=22.805s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=13.40 ACPT iters=1001 status=1]wall=22.389s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
+[mpc t=13.44 ACPT iters=1001 status=1]wall=22.307s N=15 | FL:wwSSSSSSSSSSSS FR:SSwwwwwwwwwwww BL:SSwwwwwwwwwwww BR:wwSSSSSSSSSSSS
+[mpc t=13.48 ACPT iters=218 status=1]wall=4.788s N=15 | FL:wSSSSSSSSSSSSS FR:Swwwwwwwwwwwww BL:Swwwwwwwwwwwww BR:wSSSSSSSSSSSSS
+[mpc t=13.52 ACPT iters=1001 status=1]wall=22.102s N=15 | FL:SSSSSSSSSSSSSw FR:wwwwwwwwwwwwwS BL:wwwwwwwwwwwwwS BR:SSSSSSSSSSSSSw
+[mpc t=13.56 ACPT iters=1001 status=1]wall=21.965s N=15 | FL:SSSSSSSSSSSSww FR:wwwwwwwwwwwwSS BL:wwwwwwwwwwwwSS BR:SSSSSSSSSSSSww
+[mpc t=13.60 ACPT iters=1001 status=1]wall=22.777s N=15 | FL:SSSSSSSSSSSwww FR:wwwwwwwwwwwSSS BL:wwwwwwwwwwwSSS BR:SSSSSSSSSSSwww
+[mpc t=13.64 ACPT iters=1001 status=1]wall=21.779s N=15 | FL:SSSSSSSSSSwwww FR:wwwwwwwwwwSSSS BL:wwwwwwwwwwSSSS BR:SSSSSSSSSSwwww
+[mpc t=13.68 ACPT iters=1001 status=1]wall=22.186s N=15 | FL:SSSSSSSSSwwwww FR:wwwwwwwwwSSSSS BL:wwwwwwwwwSSSSS BR:SSSSSSSSSwwwww
+[mpc t=13.72 ACPT iters=1001 status=1]wall=22.257s N=15 | FL:SSSSSSSSwwwwww FR:wwwwwwwwSSSSSS BL:wwwwwwwwSSSSSS BR:SSSSSSSSwwwwww
+[mpc t=13.76 ACPT iters=1001 status=1]wall=22.526s N=15 | FL:SSSSSSSwwwwwww FR:wwwwwwwSSSSSSS BL:wwwwwwwSSSSSSS BR:SSSSSSSwwwwwww
+[mpc t=13.80 ACPT iters=1001 status=1]wall=22.694s N=15 | FL:SSSSSSwwwwwwww FR:wwwwwwSSSSSSSS BL:wwwwwwSSSSSSSS BR:SSSSSSwwwwwwww
+[mpc t=13.84 ACPT iters=1001 status=1]wall=22.388s N=15 | FL:SSSSSwwwwwwwww FR:wwwwwSSSSSSSSS BL:wwwwwSSSSSSSSS BR:SSSSSwwwwwwwww
+[mpc t=13.88 ACPT iters=1001 status=1]wall=21.009s N=15 | FL:SSSSwwwwwwwwww FR:wwwwSSSSSSSSSS BL:wwwwSSSSSSSSSS BR:SSSSwwwwwwwwww
+[mpc t=13.92 ACPT iters=1001 status=1]wall=21.173s N=15 | FL:SSSwwwwwwwwwww FR:wwwSSSSSSSSSSS BL:wwwSSSSSSSSSSS BR:SSSwwwwwwwwwww
+[mpc t=13.96 ACPT iters=1001 status=1]wall=21.397s N=15 | FL:SSwwwwwwwwwwww FR:wwSSSSSSSSSSSS BL:wwSSSSSSSSSSSS BR:SSwwwwwwwwwwww
+[mpc t=14.00 ACPT iters=1001 status=1]wall=21.619s N=15 | FL:SwwwwwwwwwwwwS FR:wSSSSSSSSSSSSw BL:wSSSSSSSSSSSSw BR:SwwwwwwwwwwwwS
+
+=== MPC/FOSMC DEBUG ===
+MPC solves so far: 350 | time since last solve: 0.00s | last exception: None
+GaitLogic state: WALK | walking=True turning=False jump_state=''
+cmd['q_des'] (raw gait target, NOT what the MPC tracks anymore): [-0.     0.701 -0.951  0.     0.289 -0.931 -0.     0.262 -0.878  0.
+  0.67  -0.9  ]
+cmd['is_stance']              : [True, False, False, True]
+q_act        : [ 0.043  0.658 -0.81  -0.011  1.731 -0.834  0.006  0.758 -1.07   0.032
+  0.431 -1.184]
+q_des (mpc)  : [ 0.043  0.658 -0.81  -0.011  1.731 -0.834  0.006  0.758 -1.07   0.032
+  0.431 -1.184]   <- converges to NOMINAL_STANCE [ 0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1  0.   0.6 -1.1], not cmd['q_des']
+q plan end   : [ 5.000e-03  5.910e-01 -1.212e+00  1.000e-03  1.401e+00 -2.530e-01
+  2.000e-03  7.340e-01 -1.106e+00  0.000e+00  5.960e-01 -1.198e+00]   <- where the MPC sends the joints by node n
+base v_y actual: 0.0211   base v_y commanded: -2.0000
+tau0 (mpc ff): [-46.9  -63.18 -28.1   17.36 -24.3  -33.94  45.64  75.57   8.84 -80.55
+  -2.02 100.  ]
+pd (fosmc fb): [ 0.45  2.24 -2.3   2.13  2.97 -2.67 -0.32 -2.16  2.09 -0.88 -2.06  2.29]
+applied ctrl : [-46.9  -63.18 -28.1   17.36 -24.3  -33.94  45.64  75.57   8.84 -80.55
+  -2.02 100.  ]
+base pos     : [  0.5794 -15.2169   2.4564]  base quat: [0.9628 0.0019 0.0156 0.2698]
+pitch (deg, + = nose down): 0.70 | foot y rel hip (+ = behind) FL FR BL BR: [ 0.56  2.47  0.45 -0.5 ]
+swing-phase floor contact (2 ms steps since last print) FL FR BL BR: [0 0 0 0]
+=======================
+
+[mpc t=14.04 ACPT iters=1001 status=1]wall=21.507s N=15 | FL:wwwwwwwwwwwwSS FR:SSSSSSSSSSSSww BL:SSSSSSSSSSSSww BR:wwwwwwwwwwwwSS
+[mpc t=14.08 ACPT iters=936 status=1]wall=20.766s N=15 | FL:wwwwwwwwwwwSSS FR:SSSSSSSSSSSwww BL:SSSSSSSSSSSwww BR:wwwwwwwwwwwSSS
+[mpc t=14.12 ACPT iters=1001 status=1]wall=22.390s N=15 | FL:wwwwwwwwwwSSSS FR:SSSSSSSSSSwwww BL:SSSSSSSSSSwwww BR:wwwwwwwwwwSSSS
+[mpc t=14.16 ACPT iters=606 status=1]wall=13.204s N=15 | FL:wwwwwwwwwSSSSS FR:SSSSSSSSSwwwww BL:SSSSSSSSSwwwww BR:wwwwwwwwwSSSSS
+[mpc t=14.20 ACPT iters=508 status=1]wall=11.140s N=15 | FL:wwwwwwwwSSSSSS FR:SSSSSSSSwwwwww BL:SSSSSSSSwwwwww BR:wwwwwwwwSSSSSS
+[mpc t=14.24 ACPT iters=1001 status=1]wall=22.576s N=15 | FL:wwwwwwwSSSSSSS FR:SSSSSSSwwwwwww BL:SSSSSSSwwwwwww BR:wwwwwwwSSSSSSS
+[mpc t=14.28 ACPT iters=246 status=1]wall=5.542s N=15 | FL:wwwwwwSSSSSSSS FR:SSSSSSwwwwwwww BL:SSSSSSwwwwwwww BR:wwwwwwSSSSSSSS
+[mpc t=14.32 ACPT iters=211 status=1]wall=4.579s N=15 | FL:wwwwwSSSSSSSSS FR:SSSSSwwwwwwwww BL:SSSSSwwwwwwwww BR:wwwwwSSSSSSSSS
+[mpc t=14.36 ACPT iters=752 status=1]wall=16.410s N=15 | FL:wwwwSSSSSSSSSS FR:SSSSwwwwwwwwww BL:SSSSwwwwwwwwww BR:wwwwSSSSSSSSSS
+[mpc t=14.40 ACPT iters=1001 status=1]wall=22.402s N=15 | FL:wwwSSSSSSSSSSS FR:SSSwwwwwwwwwww BL:SSSwwwwwwwwwww BR:wwwSSSSSSSSSSS
