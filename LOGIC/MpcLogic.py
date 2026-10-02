@@ -40,6 +40,8 @@ class WholeBodyMPC:
         self.fz_max = fz_max
         self.fc_w = 1e-3
         self.q_joint_w = np.tile([30.0, 1.0, 1.0], 4)
+        self.q_min = np.tile([-0.5, -0.5, -2.6], 4)
+        self.q_max = np.tile([ 0.5,  1.5, -0.2], 4)
         self.joints_name_list = joints_name_list
         self.nj = len(joints_name_list)
         self.joint_damping = joint_damping
@@ -170,6 +172,8 @@ class WholeBodyMPC:
                 sub(f"fric_{legs[i]}", k, Fi[1] >= -self.mu * Fi[2] - eps)
 
             sub("tau_bound", k, opti.bounded(-self.tau_max, tau_j[k], self.tau_max))
+            if k > 0:   # eq. 8 joint position limits (node 0 is the measured state, leave it free)
+                sub("qj_bound", k, opti.bounded(self.q_min, qj[k], self.q_max))
 
             # ---- Stage cost ----
             cost += self._qj_w_p * cs.sumsqr(cs.sqrt(self.q_joint_w) * (qj[k] - q_nom_p))
