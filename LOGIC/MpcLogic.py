@@ -1,7 +1,9 @@
+import enum
 import casadi as cs
 import numpy as np
 import adam
 from adam.casadi import KinDynComputations
+
 
 def skew(v):
     return cs.vertcat(
@@ -10,13 +12,13 @@ def skew(v):
         cs.horzcat(-v[1], v[0], 0),
     )
 
+
 def so3_exp(omega, dt):
     w = omega * dt
-    theta = cs.sqrt(cs.sumsqr(w) + 1e-9)  
+    theta = cs.sqrt(cs.sumsqr(w) + 1e-9)
     axis = w / theta
     K = skew(axis)
     return cs.MX.eye(3) + cs.sin(theta) * K + (1 - cs.cos(theta)) * (K @ K)
-
 
 
 class WholeBodyMPC:
@@ -24,14 +26,15 @@ class WholeBodyMPC:
         self,
         urdf_path,
         joints_name_list,
-        n=20,
-        dt=0.02,
+        n,
+        dt,
+        joint_damping,
+        base_w,
+        swing_w,
         mu=0.6,
-        foot_names=('tl_tip_link', 'tr_tip_link', 'bl_tip_link', 'br_tip_link'),
+        foot_names=('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT'),
         tau_max=100.0,
         fz_max=400.0,
-        joint_damping=10.0,
-        base_w=(1000.0, 3000.0)
     ):
         self.n = n
         self.dt = dt
@@ -42,15 +45,18 @@ class WholeBodyMPC:
         self.q_joint_w = np.tile([30.0, 1.0, 1.0], 4)
         self.q_min = np.tile([-0.5, -0.5, -2.6], 4)
         self.q_max = np.tile([ 0.5,  1.5, -0.2], 4)
-        self.joints_name_list = joints_name_list
         self.nj = len(joints_name_list)
+        self.nv = 6 + self.nj
         self.joint_damping = joint_damping
         self.base_z_w, self.base_R_w = base_w
+        self.swing_w = swing_w
         self.foot_names = list(foot_names)
-        self.nv = 6 + self.nj
 
         self.kindyn = KinDynComputations(urdf_path, joints_name_list)
         self.kindyn.set_frame_velocity_representation(adam.Representations.MIXED_REPRESENTATION)
+
+        self._warm = None          # last solution, used to warm start the next solve
+        self.converged = False     # False = last result was a feasible but non-converged iterate
 
         self._build_dynamics_functions()
         self._build_solver()
@@ -73,6 +79,11 @@ class WholeBodyMPC:
             J_sx = self.kindyn.jacobian(foot, w_H_b_sx, q_sx)
             self.J_fun[foot] = cs.Function(f'J_{foot}', [w_H_b_sx, q_sx], [J_sx])
 
+        self.pf_fun = {}
+        for foot in self.foot_names:
+            H_sx = self.kindyn.forward_kinematics(foot, w_H_b_sx, q_sx)
+            self.pf_fun[foot] = cs.Function(f'p_{foot}', [w_H_b_sx, q_sx], [H_sx[0:3, 3]])
+
     def _build_solver(self):
         opti = cs.Opti()
         n, nj, nv = self.n, self.nj, self.nv
@@ -87,6 +98,8 @@ class WholeBodyMPC:
         stance_p = opti.parameter(4, n)
         vz_active_p = opti.parameter(4, n)
         fc_des_p = opti.parameter(12, n)
+        swing_xy_p = opti.parameter(8, n)
+        xy_active_p = opti.parameter(4, n)
         z_des_p = opti.parameter()
         R_des_p = opti.parameter(3, 3)
 
@@ -96,6 +109,7 @@ class WholeBodyMPC:
         self._tau_w_p = opti.parameter()
         self._a_w_p = opti.parameter()
 
+        # Stage-interleaved decision variables (required by Fatrop's structure detection)
         p, R, qj, v = [], [], [], []
         a, tau_j, Fc = [], [], []
         for k in range(n + 1):
@@ -146,17 +160,18 @@ class WholeBodyMPC:
             for i, foot in enumerate(self.foot_names):
                 Ji = self.J_fun[foot](w_H_b, qj[k])  # 6 x nv
                 Fi = Fc[k][3 * i: 3 * i + 3]
-                # contact_wrench += Ji[0:3, :].T @ Fi
                 contact_wrench += stance_p[i, k] * (Ji[0:3, :].T @ Fi)
 
                 if k > 0:
                     st = stance_p[i, k]
                     foot_vel = Ji[0:3, :] @ v[k]
+                    # eq. 6: stance foot velocity = 0 (big-M relaxed in swing)
                     sub(f"noslip_{legs[i]}", k, opti.bounded(-no_slip_M * (1 - st), foot_vel, no_slip_M * (1 - st)))
-
+                    # eq. 6: swing foot vertical velocity tracks the reference (relaxed in stance)
                     swing_slack = no_slip_M * (1 - vz_active_p[i, k] * (1 - st))
                     sub(f"swingvz_{legs[i]}", k, opti.bounded(-swing_slack, foot_vel[2] - swing_vz_p[i, k], swing_slack))
 
+            # eq. 5: whole-body inverse dynamics (joint damping matches the simulator)
             net = M @ a[k] + h - contact_wrench
             sub("rnea_base", k, net[0:6] == 0)
             sub("rnea_tau", k, net[6:] + self.joint_damping * v_joints_k - tau_j[k] == 0)
@@ -172,10 +187,10 @@ class WholeBodyMPC:
                 sub(f"fric_{legs[i]}", k, Fi[1] >= -self.mu * Fi[2] - eps)
 
             sub("tau_bound", k, opti.bounded(-self.tau_max, tau_j[k], self.tau_max))
-            if k > 0:   # eq. 8 joint position limits (node 0 is the measured state, leave it free)
+            if k > 1:   # eq. 8 joint limits; nodes 0 and 1 are fixed by the measured q0, v0
                 sub("qj_bound", k, opti.bounded(self.q_min, qj[k], self.q_max))
 
-            # ---- Stage cost ----
+            # ---- Stage cost (eq. 3) ----
             cost += self._qj_w_p * cs.sumsqr(cs.sqrt(self.q_joint_w) * (qj[k] - q_nom_p))
             cost += self._vbase_w_p * cs.sumsqr(v_base_k - v_base_des_p)
             cost += self._vj_w_p * cs.sumsqr(v_joints_k)
@@ -184,6 +199,12 @@ class WholeBodyMPC:
             cost += self.fc_w * cs.sumsqr(Fc[k] - fc_des_p[:, k])
             cost += self.base_z_w * (p[k][2] - z_des_p) ** 2
             cost += self.base_R_w * cs.sumsqr(R[k] - R_des_p)
+            
+            if k > 0:
+                for i, foot in enumerate(self.foot_names):
+                    swing = (1 - stance_p[i, k]) * xy_active_p[i, k]
+                    pf_xy = self.pf_fun[foot](w_H_b, qj[k])[0:2]
+                    cost += self.swing_w * swing * cs.sumsqr(pf_xy - swing_xy_p[2 * i: 2*i+2, k])
 
         # ---- Terminal cost ----
         cost += self._qj_w_p * cs.sumsqr(cs.sqrt(self.q_joint_w) * (qj[n] - q_nom_p))
@@ -191,14 +212,14 @@ class WholeBodyMPC:
         cost += self.base_R_w * cs.sumsqr(R[n] - R_des_p)
 
         opti.minimize(cost)
-        
+
         self._solver_opts = {
             "expand": True,                   # MX graph -> SX: much cheaper Hessian/Jacobian evaluations
             "structure_detection": "auto",    # let Fatrop see the x_k / u_k stage structure
             "fatrop.print_level": 0,
             "print_time": False,
             "record_time": True,
-            "fatrop.max_iter": 100,           # now actually applied; solves finish in about 20 to 30
+            "fatrop.max_iter": 100,
             "fatrop.tol": 1e-3,
             "fatrop.mu_init": 0.1,
         }
@@ -206,47 +227,38 @@ class WholeBodyMPC:
         self._struct_sig = None
 
         self.opti = opti
-        # Horizon-shaped expressions for reading results (same shapes as before)
         self._p = cs.horzcat(*p)          # 3 x (n+1)
-        self._R = R                       # list of n+1 (3x3)
         self._qj = cs.horzcat(*qj)        # nj x (n+1)
         self._v = cs.horzcat(*v)          # nv x (n+1)
-        self._a = cs.horzcat(*a)          # nv x n
         self._tau_j = cs.horzcat(*tau_j)  # nj x n
-        self._Fc = cs.horzcat(*Fc)        # 12 x n
-        self._Fc_list = Fc                # per-stage variables, needed for set_initial
+        self._Fc_list = Fc
         self._z_des_p, self._R_des_p = z_des_p, R_des_p
         self._p0_p, self._R0_p, self._qj0_p, self._v0_p = p0_p, R0_p, qj0_p, v0_p
-        self._q_nom_p, self._v_base_des_p, self._swing_vz_p, self._stance_p = (
-            q_nom_p, v_base_des_p, swing_vz_p, stance_p
-        )
-        self._vz_active_p = vz_active_p
+        self._q_nom_p, self._v_base_des_p = q_nom_p, v_base_des_p
+        self._swing_vz_p, self._stance_p, self._vz_active_p = swing_vz_p, stance_p, vz_active_p
         self._fc_des_p = fc_des_p
+        self._swing_xy_p = swing_xy_p
+        self._xy_active_p = xy_active_p
 
     def constraint_report(self, top=8):
-        """DIAGNOSTIC: rank constraint groups at the last iterate by |multiplier| and by violation."""
-        try:
-            dbg = self.opti.debug
-            g = np.array(dbg.value(self.opti.g)).flatten()
-            lam = np.array(dbg.value(self.opti.lam_g)).flatten()
-            lbg = np.array(dbg.value(self.opti.lbg)).flatten()
-            ubg = np.array(dbg.value(self.opti.ubg)).flatten()
-        except Exception as e:
-            print(f"  [con report] unavailable: {e!r}", flush=True)
-            return
+        """Rank constraint groups at the last iterate by violation (called on failure only)."""
+        dbg = self.opti.debug
+        g = np.array(dbg.value(self.opti.g)).flatten()
+        lam = np.array(dbg.value(self.opti.lam_g)).flatten()
+        lbg = np.array(dbg.value(self.opti.lbg)).flatten()
+        ubg = np.array(dbg.value(self.opti.ubg)).flatten()
         viol = np.maximum(np.maximum(lbg - g, g - ubg), 0.0)
-        rows = []
-        for name, k, s, e in self._con_groups:
-            if e <= s:
-                continue
-            rows.append((name, k, float(np.max(np.abs(lam[s:e]))), float(np.max(viol[s:e])),
-                         float(np.min(ubg[s:e] - lbg[s:e]))))
-        print("  [con report] largest |multiplier| (name, node, max|lam|, max viol, min width):", flush=True)
-        for r in sorted(rows, key=lambda r: -r[2])[:top]:
-            print(f"    {r[0]:<14} k={r[1]:<2} lam={r[2]:.2e} viol={r[3]:.2e} width={r[4]:.1e}", flush=True)
-        print("  [con report] largest violation:", flush=True)
+        rows = [(name, k, float(np.max(np.abs(lam[s:e]))), float(np.max(viol[s:e])))
+                for name, k, s, e in self._con_groups if e > s]
+        print("  [con report] largest violation (name, node, max|lam|, max viol):", flush=True)
         for r in sorted(rows, key=lambda r: -r[3])[:top]:
-            print(f"    {r[0]:<14} k={r[1]:<2} lam={r[2]:.2e} viol={r[3]:.2e} width={r[4]:.1e}", flush=True)
+            print(f"    {r[0]:<14} k={r[1]:<2} lam={r[2]:.2e} viol={r[3]:.2e}", flush=True)
+
+    def _max_violation(self, src):
+        g = np.array(src.value(self.opti.g)).flatten()
+        lbg = np.array(src.value(self.opti.lbg)).flatten()
+        ubg = np.array(src.value(self.opti.ubg)).flatten()
+        return float(np.max(np.maximum(np.maximum(lbg - g, g - ubg), 0.0)))
 
     def solve(
         self,
@@ -258,165 +270,67 @@ class WholeBodyMPC:
         v_base_des,
         swing_vz_schedule,
         stance_schedule,
-        mpc_weights=(100.0, 25.0, 0.04, 0.0000004, 0.0004),
-        vz_active_schedule=None,
-        fc_guess=None,
-        z_des=None,
-        R_des=None,
+        mpc_weights,
+        vz_active_schedule,
+        fc_guess,
+        z_des,
+        R_des,
+        swing_xy,
+        xy_active
     ):
-        self.last_solve_fresh = False 
-        self.last_solve_accepted = False 
+        """Returns (tau_traj nj x n, qj_traj nj x (n+1), vj_traj nj x (n+1)). Raises on an infeasible result."""
+        o = self.opti
 
-        if hasattr(self, "_solve_thread") and self._solve_thread.is_alive():
-            if hasattr(self, "_last"):
-                return self._last
-            return (np.zeros((self.nj, self.n)),
-                    np.tile(np.array(qj0, dtype=float).reshape(-1, 1), (1, self.n + 1)),
-                    np.zeros((self.nj, self.n + 1)))
-
-
-        st_arr = np.asarray(stance_schedule, dtype=float)
-        va_arr = np.ones((4, self.n)) if vz_active_schedule is None else np.asarray(vz_active_schedule, dtype=float)
-        sig = tuple((int(st_arr[:, k].sum()), int(((1 - st_arr[:, k]) * va_arr[:, k]).sum())) for k in range(self.n))
+        # Fatrop fixes which rows are equalities when the solver is built; the stance
+        # pattern turns no-slip rows into equalities, so rebuild when the pattern changes.
+        st = np.asarray(stance_schedule, dtype=float)
+        va = np.asarray(vz_active_schedule, dtype=float)
+        sig = tuple((int(st[:, k].sum()), int(((1 - st[:, k]) * va[:, k]).sum())) for k in range(self.n))
         if self._struct_sig is not None and sig != self._struct_sig:
-            self.opti.solver("fatrop", self._solver_opts)
+            o.solver("fatrop", self._solver_opts)
         self._struct_sig = sig
-        self.opti.set_value(self._p0_p, p0)
-        self.opti.set_value(self._R0_p, R0)
-        self.opti.set_value(self._qj0_p, qj0)
-        self.opti.set_value(self._v0_p, v0)
-        self.opti.set_value(self._q_nom_p, q_nom)
-        self.opti.set_value(self._v_base_des_p, v_base_des)
-        self.opti.set_value(self._swing_vz_p, swing_vz_schedule)
-        self.opti.set_value(self._stance_p, stance_schedule)
-        self.opti.set_value(self._vz_active_p, np.ones((4, self.n)) if vz_active_schedule is None else vz_active_schedule)
-        self.opti.set_value(self._z_des_p, float(p0[2]) if z_des is None else z_des)
-        self.opti.set_value(self._R_des_p, np.eye(3) if R_des is None else R_des)
 
-        self.opti.set_value(self._qj_w_p, mpc_weights[0])
-        self.opti.set_value(self._vbase_w_p, mpc_weights[1])
-        self.opti.set_value(self._vj_w_p, mpc_weights[2])
-        self.opti.set_value(self._tau_w_p, mpc_weights[3])
-        self.opti.set_value(self._a_w_p, mpc_weights[4])
-        qj0_arr = np.array(qj0, dtype=float)
-        v0_arr = np.array(v0, dtype=float)
-        p0_arr = np.array(p0, dtype=float)
+        o.set_value(self._p0_p, p0)
+        o.set_value(self._R0_p, R0)
+        o.set_value(self._qj0_p, qj0)
+        o.set_value(self._v0_p, v0)
+        o.set_value(self._q_nom_p, q_nom)
+        o.set_value(self._v_base_des_p, v_base_des)
+        o.set_value(self._swing_vz_p, swing_vz_schedule)
+        o.set_value(self._stance_p, st)
+        o.set_value(self._vz_active_p, va)
+        o.set_value(self._z_des_p, z_des)
+        o.set_value(self._R_des_p, R_des)
+        o.set_value(self._swing_xy_p, swing_xy)
+        o.set_value(self._xy_active_p, xy_active)
+        o.set_value(self._qj_w_p, mpc_weights[0])
+        o.set_value(self._vbase_w_p, mpc_weights[1])
+        o.set_value(self._vj_w_p, mpc_weights[2])
+        o.set_value(self._tau_w_p, mpc_weights[3])
+        o.set_value(self._a_w_p, mpc_weights[4])
 
-        sane = (
-            np.all(np.isfinite(qj0_arr)) and np.all(np.isfinite(v0_arr)) and np.all(np.isfinite(p0_arr))
-            and -3.00 < p0_arr[2] < 3.00
-            and np.max(np.abs(v0_arr)) < 50.0
-        )
-        if not sane:
-            print(f"[WholeBodyMPC] refusing solve: state outside sane envelope "
-                  f"(base z={p0_arr[2]:.3f}, max|v0|={np.max(np.abs(v0_arr)):.1f})", flush=True)
-            safe_qj = np.tile(np.array(q_nom, dtype=float).reshape(-1, 1), (1, self.n + 1))
-            self.last_solve_fresh = True
-            return np.zeros((self.nj, self.n)), safe_qj, np.zeros((self.nj, self.n + 1))
+        fc_des = np.asarray(fc_guess, dtype=float).reshape(12, self.n)
+        o.set_value(self._fc_des_p, fc_des)
 
-        if hasattr(self, "_warm"):
-            try:
-                self.opti.set_initial(self._warm)
-            except Exception:
-                pass
+        if self._warm is not None:
+            o.set_initial(self._warm)
+        else:
+            for k in range(self.n):
+                o.set_initial(self._Fc_list[k], fc_des[:, k])
 
-        # if fc_guess is not None:
-        #     fc_guess = np.array(fc_guess, dtype=float).reshape(12, self.n)
-        #     for k in range(self.n):
-        #         self.opti.set_initial(self._Fc_list[k], fc_guess[:, k])
-        fc_des = np.zeros((12, self.n)) if fc_guess is None else np.array(fc_guess, dtype=float).reshape(12, self.n)
-        self.opti.set_value(self._fc_des_p, fc_des)   # eq. 3 target for the contact forces
-        for k in range(self.n):
-            self.opti.set_initial(self._Fc_list[k], fc_des[:, k])
-
-        import threading
-        result = {}
-        def _run_solve():
-            try:
-                result["sol"] = self.opti.solve()
-            except Exception as e:
-                result["exc"] = e
-        self._solve_thread = threading.Thread(target=_run_solve, daemon=True)
-        self._solve_thread.start()
-        first_solve = not getattr(self, "_jit_ready", False)
-        self._solve_thread.join(timeout=None if first_solve else 60.0)
-        if not self._solve_thread.is_alive():
-            self._jit_ready = True
-        if self._solve_thread.is_alive():
-            print("[WholeBodyMPC] solve TIMED OUT (>60s), abandoning this attempt", flush=True)
-            print(f"  [hang inputs] p0={np.round(p0_arr, 4)}  max|v0|={np.max(np.abs(v0_arr)):.3f}\n"
-                  f"  qj0={np.round(qj0_arr, 3)}\n"
-                  f"  v0={np.round(v0_arr, 3)}\n"
-                  f"  v_base_des={np.round(np.array(v_base_des, dtype=float), 3)}\n"
-                  f"  stance (rows FL,FR,BL,BR x nodes)=\n{np.array(stance_schedule)}\n"
-                  f"  swing_vz=\n{np.round(np.array(swing_vz_schedule, dtype=float), 3)}\n"
-                  f"  vz_active=\n{np.array(vz_active_schedule) if vz_active_schedule is not None else 'None'}",
-                  flush=True)
-            if hasattr(self, "_last"):
-                return self._last
-            return np.zeros((self.nj, self.n)), np.tile(np.array(qj0).reshape(-1,1), (1,self.n+1)), np.zeros((self.nj, self.n+1))
-        if "exc" in result:
-            # Solver did not certify convergence. If its last iterate still satisfies every
-            # constraint, use it (standard real-time MPC practice); otherwise report and fail.
-            dbg = self.opti.debug
-            try:
-                g = np.array(dbg.value(self.opti.g)).flatten()
-                lbg = np.array(dbg.value(self.opti.lbg)).flatten()
-                ubg = np.array(dbg.value(self.opti.ubg)).flatten()
-                max_viol = float(np.max(np.maximum(np.maximum(lbg - g, g - ubg), 0.0)))
-            except Exception:
-                max_viol = float("inf")
-            if max_viol < 1e-4:
-                tau_traj = np.array(dbg.value(self._tau_j)).reshape(self.nj, self.n)
-                qj_traj = np.array(dbg.value(self._qj)).reshape(self.nj, self.n + 1)
-                v_traj = np.array(dbg.value(self._v[6:, :])).reshape(self.nj, self.n + 1)
-                self._warm = dbg.value_variables()
-                self._last = (tau_traj, qj_traj, v_traj)
-                self.last_solve_fresh = True
-                self.last_solve_accepted = True
-                if not getattr(self, "_diag_done", False):   # DIAGNOSTIC: first non-converged solve only
-                    self._diag_done = True
-                    print(f"[diag] full stats: {self.opti.stats()}", flush=True)
-                    self.constraint_report(top=10)
-                return tau_traj, qj_traj, v_traj
-            self.constraint_report()
-            raise result["exc"]
         try:
-            sol = result["sol"]
-            self._last_sol = sol
-            self._warm = sol.value_variables()
-            tau_traj = np.array(sol.value(self._tau_j)).reshape(self.nj, self.n)
-            qj_traj = np.array(sol.value(self._qj)).reshape(self.nj, self.n + 1)
-            v_traj = np.array(sol.value(self._v[6:, :])).reshape(self.nj, self.n + 1)
-            self._last = (tau_traj, qj_traj, v_traj)
-            self.last_solve_fresh = True
-            return tau_traj, qj_traj, v_traj
-        except Exception as e:
-            print(f"[WholeBodyMPC] solve failed: {e}", flush=True)
-            try:
-                dbg = self.opti.debug
-                k = 1  # first free horizon node -- where a bad transition would show up
-                p1 = np.array(dbg.value(self._p[:, k])).flatten()
-                R1 = np.array(dbg.value(self._R[k]))
-                qj1 = np.array(dbg.value(self._qj[:, k])).flatten()
-                v1 = np.array(dbg.value(self._v[:, k])).flatten()
-                Fc0 = np.array(dbg.value(self._Fc[:, 0])).reshape(4, 3)
-                tau0_dbg = np.array(dbg.value(self._tau_j[:, 0])).flatten()
-                stance0 = np.array(dbg.value(self._stance_p[:, 0])).flatten()
-                print(f"[DEBUG] last iterate, node k={k}:", flush=True)
-                print(f"  stance flags (node 0): {stance0}", flush=True)
-                print(f"  base p: {np.round(p1,4)}", flush=True)
-                print(f"  qj: {np.round(qj1,4)}", flush=True)
-                print(f"  v: {np.round(v1,4)}", flush=True)
-                print(f"  Fc per foot (fx,fy,fz): {np.round(Fc0,3)}", flush=True)
-                print(f"  tau0: {np.round(tau0_dbg,3)}  (tau_max={self.tau_max})", flush=True)
-                w_H_b1 = np.eye(4); w_H_b1[0:3, 0:3] = R1; w_H_b1[0:3, 3] = p1
-                for i, foot in enumerate(self.foot_names):
-                    Ji = np.array(self.J_fun[foot](w_H_b1, qj1))
-                    fv = Ji[0:3, :] @ v1
-                    print(f"  {foot}: foot_vel={np.round(fv,4)}  Fc_z={Fc0[i,2]:.2f}  mu*Fz={self.mu*Fc0[i,2]:.2f} vs Fx,Fy={Fc0[i,0]:.2f},{Fc0[i,1]:.2f}", flush=True)
-            except Exception as e2:
-                print(f"[DEBUG] could not extract debug values: {e2}", flush=True)
-            if hasattr(self, "_last"):
-                return self._last
-            return np.zeros((self.nj, self.n)), np.tile(np.array(qj0).reshape(-1,1), (1,self.n+1)), np.zeros((self.nj, self.n+1))
+            src = o.solve()
+            self.converged = True
+        except RuntimeError:
+            # Not certified converged: use the last iterate only if it satisfies every constraint
+            src = o.debug
+            if self._max_violation(src) > 1e-4:
+                self.constraint_report()
+                raise
+            self.converged = False
+
+        self._warm = src.value_variables()
+        tau_traj = np.array(src.value(self._tau_j)).reshape(self.nj, self.n)
+        qj_traj = np.array(src.value(self._qj)).reshape(self.nj, self.n + 1)
+        vj_traj = np.array(src.value(self._v[6:, :])).reshape(self.nj, self.n + 1)
+        return tau_traj, qj_traj, vj_traj

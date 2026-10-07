@@ -14,17 +14,10 @@ LEG_NAMES = [
 ]
 
 JOINT_NAMES = {
-    'FL': ['tl_shoulder_joint', 'tl_thigh_joint', 'tl_leg_joint'],
-    'FR': ['tr_shoulder_joint', 'tr_thigh_joint', 'tr_leg_joint'],
-    'BL': ['bl_shoulder_joint', 'bl_thigh_joint', 'bl_leg_joint'],
-    'BR': ['br_shoulder_joint', 'br_thigh_joint', 'br_leg_joint'],
-}
-
-LEG_TO_PHI = {
-    'FL': 'tl_leg',
-    'FR': 'tr_leg',
-    'BL': 'bl_leg',
-    'BR': 'br_leg'
+    'FL': ['LF_HAA', 'LF_HFE', 'LF_KFE'],
+    'FR': ['RF_HAA', 'RF_HFE', 'RF_KFE'],
+    'BL': ['LH_HAA', 'LH_HFE', 'LH_KFE'],
+    'BR': ['RH_HAA', 'RH_HFE', 'RH_KFE'],
 }
 
 class GaitLogic():
@@ -38,8 +31,8 @@ class GaitLogic():
         self.state_start_time = None
         self.sim_time = 0.0
         self.nominal_feet = {leg: self.kinematics.get_init_pos(leg)[0:2] for leg in LEG_NAMES}
-        self.x_off_used, self.z_off_used = 0.0, 2.7
-        self.start_x_off, self.start_z_off = 0.0, 2.7
+        self.x_off_used, self.z_off_used = 0.0, 0.39
+        self.start_x_off, self.start_z_off = 0.0, 0.39
 
         self.callbacks = callbacks if callbacks else {}
 
@@ -47,7 +40,7 @@ class GaitLogic():
         self.dt = 1.0 / self.control_rate # Time step (0.02s)
         self.t = 0.0 # global timer (s) incremented everey walk_process cycle (0 on enter)
         self.graph_t = 0.0
-        self.robot_mass = 12.2
+        self.robot_mass = 10.2
 
         self.current_roll = 0.0
         self.current_pitch = 0.0
@@ -62,26 +55,11 @@ class GaitLogic():
 
         # NOTE: Every leg part index / tag
         self.phi = {
-            "tr_leg": {
+            leg: {
                 "shoulder": 0.0,
                 "thigh": 0.0,
-                "leg": 0.0,
-            },
-            "tl_leg": {
-                "shoulder": 0.0,
-                "thigh": 0.0,
-                "leg": 0.0,
-            },       
-            "br_leg": {
-                "shoulder": 0.0,
-                "thigh": 0.0,
-                "leg": 0.0,
-            },
-            "bl_leg": {
-                "shoulder": 0.0,
-                "thigh": 0.0,
-                "leg": 0.0,
-            },       
+                "leg": 0.0
+            } for leg in LEG_NAMES
         }
 
         self.walking = False
@@ -93,7 +71,6 @@ class GaitLogic():
 
         self.transitioning = False
         self.transition_elapsed = 0.0
-        self.robot_mass = 12.2
         self.transition_duration = 1.0
         self.transition_initial = {}
         self.transition_target = (0.0, 0.0, 0.0)
@@ -144,6 +121,7 @@ class GaitLogic():
         self.turning = False
         self.jump_state = ""
         self.transitioning = False
+        self.yaw_rate = 0.0
         self.current_state = msg
 
         self.state_start_time = None
@@ -235,7 +213,7 @@ class GaitLogic():
         else:
             forward_dir = 1.0 if ly < 0 else -1.0
 
-        scale = 3.0 if self.current_state == "RUN" else 1.0
+        scale = 0.44 if self.current_state == "RUN" else 0.146
         self.step_len = forward_dir * scale 
 
         if isinstance(self.planner, GaitPlanner):
@@ -247,7 +225,8 @@ class GaitLogic():
 
     def raw_tune(self, msg: list):
         # NOTE: Raw Tuning just sends a theta value from msg (per coxa, tibia, femur)
-        self.send_theta(msg[0], msg[1], msg[2])
+        if "raw_tune_cb" in self.callbacks:
+            self.callbacks["raw_tune_cb"](msg[0:3])
 
     def setup_transition(self, target_s, target_t, target_k, duration=1.0):
         self.transitioning = True
@@ -306,6 +285,10 @@ class GaitLogic():
             # to prevent MPC runaway torque spikes
             self.target_yaw = self.current_yaw + (self.yaw_rate * self.dt)
 
+        # NOTE: Joint-space targets only for a PD consumer (ROS); the MPC uses the planner schedule
+        if "walk_points" not in self.callbacks:
+            return
+
         q_desired, q_dot_desired = [], []
         for leg in LEG_NAMES:
             ix, iy, iz = self.kinematics.get_init_pos(leg) # Get foot initial pos
@@ -324,10 +307,9 @@ class GaitLogic():
             q_dot_desired.extend(q_dot.tolist())
 
             # NOTE: cache the angle, transitions start from here
-            phi_key = LEG_TO_PHI[leg]
-            self.phi[phi_key]["shoulder"] = theta1
-            self.phi[phi_key]["thigh"] = theta2
-            self.phi[phi_key]["leg"] = theta3
+            self.phi[leg]["shoulder"] = theta1
+            self.phi[leg]["thigh"] = theta2
+            self.phi[leg]["leg"] = theta3
 
         if "graph" in self.callbacks:
             self.callbacks["graph"]([float(t), float(q_desired[1]), float(self.current_q[1])])
@@ -341,8 +323,7 @@ class GaitLogic():
             "time_offset": 0.0
         }]
 
-        if "walk_points" in self.callbacks:
-            self.callbacks["walk_points"](points)
+        self.callbacks["walk_points"](points)
 
     def jump_process(self, t):
         jp = self.planner
