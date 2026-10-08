@@ -62,7 +62,8 @@ def main():
     while data.ncon > 0:
         data.qpos[2] += 0.01
         mujoco.mj_forward(model, data)
-    z_nom = float(data.qpos[2])
+    foot_r = model.geom_size[foot_geoms[0]][0]
+    z_nom = float(data.qpos[2]) - (min(data.xpos[f][2] for f in foot_ids) - foot_r) 
     foot_nom_xy = np.array([data.xpos[f][0:2] - data.qpos[0:2] for f in foot_ids])
 
     # ---------------- 2. Logic & GUI ----------------
@@ -125,7 +126,7 @@ def main():
     step = 0
     last_render = time.time()
     # Diagnostics, collected from 1 s after WALK starts (skips the stride ramp)
-    stats = {"n": 0, "n_st": 0, "n_sw": 0, "v_err2": 0.0, "z_err2": 0.0, "late": 0, "early": 0,
+    stats = {"n": 0, "n_st": 0, "n_sw": 0, "v_err2": 0.0, "z_err2": 0.0, "z_bias": 0.0, "late": 0, "early": 0,
              "fell": None, "s": {g: 0.0 for g in GROUP_ROWS}, "miss": {g: 0.0 for g in GROUP_ROWS},
              "cnt": {g: 0 for g in GROUP_ROWS}}
     win = {g: [0.0, 0.0] for g in GROUP_ROWS}   # per print window: peak |s|, peak mean miss
@@ -182,7 +183,9 @@ def main():
                         stats["n_st"] += int(np.sum(sched))
                         stats["n_sw"] += int(np.sum(~sched))
                         stats["v_err2"] += float(np.sum((data.qvel[0:2] - task.v_cmd) ** 2))
-                        stats["z_err2"] += float((data.qpos[2] - z_nom) ** 2)
+                        z_tgt = task.z_nom - task.blend * task.walk_drop
+                        stats["z_err2"] += float((data.qpos[2] - z_tgt) ** 2)
+                        stats["z_bias"] += float(data.qpos[2] - z_tgt)
                         stats["late"] += int(np.sum(sched & ~in_contact))
                         stats["early"] += int(np.sum(~sched & in_contact))
                         for g, rows in GROUP_ROWS.items():
@@ -236,6 +239,7 @@ def main():
         print(f"fell               : {fell}")
         print(f"speed error RMS    : {np.sqrt(stats['v_err2'] / n):.3f} m/s")
         print(f"height error RMS   : {100 * np.sqrt(stats['z_err2'] / n):.1f} cm")
+        print(f"height bias (mean) : {100 * stats['z_bias'] / n:+.2f} cm")
         print(f"stance, no contact : {100 * stats['late'] / max(stats['n_st'], 1):.1f} %")
         print(f"swing, in contact  : {100 * stats['early'] / max(stats['n_sw'], 1):.1f} %")
         for g in GROUP_ROWS:

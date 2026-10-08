@@ -9,9 +9,9 @@ DEFAULT_WEIGHTS = {
     "swing": 100.0,        # swing foot task
     "contact": 1.0e4,      # stance no-slip hardness (bigger = harder)
     "contact_kd": 20.0,    # pulls leftover stance foot velocity back to zero
-    "posture": 1.0,        # keeps joints near the posture reference
+    "posture": 0.01,        # keeps joints near the posture reference
     "tau": 1.0e-4,         # small torque penalty
-    "fc": 1.0e-4,          # keeps contact forces near the weight-split guess
+    "fc": 1.0e-2,          # keeps contact forces near the weight-split guess
 }
 WEIGHT_KEYS = list(DEFAULT_WEIGHTS)
 
