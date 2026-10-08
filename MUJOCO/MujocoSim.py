@@ -26,6 +26,7 @@ WBC_DEC = 1     # run the WBC every N physics steps (1 = every step)
 USE_FOSMC = True 
 FOSMC_TEST_A = False 
 AUTO_WALK_T = 2.0
+AUTO_STATE = "WALK"
 RUN_T = 20.0
 GROUP_ROWS = {"lin": slice(0, 3), "ang": slice(3, 6), "swing": slice(6, 18)}
 WALK_DROP = 0.085
@@ -126,7 +127,7 @@ def main():
     step = 0
     last_render = time.time()
     # Diagnostics, collected from 1 s after WALK starts (skips the stride ramp)
-    stats = {"n": 0, "n_st": 0, "n_sw": 0, "v_err2": 0.0, "z_err2": 0.0, "z_bias": 0.0, "late": 0, "early": 0,
+    stats = {"n": 0, "n_st": 0, "n_sw": 0, "v_err2": 0.0, "wz_err2": 0.0, "z_err2": 0.0, "z_bias": 0.0, "late": 0, "early": 0,
              "fell": None, "s": {g: 0.0 for g in GROUP_ROWS}, "miss": {g: 0.0 for g in GROUP_ROWS},
              "cnt": {g: 0 for g in GROUP_ROWS}}
     win = {g: [0.0, 0.0] for g in GROUP_ROWS}   # per print window: peak |s|, peak mean miss
@@ -154,7 +155,7 @@ def main():
                     logic.current_q, logic.current_q_dot = q_act, qd_act
                     logic.current_yaw = continuous_yaw
                     if AUTO_WALK_T is not None and logic.current_state == "TUNING" and data.time >= AUTO_WALK_T:
-                        logic.update_state("WALK")
+                        logic.update_state(AUTO_STATE)
                         walk_t0 = data.time
                     logic.loop_step(data.time)
 
@@ -183,6 +184,8 @@ def main():
                         stats["n_st"] += int(np.sum(sched))
                         stats["n_sw"] += int(np.sum(~sched))
                         stats["v_err2"] += float(np.sum((data.qvel[0:2] - task.v_cmd) ** 2))
+                        w_cmd = logic.yaw_rate if logic.turning else 0.0
+                        stats["wz_err2"] += float((v_base[5] - w_cmd) ** 2)
                         z_tgt = task.z_nom - task.blend * task.walk_drop
                         stats["z_err2"] += float((data.qpos[2] - z_tgt) ** 2)
                         stats["z_bias"] += float(data.qpos[2] - z_tgt)
@@ -238,6 +241,7 @@ def main():
         print("\n===== SUMMARY =====", flush=True)
         print(f"fell               : {fell}")
         print(f"speed error RMS    : {np.sqrt(stats['v_err2'] / n):.3f} m/s")
+        print(f"yaw rate error RMS : {np.sqrt(stats['wz_err2'] / n):.3f} rad/s")
         print(f"height error RMS   : {100 * np.sqrt(stats['z_err2'] / n):.1f} cm")
         print(f"height bias (mean) : {100 * stats['z_bias'] / n:+.2f} cm")
         print(f"stance, no contact : {100 * stats['late'] / max(stats['n_st'], 1):.1f} %")

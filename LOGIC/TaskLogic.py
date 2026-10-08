@@ -62,11 +62,13 @@ class TaskController:
         aw_abs=1.0,
         aw_rel=0.2,
         walk_drop=0.0,
+        yaw_leash=0.2,
     ):
         self.logic = logic
         self.q_nom = np.asarray(nominal_stance, dtype=float)
         self.z_nom = z_nom
         self.foot_nom_xy = np.asarray(foot_nom_xy, dtype=float)   # 4 x 2, body frame, FL FR BL BR
+        logic.nominal_feet = {leg: self.foot_nom_xy[i].copy() for i, leg in enumerate(LEG_NAMES)}
         self.leash = leash          # max distance the body target may run ahead (m)
         self.k_foot = k_foot        # foot placement correction, ~ sqrt(height / g)
         self.g = dict(DEFAULT_PD)
@@ -80,6 +82,9 @@ class TaskController:
         self.last_cmd = None
 
         self.base_xy_d = None
+        self.yaw_d = 0.0
+        self.was_turning = False
+        self.yaw_leash = yaw_leash
         self.v_cmd = np.zeros(2)
         self.debug = {}
 
@@ -141,9 +146,21 @@ class TaskController:
         e_dot[2] = v_base[2]
 
         # ---- Body rotation: level, facing target_yaw ----
-        R_d = yaw_rot(lg.target_yaw)
+        # WALK / stand: GaitLogic owns the heading. TURN: integrate the yaw rate here
+        # every WBC step, leashed to the real yaw (same idea as the body x, y leash)
+        yaw_rate = lg.yaw_rate if lg.turning else 0.0
+        if lg.turning and self.was_turning:
+            self.yaw_d += yaw_rate * dt
+            gap = (self.yaw_d - m.atan2(R[1, 0], R[0, 0]) + m.pi) % (2.0 * m.pi) - m.pi
+            if abs(gap) > self.yaw_leash:
+                self.yaw_d += m.copysign(self.yaw_leash, gap) - gap
+            lg.target_yaw = self.yaw_d      # leaving TURN keeps the reached heading
+        else:
+            self.yaw_d = lg.target_yaw
+        self.was_turning = lg.turning
+        R_d = yaw_rot(self.yaw_d)
         e[3:6] = so3_log(R @ R_d.T)     # world frame: how far R is rotated past R_d
-        w_d = np.array([0.0, 0.0, lg.yaw_rate if lg.turning else 0.0])
+        w_d = np.array([0.0, 0.0, yaw_rate])
         e_dot[3:6] = v_base[3:6] - w_d
 
         # ---- Feet: planner path placed in the world (stance rows are inactive) ----
@@ -155,13 +172,20 @@ class TaskController:
             tr = slice(6 + 3 * i, 9 + 3 * i)
             off, vel, acc = tg["off"][i], tg["vel"][i], tg["acc"][i]
 
-            xy_d = p[0:2] + R_yaw @ (self.foot_nom_xy[i] + off[0:2])
+            rel = R_yaw @ (self.foot_nom_xy[i] + off[0:2])   # foot from body center, world frame
+            xy_d = p[0:2] + rel
             # foot placement correction (Raibert): 0 at lift-off, full at touchdown
             xy_d = xy_d + self.k_foot * tg["s"][i] * v_err
 
+            # rel turns with the yaw target, so add its spin to the feed-forward terms
+            wz = w_d[2]
+            vel_w = R_yaw @ vel[0:2]
+            spin_v = wz * np.array([-rel[1], rel[0]])                              # w x rel
+            spin_a = 2.0 * wz * np.array([-vel_w[1], vel_w[0]]) - wz ** 2 * rel   # Coriolis + centripetal
+
             pos_d = np.array([xy_d[0], xy_d[1], FOOT_R + off[2]])
-            vel_d = np.concatenate([self.v_cmd + R_yaw @ vel[0:2], [vel[2]]])
-            acc_d = np.concatenate([R_yaw @ acc[0:2], [acc[2]]])
+            vel_d = np.concatenate([self.v_cmd + vel_w + spin_v, [vel[2]]])
+            acc_d = np.concatenate([R_yaw @ acc[0:2] + spin_a, [acc[2]]])
             pf_d[r] = pos_d
 
             if tg["stance"][i] > 0.5:

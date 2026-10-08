@@ -281,9 +281,6 @@ class GaitLogic():
             if abs(self.yaw_rate) < 0.1:
                 self.yaw_rate = p.sc_yaw
             planner.yaw_rate = self.yaw_rate
-            # NOTE: Anchoring target yaw to the current yaw
-            # to prevent MPC runaway torque spikes
-            self.target_yaw = self.current_yaw + (self.yaw_rate * self.dt)
 
         # NOTE: Joint-space targets only for a PD consumer (ROS); the MPC uses the planner schedule
         if "walk_points" not in self.callbacks:
