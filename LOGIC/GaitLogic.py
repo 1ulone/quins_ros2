@@ -69,6 +69,9 @@ class GaitLogic():
         self.jump_q_history = np.zeros(12)
         self.jump_qd_history = np.zeros(12)
 
+        self.pending_state = None
+        self.half_cycle = None
+
         self.transitioning = False
         self.transition_elapsed = 0.0
         self.transition_duration = 1.0
@@ -114,6 +117,25 @@ class GaitLogic():
         }
 
     # NOTE: -------- Callback --------
+    def request_state(self, msg: str):
+        # NOTE: GUI thread only stores the request; loop_step applies it on the sim clock
+        self.pending_state = msg
+
+    def _apply_pending(self, sim_time):
+        msg = self.pending_state
+        if msg is None:
+            return
+        # NOTE: a running gait only switches when all four feet are down; with the 0.5 duty
+        # trot that is every half cycle (one pair lands as the other lifts)
+        if isinstance(self.planner, GaitPlanner) and self.state_start_time is not None:
+            half = m.floor(2.0 * (sim_time - self.state_start_time) * self.planner.p.freq)
+            if self.half_cycle is None:
+                self.half_cycle = half
+            if half == self.half_cycle:
+                return
+        self.pending_state = None
+        self.half_cycle = None
+        self.update_state(msg)
     def update_state(self, msg: str):
         # NOTE: if state_callback is triggered again, 
         # it will cancel the walk timer, to avoid duplicated process
@@ -135,14 +157,19 @@ class GaitLogic():
                 self.setup_transition(0.00, 1.30, -2.70)
             case "IDLE":
                 self.setup_transition(0.00, 0.45, -0.60)
-            case "WALK" | "CRAWL" | "RUN" | "TURN":
-                self.planner = GaitPlanner(replace(GAIT_TABLE[msg]), self.nominal_feet)
+            case "WALK" | "WALK_BACK" | "CRAWL" | "RUN" | "TURN" | "TURN_RIGHT":
+                gait = {"WALK_BACK": "WALK", "TURN_RIGHT": "TURN"}.get(msg, msg)
+                self.planner = GaitPlanner(replace(GAIT_TABLE[gait]), self.nominal_feet)
+                if msg == "WALK_BACK":
+                    self.planner.p.step_len = -self.planner.p.step_len
+                if msg == "TURN_RIGHT":
+                    self.planner.p.sc_yaw = -self.planner.p.sc_yaw
                 self.x_off, self.z_off = self.planner.p.x_off, self.planner.p.z_off
 
                 self.start_x_off, self.start_z_off = self.x_off_used, self.z_off_used
 
-                self.walking = msg != "TURN"
-                self.turning = msg == "TURN"
+                self.walking = gait != "TURN"
+                self.turning = gait == "TURN"
                 self.target_yaw = self.current_yaw
             case "JUMP":
                 self.setup_transition(0.00, -0.45, -0.60)
@@ -370,6 +397,7 @@ class GaitLogic():
 
     def loop_step(self, sim_time):
         self.sim_time = sim_time
+        self._apply_pending(sim_time)
         if self.state_start_time is None:
             self.state_start_time = sim_time
 

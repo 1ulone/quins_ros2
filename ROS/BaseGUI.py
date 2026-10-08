@@ -176,14 +176,35 @@ class GUI:
 
         turnBtn = tk.Radiobutton(
             state_group,
-            text="TURN",
+            text="TURN LEFT",
             value="TURN",
             variable=self.state,
             font=font_style,
             command=update_state,
         )
         turnBtn.grid(column=1, row=3)
+        # for now only IDLE, WALK and TURN run under the WBC
+        for btn in (tuningBtn, crouchBtn, jumpBtn, crawlBtn, trotBtn): btn.config(state=tk.DISABLED)
 
+        walkBackBtn = tk.Radiobutton(
+            state_group,
+            text="WALK BACK",
+            value="WALK_BACK",
+            variable=self.state,
+            font=font_style,
+            command=update_state,
+        )
+        walkBackBtn.grid(column=0, row=4)
+
+        turnRightBtn = tk.Radiobutton(
+            state_group,
+            text="TURN RIGHT",
+            value="TURN_RIGHT",
+            variable=self.state,
+            font=font_style,
+            command=update_state,
+        )
+        turnRightBtn.grid(column=1, row=4)
         gpad_group = ttk.LabelFrame(grid_container, text=f"Gamepad group {self.phase_s.get()}", padding=15)
         gpad_group.grid(row=0, column=1, sticky='nsew')
 
@@ -558,12 +579,12 @@ class GUI:
             return
         
         button_mapping = {
-            0: "JUMP",   # Cross / A
-            1: "CROUCH", # Circle / B
+            0: "IDLE",   # Cross / A
+            1: "WALK_BACK", # Circle / B
             2: "IDLE",   # Square / X
             3: "WALK",   # Triangle / Y
-            4: "CRAWL",  # L1
-            5: "RUN"     # R1
+            4: "TURN",  # L1
+            5: "TURN_RIGHT"     # R1
         }
 
         # 1. Process discrete button events directly from the queue

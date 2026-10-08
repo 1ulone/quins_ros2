@@ -26,8 +26,8 @@ WBC_DEC = 1     # run the WBC every N physics steps (1 = every step)
 USE_FOSMC = True 
 FOSMC_TEST_A = False 
 AUTO_WALK_T = 2.0
-AUTO_STATE = "WALK"
-RUN_T = 20.0
+AUTO_STATE = None 
+RUN_T = None 
 GROUP_ROWS = {"lin": slice(0, 3), "ang": slice(3, 6), "swing": slice(6, 18)}
 WALK_DROP = 0.085
 
@@ -74,7 +74,7 @@ def main():
 
     def start_gui():
         gui = GUI({
-            "state": logic.update_state,
+            "state": logic.request_state,
             "phase": logic.update_phase_offsets,
             "wt_params": logic.update_wt_params,
             "jt_params": logic.update_jt_params,
@@ -154,7 +154,7 @@ def main():
                     prev_raw_yaw = raw_yaw
                     logic.current_q, logic.current_q_dot = q_act, qd_act
                     logic.current_yaw = continuous_yaw
-                    if AUTO_WALK_T is not None and logic.current_state == "TUNING" and data.time >= AUTO_WALK_T:
+                    if AUTO_STATE is not None and AUTO_WALK_T is not None and logic.current_state == "TUNING" and data.time >= AUTO_WALK_T:
                         logic.update_state(AUTO_STATE)
                         walk_t0 = data.time
                     logic.loop_step(data.time)
