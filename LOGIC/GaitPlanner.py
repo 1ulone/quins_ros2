@@ -1,8 +1,10 @@
 import math as m
 from dataclasses import dataclass
+import numpy as np
 
 LEG_NAMES = ['FL', 'FR', 'BL', 'BR']
 GRAVITY = 9.81
+FORWARD = 1
 
 class BasePlanner:
     def phase(self, leg, t): 
@@ -26,6 +28,12 @@ class BasePlanner:
         p1 = self.foot_offset(leg, t + h)
         p0 = self.foot_offset(leg, t - h)
         return tuple((a - b) / (2.0 * h) for a, b in zip(p1, p0))
+
+    def foot_acc(self, leg, t, h=1e-3):
+        p1 = self.foot_offset(leg, t + h)
+        p = self.foot_offset(leg, t)
+        p0 = self.foot_offset(leg, t - h)
+        return tuple(max(-50.0, min(50.0, (a - 2.0 * b + c) / (h * h))) for a, b, c in zip(p1, p, p0))
 
     def horizon(self, t0, n, dt, mass):
         # NOTE: Mpc Schedule for nodes k = 0..n-1 at t0 + k*dt, 
@@ -60,6 +68,31 @@ class BasePlanner:
             out["xy_active"].append(k_xya)
 
         return out
+
+    def instant(self, t, mass):
+        # NOTE: Single-instant schedule for the WBC, per leg in LEG_NAMES order:
+        # stance flag, phase progress s, foot offset / velocity / acceleration, Fz guess
+        stance, s, off, vel, acc = [], [], [], [], []
+        for leg in LEG_NAMES:
+            is_stance, s_leg = self.phase(leg, t)
+            stance.append(1.0 if is_stance else 0.0)
+            s.append(s_leg)
+            off.append(self.foot_offset(leg, t))
+            vel.append(self.foot_vel(leg, t))
+            acc.append(self.foot_acc(leg, t))
+
+        n_st = sum(stance)
+        fz = [mass * GRAVITY / n_st * self.fz_scale(leg, t) * st if n_st > 0 else 0.0
+              for leg, st in zip(LEG_NAMES, stance)]
+
+        return {
+            "stance": np.array(stance),
+            "s": np.array(s),
+            "off": np.array(off, dtype=float),
+            "vel": np.array(vel, dtype=float),
+            "acc": np.array(acc, dtype=float),
+            "fz": np.array(fz),
+        }
 
 class StandPlanner(BasePlanner):
     def phase(self, leg, t):
@@ -170,12 +203,15 @@ class GaitPlanner(BasePlanner):
 
     def foot_offset(self, leg, t):
         is_stance, s = self.phase(leg, t)
-        if self.p.path == "RUN":
-            return self._run_path(leg, is_stance, s)
         if self.p.path == "TURN":
             return self._turn_path(leg, is_stance, s)
-        
-        return self._walk_path(is_stance, s)
+        if self.p.path == "RUN":
+            x, y, z = self._run_path(leg, is_stance, s)
+        else:
+            x, y, z = self._walk_path(is_stance, s)
+        # NOTE: the paths are written for a front at -x (stance foot sweeps toward +x);
+        # mirror x so the stance foot always sweeps away from the front
+        return -FORWARD * x, y, z
 
     def _lift(self, s):
         # NOTE: Swing polynomial trajectory

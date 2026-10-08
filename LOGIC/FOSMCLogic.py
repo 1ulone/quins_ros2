@@ -1,113 +1,118 @@
 import numpy as np
 
-class VectorFractionalDerivative:
-    def __init__(self, order, dt, buffer_size=100, dof=12):
-        self.order = order
-        self.dt = dt
-        self.buffer = []
-        self.buffer_size = buffer_size
-        self.weights = [1.0]
-        self.dof = dof 
-        for i in range(1, buffer_size):
-            self.weights.append(self.weights[-1] * (1 - (order + 1) / i))
-        self.weights = np.array(self.weights)
+# Task rows per gain group (layout set by TaskLogic: body xyz | body rotation | feet)
+GROUPS = {
+    "base_lin": slice(0, 3),
+    "base_ang": slice(3, 6),
+    "swing":    slice(6, 18),
+}
 
-    def update(self, error):
-        self.buffer.insert(0, error)
-        if len(self.buffer) > self.buffer_size:
-            self.buffer.pop()
-        hist = np.array(self.buffer)
-        n = len(hist)
-        return (1.0 / (self.dt ** self.order)) * np.sum(hist * self.weights[:n].reshape(-1, 1), axis=0)
+# Starting gains. With lam = 1, Ke2 = 0, Kr = 0 this reduces to a PD with
+# Kp = Ke1 * Ks and Kd = Ke1 + Ks (close to the PD gains that already walk)
+# Ke2 found by test (lam = 1, Kr off): rotation fell at 2.0, swing got worse at 1.5 and fell at 3.0
+DEFAULT_GAINS = {
+    "base_lin": {"Ke1": 8.0,  "Ke2": 1.0,  "Ks": 8.0,  "Kr": 0.5},
+    "base_ang": {"Ke1": 14.0, "Ke2": 1.0,  "Ks": 14.0, "Kr": 1.0},
+    "swing":    {"Ke1": 30.0, "Ke2": 0.75, "Ks": 30.0, "Kr": 2.0},
+}
+GAIN_NAMES = ("Ke1", "Ke2", "Ks", "Kr")
+
+
+def gl_weights(order, n):
+    # NOTE: Grunwald-Letnikov weights: w0 = 1, wj = w(j-1) * (1 - (order + 1) / j)
+    w = np.ones(n)
+    for j in range(1, n):
+        w[j] = w[j - 1] * (1.0 - (order + 1.0) / j)
+    return w
+
 
 class FOSMC:
-    def __init__(self, dof, dt, lam, alpha, Ke1, Ke2, Ks, Kr, gamma_c, gamma_a, num_hidden_nodes=8):
+    """Task-space fractional-order sliding mode controller.
+    In: task error e, its rate e_dot, feed-forward acceleration. Out: commanded task acceleration."""
+
+    def __init__(self, dof, dt, lam=0.95, alpha=1.5, memory=100, eps=0.01, delta=0.5, gains=None):
         self.dof = dof
         self.dt = dt
-        
+        self.memory = memory
+        self.eps = eps          # keeps (|e| + eps)^(lam - 1) finite at e = 0
+        self.delta = delta      # boundary layer width (eq. 51)
+
+        self.hist = np.zeros((memory, dof))     # error history, row 0 = newest
+        self.hist_v = np.zeros((memory, dof))
+        self.last_in = np.zeros(dof)
+        self.prev_active = np.zeros(dof, dtype=bool)
+        self.s = np.zeros(dof)
+
+        self.groups = {g: dict(v) for g, v in DEFAULT_GAINS.items()}
+        if gains:
+            for g, vals in gains.items():
+                self.groups[g].update(vals)
+        self._expand_gains()
+
         self.lam = lam
+        self.set_alpha(alpha)
+
+    def _expand_gains(self):
+        # Group gains -> one value per task row (self.Ke1, self.Ke2, self.Ks, self.Kr)
+        for name in GAIN_NAMES:
+            vec = np.zeros(self.dof)
+            for g, rows in GROUPS.items():
+                vec[rows] = self.groups[g][name]
+            setattr(self, name, vec)
+
+    def set_alpha(self, alpha):
         self.alpha = alpha
-        self.Ke1 = np.diag([Ke1] * dof)
-        self.Ke2 = np.diag([Ke2] * dof)
-        self.Ks = np.diag([Ks] * dof)
-        self.Kr = np.diag([Kr] * dof)
-        self.frac_deriv = VectorFractionalDerivative(order=self.alpha - 1.0, dt=dt, dof=dof)
-        
-        self.num_hidden = num_hidden_nodes
-        self.gamma_c = gamma_c
-        self.gamma_a = gamma_a
-        self.Lambda_c = np.eye(self.num_hidden) * 0.1
-        self.Lambda_a = np.eye(self.num_hidden) * 0.1
-        
-        # W_c correctly sized to (num_hidden, dof) to map J(t) as a vector
-        # Initialized to zero to prevent massive unlearned torques on spawn
-        self.W_c = np.zeros((self.num_hidden, self.dof)) 
-        self.W_a = np.zeros((self.num_hidden, self.dof))
-        
-        self.Z_a_dim = self.dof * 4 
-        self.Z_c_dim = self.dof     
-        
-        # Expanded RBF centers to cover full joint range (-pi to pi)
-        centers_1d = np.linspace(-3.14, 3.14, self.num_hidden)
-        self.c_a = np.tile(centers_1d.reshape(-1, 1), (1, self.Z_a_dim))
-        self.b_a = np.ones(self.num_hidden) * 2.0
+        # D^(alpha-1) weights, used on e (surface) and on e_dot (output: D^alpha e = D^(alpha-1) e_dot)
+        self.w_s = gl_weights(alpha - 1.0, self.memory) / self.dt ** (alpha - 1.0)
 
-        self.c_c = np.tile(centers_1d.reshape(-1, 1), (1, self.Z_c_dim))
-        self.b_c = np.ones(self.num_hidden) * 2.0
-        
-        self.prev_psi_c = np.zeros((self.num_hidden, 1))
-        self.boundary_thickness = 0.01
+    def update_gains(self, groups=None, lam=None, alpha=None):
+        """groups: {"swing": {"Ks": 40.0}, ...}, partial updates are fine."""
+        if groups:
+            for g, vals in groups.items():
+                self.groups[g].update(vals)
+            self._expand_gains()
+        if lam is not None:
+            self.lam = lam
+        if alpha is not None and alpha != self.alpha:
+            self.set_alpha(alpha)   # history is kept, only the weights are rebuilt
 
-    def update_gains(self, Ke1, Ke2, Ks, Kr):
-        self.Ke1 = np.diag([Ke1] * self.dof)
-        self.Ke2 = np.diag([Ke2] * self.dof)
-        self.Ks = np.diag([Ks] * self.dof)
-        self.Kr = np.diag([Kr] * self.dof)
+    def compute(self, e, e_dot, acc_ff, active=None, freeze=None):
+        if active is None:
+            active = np.ones(self.dof, dtype=bool)
+        if freeze is None or self.alpha >= 1.0:
+            freeze = np.zeros(self.dof, dtype=bool)
 
-    def rbf(self, z, centers, widths):
-        z_expanded = np.tile(z, (self.num_hidden, 1))
-        dist_sq = np.sum((z_expanded - centers) ** 2, axis=1)
-        return np.exp(-dist_sq / (2 * widths ** 2)).reshape(-1, 1)
+        # Anti-windup: frozen rows repeat their previous input, so the memory stops growing
+        e_in = np.where(freeze, self.last_in, e)
+        self.hist = np.roll(self.hist, 1, axis=0)
+        self.hist[0] = e_in
+        self.hist_v = np.roll(self.hist_v, 1, axis=0)
+        self.hist_v[0] = e_dot
 
-    def boundary_layer(self, s):
-        # Eq. 51 boundary_layer: sign(s) outside, smooth s / (|s| + delta)
-        hs = np.sign(s)
-        ss = s / (np.abs(s) + self.boundary_thickness)
-        return np.where(np.abs(s) >= self.boundary_thickness, hs, ss)
+        # Rows that just became active (lift-off, first call): fresh memory at the current
+        # error and error rate, as if both had always been that value
+        started = active & ~self.prev_active
+        if np.any(started):
+            self.hist[:, started] = e[started]
+            self.hist_v[:, started] = e_dot[started]
+            e_in[started] = e[started]
+        self.prev_active = active.copy()
+        self.last_in = e_in
 
-    def compute(self, q, q_dot, q_d, q_dot_d):
-        e = q - q_d 
-        e_dot = q_dot - q_dot_d 
+        d_s = self.w_s @ self.hist      # D^(alpha-1) e
+        # D^alpha e as D^(alpha-1) of the measured e_dot (Caputo form): same value, but it no
+        # longer differentiates the error history, whose targets carry velocity jumps
+        d_o = self.w_s @ self.hist_v
 
-        d_alpha_e = self.frac_deriv.update(e)
-        term2 = self.Ke1 @ (np.sign(e) * (np.abs(e) ** self.lam))
-        term3 = self.Ke2 @ d_alpha_e
-        s = e_dot + term2 + term3  
-        s_norm_val = np.linalg.norm(s)
+        # eq. 31: sliding surface
+        sig = np.sign(e) * np.abs(e) ** self.lam
+        s = e_dot + self.Ke1 * sig + self.Ke2 * d_s
+        self.s = s
 
-        z_a = np.concatenate((q, q_dot, e, s))
-        z_c = s
+        D = np.where(np.abs(s) >= self.delta, np.sign(s), s / (np.abs(s) + self.delta))
 
-        psi_a = self.rbf(z_a, self.c_a, self.b_a)
-        psi_c = self.rbf(z_c, self.c_c, self.b_c)
-
-        j_t = self.W_c.T @ psi_c 
-        delta_psi_c = psi_c - self.prev_psi_c 
-        self.prev_psi_c = psi_c
-
-        o_c = np.zeros((self.dof, 1))
-        
-        inner_term = (self.W_c.T @ delta_psi_c) + o_c
-        critic_grad = delta_psi_c @ inner_term.T + self.Lambda_c @ self.W_c
-        
-        self.W_c -= self.gamma_c * s_norm_val * critic_grad * self.dt
-
-        rho = s_norm_val * j_t.flatten() + s 
-        
-        actor_grad = psi_a @ rho.reshape(1, -1) + s_norm_val * (self.Lambda_a @ self.W_a)
-        self.W_a  -= self.gamma_a * actor_grad * self.dt
-
-        tau_r = -self.Kr @ self.boundary_layer(s)
-        tau_nn = self.W_a.T @ psi_a
-        tau_p = -self.Ks @ s + tau_nn.flatten() + tau_r
-        return tau_p
+        return (acc_ff
+                - self.lam * self.Ke1 * (np.abs(e) + self.eps) ** (self.lam - 1.0) * e_dot
+                - self.Ke2 * d_o
+                - self.Ks * s
+                - self.Kr * D)

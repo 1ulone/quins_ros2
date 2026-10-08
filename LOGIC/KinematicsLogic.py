@@ -78,7 +78,7 @@ class KinematicsLogic():
         idx_v = self.v_idx[leg_id]
         
         # Seed the solver slightly bent based on knee_dir to avoid singularities
-        q[idx_q[1]] = 0.5 
+        q[idx_q[1]] = 0.5 * knee_dir 
         q[idx_q[2]] = -1.0 * knee_dir
         
         eps = 1e-4

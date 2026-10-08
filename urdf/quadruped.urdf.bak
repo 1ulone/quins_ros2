@@ -1,0 +1,334 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot xmlns:ns0="http://www.ros.org/wiki/xacro" name="quins">
+
+  <ns0:arg name="controller_config" default="" />
+
+  <material name="gray"><color rgba="0.5 0.5 0.5 1" /></material>
+  <material name="dark_gray"><color rgba="0.2 0.2 0.2 1" /></material>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_BODY.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="gray" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_BODY.stl" scale="0.001 0.001 0.001" /></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" /><mass value="3.0" />
+      <inertia ixx="0.008125" ixy="0" ixz="0" iyy="0.025" iyz="0" izz="0.028125" />
+    </inertial>
+  </link>
+
+  <!-- ===================== LF ===================== -->
+  <joint name="LF_HAA" type="revolute">
+    <parent link="base_link" /><child link="LF_HIP" />
+    <origin xyz="-0.157 0.060 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="LF_HIP">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_LF_HIP.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="dark_gray" />
+    </visual>
+    <inertial>
+      <origin xyz="-0.0265 0.015 0" rpy="0 0 0" /><mass value="0.7" />
+      <inertia ixx="0.000793" ixy="0" ixz="0" iyy="0.001289" iyz="0" izz="0.000916" />
+    </inertial>
+  </link>
+
+  <joint name="LF_HFE" type="revolute">
+    <parent link="LF_HIP" /><child link="LF_THIGH" />
+    <origin xyz="-0.053 0.030 0" rpy="0 0 0" />
+    <axis xyz="0 -1 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="LF_THIGH">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_LF_THIGH.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="gray" />
+    </visual>
+    <inertial>
+      <origin xyz="0 0.086 -0.0899" rpy="0 0 0" /><mass value="0.8" />
+      <inertia ixx="0.004087" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.002093" />
+    </inertial>
+  </link>
+
+  <joint name="LF_KFE" type="revolute">
+    <parent link="LF_THIGH" /><child link="LF_SHANK" />
+    <origin xyz="0 0.172 -0.17985" rpy="0 0 0" />
+    <axis xyz="0 -1 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="LF_SHANK">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_LF_SHANK.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="dark_gray" />
+    </visual>
+    <inertial>
+      <origin xyz="0.020 0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
+      <inertia ixx="0.001345" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.000045" />
+    </inertial>
+  </link>
+
+  <joint name="LF_SHANK_TO_FOOT" type="fixed">
+    <parent link="LF_SHANK" /><child link="LF_FOOT" />
+    <origin xyz="0.040 0.0245 -0.23015" rpy="0 0 0" />
+  </joint>
+  <link name="LF_FOOT">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" /><mass value="0.0115" />
+      <inertia ixx="9.0e-7" ixy="0" ixz="0" iyy="9.0e-7" iyz="0" izz="9.0e-7" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><sphere radius="0.014" /></geometry>
+    </collision>
+  </link>
+
+  <!-- ===================== RF ===================== -->
+  <joint name="RF_HAA" type="revolute">
+    <parent link="base_link" /><child link="RF_HIP" />
+    <origin xyz="-0.157 -0.060 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="RF_HIP">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_RF_HIP.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="dark_gray" />
+    </visual>
+    <inertial>
+      <origin xyz="-0.0265 -0.015 0" rpy="0 0 0" /><mass value="0.7" />
+      <inertia ixx="0.000793" ixy="0" ixz="0" iyy="0.001289" iyz="0" izz="0.000916" />
+    </inertial>
+  </link>
+
+  <joint name="RF_HFE" type="revolute">
+    <parent link="RF_HIP" /><child link="RF_THIGH" />
+    <origin xyz="-0.053 -0.030 0" rpy="0 0 0" />
+    <axis xyz="0 -1 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="RF_THIGH">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_RF_THIGH.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="gray" />
+    </visual>
+    <inertial>
+      <origin xyz="0 -0.086 -0.0899" rpy="0 0 0" /><mass value="0.8" />
+      <inertia ixx="0.004087" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.002093" />
+    </inertial>
+  </link>
+
+  <joint name="RF_KFE" type="revolute">
+    <parent link="RF_THIGH" /><child link="RF_SHANK" />
+    <origin xyz="0 -0.172 -0.17985" rpy="0 0 0" />
+    <axis xyz="0 -1 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="RF_SHANK">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_RF_SHANK.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="dark_gray" />
+    </visual>
+    <inertial>
+      <origin xyz="0.020 -0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
+      <inertia ixx="0.001345" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.000045" />
+    </inertial>
+  </link>
+
+  <joint name="RF_SHANK_TO_FOOT" type="fixed">
+    <parent link="RF_SHANK" /><child link="RF_FOOT" />
+    <origin xyz="0.040 -0.0245 -0.23015" rpy="0 0 0" />
+  </joint>
+  <link name="RF_FOOT">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" /><mass value="0.0115" />
+      <inertia ixx="9.0e-7" ixy="0" ixz="0" iyy="9.0e-7" iyz="0" izz="9.0e-7" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><sphere radius="0.014" /></geometry>
+    </collision>
+  </link>
+
+  <!-- ===================== LH ===================== -->
+  <joint name="LH_HAA" type="revolute">
+    <parent link="base_link" /><child link="LH_HIP" />
+    <origin xyz="0.157 0.060 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="LH_HIP">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_LH_HIP.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="dark_gray" />
+    </visual>
+    <inertial>
+      <origin xyz="0.0265 0.015 0" rpy="0 0 0" /><mass value="0.7" />
+      <inertia ixx="0.000793" ixy="0" ixz="0" iyy="0.001289" iyz="0" izz="0.000916" />
+    </inertial>
+  </link>
+
+  <joint name="LH_HFE" type="revolute">
+    <parent link="LH_HIP" /><child link="LH_THIGH" />
+    <origin xyz="0.053 0.030 0" rpy="0 0 0" />
+    <axis xyz="0 -1 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="LH_THIGH">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_LH_THIGH.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="gray" />
+    </visual>
+    <inertial>
+      <origin xyz="0 0.086 -0.0899" rpy="0 0 0" /><mass value="0.8" />
+      <inertia ixx="0.004087" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.002093" />
+    </inertial>
+  </link>
+
+  <joint name="LH_KFE" type="revolute">
+    <parent link="LH_THIGH" /><child link="LH_SHANK" />
+    <origin xyz="0 0.172 -0.17985" rpy="0 0 0" />
+    <axis xyz="0 -1 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="LH_SHANK">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_LH_SHANK.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="dark_gray" />
+    </visual>
+    <inertial>
+      <origin xyz="0.020 0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
+      <inertia ixx="0.001345" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.000045" />
+    </inertial>
+  </link>
+
+  <joint name="LH_SHANK_TO_FOOT" type="fixed">
+    <parent link="LH_SHANK" /><child link="LH_FOOT" />
+    <origin xyz="0.040 0.0245 -0.23015" rpy="0 0 0" />
+  </joint>
+  <link name="LH_FOOT">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" /><mass value="0.0115" />
+      <inertia ixx="9.0e-7" ixy="0" ixz="0" iyy="9.0e-7" iyz="0" izz="9.0e-7" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><sphere radius="0.014" /></geometry>
+    </collision>
+  </link>
+
+  <!-- ===================== RH ===================== -->
+  <joint name="RH_HAA" type="revolute">
+    <parent link="base_link" /><child link="RH_HIP" />
+    <origin xyz="0.157 -0.060 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="RH_HIP">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_RH_HIP.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="dark_gray" />
+    </visual>
+    <inertial>
+      <origin xyz="0.0265 -0.015 0" rpy="0 0 0" /><mass value="0.7" />
+      <inertia ixx="0.000793" ixy="0" ixz="0" iyy="0.001289" iyz="0" izz="0.000916" />
+    </inertial>
+  </link>
+
+  <joint name="RH_HFE" type="revolute">
+    <parent link="RH_HIP" /><child link="RH_THIGH" />
+    <origin xyz="0.053 -0.030 0" rpy="0 0 0" />
+    <axis xyz="0 -1 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="RH_THIGH">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_RH_THIGH.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="gray" />
+    </visual>
+    <inertial>
+      <origin xyz="0 -0.086 -0.0899" rpy="0 0 0" /><mass value="0.8" />
+      <inertia ixx="0.004087" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.002093" />
+    </inertial>
+  </link>
+
+  <joint name="RH_KFE" type="revolute">
+    <parent link="RH_THIGH" /><child link="RH_SHANK" />
+    <origin xyz="0 -0.172 -0.17985" rpy="0 0 0" />
+    <axis xyz="0 -1 0" />
+    <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
+    <dynamics damping="0.5" friction="0.05" />
+  </joint>
+  <link name="RH_SHANK">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><mesh filename="package://quins_ros2/meshes/QUINS_RH_SHANK.stl" scale="0.001 0.001 0.001" /></geometry>
+      <material name="dark_gray" />
+    </visual>
+    <inertial>
+      <origin xyz="0.020 -0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
+      <inertia ixx="0.001345" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.000045" />
+    </inertial>
+  </link>
+
+  <joint name="RH_SHANK_TO_FOOT" type="fixed">
+    <parent link="RH_SHANK" /><child link="RH_FOOT" />
+    <origin xyz="0.040 -0.0245 -0.23015" rpy="0 0 0" />
+  </joint>
+  <link name="RH_FOOT">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" /><mass value="0.0115" />
+      <inertia ixx="9.0e-7" ixy="0" ixz="0" iyy="9.0e-7" iyz="0" izz="9.0e-7" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry><sphere radius="0.014" /></geometry>
+    </collision>
+  </link>
+
+  <mujoco>
+    <compiler discardvisual="false" angle="radian" />
+    <actuator>
+      <motor name="LF_HAA_motor" joint="LF_HAA" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="LF_HFE_motor" joint="LF_HFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="LF_KFE_motor" joint="LF_KFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="RF_HAA_motor" joint="RF_HAA" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="RF_HFE_motor" joint="RF_HFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="RF_KFE_motor" joint="RF_KFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="LH_HAA_motor" joint="LH_HAA" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="LH_HFE_motor" joint="LH_HFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="LH_KFE_motor" joint="LH_KFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="RH_HAA_motor" joint="RH_HAA" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="RH_HFE_motor" joint="RH_HFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+      <motor name="RH_KFE_motor" joint="RH_KFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500" />
+    </actuator>
+  </mujoco>
+</robot>

@@ -390,3 +390,11 @@ class GaitLogic():
         if self.transitioning or self.planner is None or self.state_start_time is None:
             return self.stand_planner.horizon(0.0, n, dt, self.robot_mass)
         return self.planner.horizon(sim_time - self.state_start_time, n, dt, self.robot_mass)
+
+    def wbc_targets(self, sim_time):
+        # NOTE: Single-instant schedule for the WBC; anything that is not a periodic gait
+        # (transitions, jump) stands on all four feet for now
+        if self.transitioning or self.state_start_time is None or not isinstance(self.planner, GaitPlanner):
+            return self.stand_planner.instant(0.0, self.robot_mass)
+        return self.planner.instant(sim_time - self.state_start_time, self.robot_mass)
+

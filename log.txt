@@ -1,0 +1,60 @@
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+[init] base z = 0.390
+[INPUT] No Gamepad detected
+Unknown tag "{http://www.ros.org/wiki/xacro}arg" in /robot[@name='quins']
+Unknown tag "mujoco" in /robot[@name='quins']
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+t=0.00 TUNING ok=True st=SSSS v=(+0.000,+0.000) cmd=(+0.000,+0.000) z=0.390 yaw=+0.000/+0.000 Fz=100.5 |s|=0.000 frz=0
+t=0.50 TUNING ok=True st=SSSS v=(+0.005,-0.000) cmd=(+0.000,+0.000) z=0.388 yaw=-0.000/+0.000 Fz=99.4 |s|=0.032 frz=0
+t=1.00 WALK   ok=True st=S--S v=(-0.019,+0.000) cmd=(-0.000,+0.000) z=0.386 yaw=-0.000/-0.000 Fz=103.1 |s|=0.495 frz=0
+t=1.50 WALK   ok=True st=S--S v=(-0.375,-0.024) cmd=(-0.190,+0.000) z=0.417 yaw=-0.032/-0.000 Fz=13.5 |s|=0.606 frz=8
+t=2.00 WALK   ok=True st=-SS- v=(-0.684,-0.115) cmd=(-0.380,+0.000) z=0.409 yaw=-0.024/-0.000 Fz=172.6 |s|=1.972 frz=12
+t=2.50 WALK   ok=True st=-SS- v=(-0.477,+0.038) cmd=(-0.380,+0.000) z=0.419 yaw=+0.037/-0.000 Fz=101.9 |s|=0.897 frz=8
+t=3.00 WALK   ok=True st=S--S v=(-0.399,+0.016) cmd=(-0.380,+0.000) z=0.425 yaw=-0.023/-0.000 Fz=61.2 |s|=1.980 frz=10
+t=3.50 WALK   ok=True st=S--S v=(-0.505,-0.045) cmd=(-0.380,+0.000) z=0.420 yaw=-0.017/-0.000 Fz=98.8 |s|=0.925 frz=8
+t=4.00 WALK   ok=True st=-SS- v=(-0.469,-0.009) cmd=(-0.380,+0.000) z=0.427 yaw=+0.045/-0.000 Fz=29.1 |s|=0.888 frz=7
+t=4.50 WALK   ok=True st=S--S v=(-0.494,+0.105) cmd=(-0.380,+0.000) z=0.419 yaw=+0.002/-0.000 Fz=159.4 |s|=1.364 frz=11
+t=5.00 WALK   ok=True st=S--S v=(-0.501,+0.011) cmd=(-0.380,+0.000) z=0.425 yaw=-0.032/-0.000 Fz=101.3 |s|=0.922 frz=8
+t=5.50 WALK   ok=True st=-SS- v=(-0.467,-0.051) cmd=(-0.380,+0.000) z=0.424 yaw=+0.024/-0.000 Fz=57.6 |s|=2.022 frz=10
+t=6.00 WALK   ok=True st=-SS- v=(-0.454,+0.066) cmd=(-0.380,+0.000) z=0.420 yaw=+0.022/-0.000 Fz=100.0 |s|=0.874 frz=8
+t=6.50 IDLE   ok=True st=SSSS v=(+0.183,+0.031) cmd=(+0.000,+0.000) z=0.422 yaw=+0.010/-0.000 Fz=95.5 |s|=0.547 frz=1
+t=7.00 IDLE   ok=True st=SSSS v=(+0.037,-0.009) cmd=(+0.000,+0.000) z=0.395 yaw=+0.003/-0.000 Fz=98.9 |s|=0.283 frz=1
+t=7.50 IDLE   ok=True st=SSSS v=(+0.003,-0.002) cmd=(+0.000,+0.000) z=0.387 yaw=+0.002/-0.000 Fz=98.1 |s|=0.163 frz=1
+t=8.00 WALK   ok=True st=S--S v=(-0.025,-0.002) cmd=(-0.000,-0.000) z=0.385 yaw=+0.002/+0.002 Fz=115.1 |s|=1.425 frz=0
+t=8.50 WALK   ok=True st=S--S v=(-0.209,+0.427) cmd=(-0.190,-0.000) z=0.404 yaw=-0.037/+0.002 Fz=5.9 |s|=1.778 frz=9
+t=9.00 WALK   ok=True st=-SS- v=(-0.603,-0.247) cmd=(-0.380,-0.001) z=0.385 yaw=+0.005/+0.002 Fz=244.6 |s|=2.269 frz=10
+t=9.50 WALK   ok=True st=-SS- v=(-0.437,-0.064) cmd=(-0.380,-0.001) z=0.411 yaw=+0.014/+0.002 Fz=114.4 |s|=0.835 frz=9
+t=10.00 WALK   ok=True st=S--S v=(-0.393,-0.052) cmd=(-0.380,-0.001) z=0.421 yaw=-0.032/+0.002 Fz=43.6 |s|=1.782 frz=9
+Traceback (most recent call last):
+  File "/home/ulone/ros2_ws/src/quins_ros2/MUJOCO/MujocoSim.py", line 185, in <module>
+    main()
+  File "/home/ulone/ros2_ws/src/quins_ros2/MUJOCO/MujocoSim.py", line 145, in main
+    wbc.update_state(p=p, R=R_act, q=q_act, v_base=v_base, v_joints=qd_act)
+  File "/home/ulone/ros2_ws/src/quins_ros2/LOGIC/WbcLogic.py", line 154, in update_state
+    self.M = np.array(M)
+             ^^^^^^^^^^^
+KeyboardInterrupt
+/home/ulone/ros2_ws/src/quins_ros2/.venv/lib/python3.12/site-packages/glfw/__init__.py:917: GLFWError: (65537) b'The GLFW library is not initialized'
+  warnings.warn(message, GLFWError)

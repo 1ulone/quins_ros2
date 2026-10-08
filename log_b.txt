@@ -1,0 +1,65 @@
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+[init] base z = 0.390
+[INPUT] No Gamepad detected
+Unknown tag "{http://www.ros.org/wiki/xacro}arg" in /robot[@name='quins']
+Unknown tag "mujoco" in /robot[@name='quins']
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+t=0.00 TUNING ok=True st=SSSS v=(+0.000,+0.000) cmd=(+0.000,+0.000) z=0.390 yaw=+0.000/+0.000 Fz=100.5 |s|=0.000 frz=0
+t=0.50 TUNING ok=True st=SSSS v=(+0.004,-0.000) cmd=(+0.000,+0.000) z=0.388 yaw=+0.000/+0.000 Fz=99.4 |s|=0.034 frz=0
+t=1.00 TUNING ok=True st=SSSS v=(+0.001,+0.000) cmd=(+0.000,+0.000) z=0.386 yaw=+0.000/+0.000 Fz=99.7 |s|=0.044 frz=0
+t=1.50 TUNING ok=True st=SSSS v=(+0.000,+0.000) cmd=(+0.000,+0.000) z=0.384 yaw=+0.000/+0.000 Fz=99.9 |s|=0.057 frz=0
+t=2.00 WALK   ok=True st=-SS- v=(-0.257,-0.066) cmd=(-0.084,-0.000) z=0.402 yaw=+0.004/+0.000 Fz=214.4 |s|=1.382 frz=10
+t=2.50 WALK   ok=True st=-SS- v=(-0.542,+0.085) cmd=(-0.273,-0.000) z=0.416 yaw=+0.040/+0.000 Fz=70.3 |s|=1.195 frz=9
+t=3.00 WALK   ok=True st=S--S v=(-1.170,+0.093) cmd=(-0.380,-0.000) z=0.394 yaw=+0.026/+0.000 Fz=96.7 |s|=4.684 frz=12
+t=3.50 WALK   ok=True st=S--S v=(-0.572,-0.285) cmd=(-0.380,-0.000) z=0.400 yaw=-0.037/+0.000 Fz=85.2 |s|=2.910 frz=10
+t=4.00 WALK   ok=True st=-SS- v=(-0.718,+0.081) cmd=(-0.380,-0.000) z=0.459 yaw=-0.024/+0.000 Fz=24.2 |s|=3.998 frz=10
+t=4.50 WALK   ok=True st=S--S v=(-1.384,-1.033) cmd=(-0.380,-0.000) z=0.315 yaw=+0.062/+0.000 Fz=387.4 |s|=9.301 frz=11
+t=5.00 WALK   ok=True st=S--S v=(-2.342,-0.863) cmd=(-0.380,-0.000) z=0.227 yaw=-1.571/+0.000 Fz=58.4 |s|=45.858 frz=10
+t=5.50 WALK   ok=True st=-SS- v=(-1.397,-0.053) cmd=(-0.380,-0.000) z=1.299 yaw=-2.045/+0.000 Fz=160.0 |s|=29.429 frz=12
+t=6.00 WALK   ok=True st=-SS- v=(-1.370,+0.101) cmd=(-0.380,-0.000) z=0.417 yaw=-3.803/+0.000 Fz=179.0 |s|=32.200 frz=12
+t=6.50 WALK   ok=True st=S--S v=(+0.371,+1.112) cmd=(-0.380,-0.000) z=0.436 yaw=-6.880/+0.000 Fz=400.0 |s|=22.815 frz=11
+t=7.00 WALK   ok=True st=-SS- v=(-0.150,+1.400) cmd=(-0.380,-0.000) z=0.330 yaw=-4.818/+0.000 Fz=454.7 |s|=35.568 frz=11
+Traceback (most recent call last):
+  File "/home/ulone/.local/lib/python3.12/site-packages/casadi/casadi.py", line 15025, in toarray
+    return np.array(self.T.elements()).reshape(self.shape)
+                    ^^^^^^
+  File "/home/ulone/.local/lib/python3.12/site-packages/casadi/casadi.py", line 14929, in T
+    return _casadi.transpose(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ulone/ros2_ws/src/quins_ros2/MUJOCO/MujocoSim.py", line 186, in <module>
+    main()
+  File "/home/ulone/ros2_ws/src/quins_ros2/MUJOCO/MujocoSim.py", line 146, in main
+    wbc.update_state(p=p, R=R_act, q=q_act, v_base=v_base, v_joints=qd_act)
+  File "/home/ulone/ros2_ws/src/quins_ros2/LOGIC/WbcLogic.py", line 154, in update_state
+    self.M = np.array(M)
+             ^^^^^^^^^^^
+SystemError: <function DM.__array__ at 0x722a78d204a0> returned a result with an exception set
+/home/ulone/ros2_ws/src/quins_ros2/.venv/lib/python3.12/site-packages/glfw/__init__.py:917: GLFWError: (65537) b'The GLFW library is not initialized'
+  warnings.warn(message, GLFWError)

@@ -1,0 +1,100 @@
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+[init] base z = 0.390
+[INPUT] No Gamepad detected
+Unknown tag "{http://www.ros.org/wiki/xacro}arg" in /robot[@name='quins']
+Unknown tag "mujoco" in /robot[@name='quins']
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+t=0.00 TUNING ok=True st=SSSS v=(+0.000,+0.000) cmd=(+0.000,+0.000) z=0.390 yaw=+0.000/+0.000 Fz=100.5 |s|=0.000 frz=0
+t=0.50 TUNING ok=True st=SSSS v=(+0.005,-0.000) cmd=(+0.000,+0.000) z=0.388 yaw=-0.000/+0.000 Fz=99.4 |s|=0.032 frz=0
+t=1.00 TUNING ok=True st=SSSS v=(+0.001,+0.000) cmd=(+0.000,+0.000) z=0.386 yaw=-0.000/+0.000 Fz=99.6 |s|=0.041 frz=0
+t=1.50 TUNING ok=True st=SSSS v=(+0.000,+0.000) cmd=(+0.000,+0.000) z=0.384 yaw=-0.000/+0.000 Fz=99.8 |s|=0.050 frz=0
+t=2.00 WALK   ok=True st=S--S v=(-0.154,-0.031) cmd=(-0.068,+0.000) z=0.402 yaw=-0.006/-0.000 Fz=153.2 |s|=0.306 frz=9
+t=2.50 WALK   ok=True st=-SS- v=(-0.545,-0.035) cmd=(-0.258,+0.000) z=0.423 yaw=+0.036/-0.000 Fz=7.5 |s|=1.246 frz=7
+t=3.00 WALK   ok=True st=S--S v=(-0.544,+0.121) cmd=(-0.380,+0.000) z=0.415 yaw=+0.016/-0.000 Fz=174.3 |s|=1.014 frz=11
+t=3.50 WALK   ok=True st=S--S v=(-0.392,-0.023) cmd=(-0.380,+0.000) z=0.426 yaw=-0.040/-0.000 Fz=79.6 |s|=0.808 frz=7
+t=4.00 WALK   ok=True st=-SS- v=(-0.484,-0.085) cmd=(-0.380,+0.000) z=0.424 yaw=+0.017/-0.000 Fz=84.6 |s|=2.004 frz=10
+t=4.50 WALK   ok=True st=-SS- v=(-0.545,+0.047) cmd=(-0.380,+0.000) z=0.419 yaw=+0.025/-0.000 Fz=127.1 |s|=0.964 frz=8
+t=5.00 WALK   ok=True st=S--S v=(-0.388,+0.000) cmd=(-0.380,+0.000) z=0.428 yaw=-0.042/-0.000 Fz=31.3 |s|=1.161 frz=3
+t=5.50 WALK   ok=True st=-SS- v=(-0.495,-0.090) cmd=(-0.380,+0.000) z=0.418 yaw=-0.006/-0.000 Fz=173.4 |s|=0.915 frz=11
+t=6.00 WALK   ok=True st=-SS- v=(-0.500,-0.011) cmd=(-0.380,+0.000) z=0.426 yaw=+0.041/-0.000 Fz=77.1 |s|=0.918 frz=7
+t=6.50 WALK   ok=True st=S--S v=(-0.450,+0.084) cmd=(-0.380,+0.000) z=0.423 yaw=-0.015/-0.000 Fz=87.1 |s|=2.031 frz=10
+t=7.00 WALK   ok=True st=S--S v=(-0.481,-0.026) cmd=(-0.380,+0.000) z=0.422 yaw=-0.020/-0.000 Fz=128.0 |s|=0.901 frz=8
+t=7.50 WALK   ok=True st=-SS- v=(-0.481,-0.021) cmd=(-0.380,+0.000) z=0.427 yaw=+0.041/-0.000 Fz=21.8 |s|=1.255 frz=4
+t=8.00 WALK   ok=True st=S--S v=(-0.486,+0.100) cmd=(-0.380,+0.000) z=0.418 yaw=+0.009/-0.000 Fz=174.0 |s|=0.904 frz=11
+t=8.50 WALK   ok=True st=S--S v=(-0.493,+0.007) cmd=(-0.380,+0.000) z=0.426 yaw=-0.037/-0.000 Fz=74.9 |s|=0.914 frz=7
+t=9.00 WALK   ok=True st=-SS- v=(-0.472,-0.071) cmd=(-0.380,+0.000) z=0.422 yaw=+0.014/-0.000 Fz=88.3 |s|=2.063 frz=10
+t=9.50 WALK   ok=True st=-SS- v=(-0.448,+0.040) cmd=(-0.380,+0.000) z=0.422 yaw=+0.023/-0.000 Fz=128.2 |s|=0.868 frz=8
+t=10.00 WALK   ok=True st=S--S v=(-0.463,+0.014) cmd=(-0.380,+0.000) z=0.428 yaw=-0.040/-0.000 Fz=24.0 |s|=1.113 frz=4
+t=10.50 WALK   ok=True st=-SS- v=(-0.531,-0.105) cmd=(-0.380,+0.000) z=0.416 yaw=-0.014/-0.000 Fz=180.3 |s|=1.072 frz=11
+t=11.00 WALK   ok=True st=-SS- v=(-0.403,-0.002) cmd=(-0.380,+0.000) z=0.428 yaw=+0.040/-0.000 Fz=78.5 |s|=0.822 frz=7
+t=11.50 WALK   ok=True st=S--S v=(-0.516,+0.093) cmd=(-0.380,+0.000) z=0.423 yaw=-0.017/-0.000 Fz=83.9 |s|=2.016 frz=10
+t=12.00 WALK   ok=True st=S--S v=(-0.530,-0.052) cmd=(-0.380,+0.000) z=0.419 yaw=-0.026/-0.000 Fz=127.6 |s|=0.950 frz=8
+t=12.50 WALK   ok=True st=-SS- v=(-0.381,-0.002) cmd=(-0.380,+0.000) z=0.428 yaw=+0.042/-0.000 Fz=30.9 |s|=1.156 frz=3
+t=13.00 WALK   ok=True st=S--S v=(-0.506,+0.090) cmd=(-0.380,+0.000) z=0.418 yaw=+0.005/-0.000 Fz=172.6 |s|=0.926 frz=11
+t=13.50 WALK   ok=True st=S--S v=(-0.515,+0.012) cmd=(-0.380,+0.000) z=0.425 yaw=-0.040/-0.000 Fz=76.3 |s|=0.932 frz=7
+t=14.00 WALK   ok=True st=-SS- v=(-0.436,-0.075) cmd=(-0.380,+0.000) z=0.423 yaw=+0.015/-0.000 Fz=88.4 |s|=2.041 frz=10
+t=14.50 WALK   ok=True st=-SS- v=(-0.484,+0.024) cmd=(-0.380,+0.000) z=0.422 yaw=+0.020/-0.000 Fz=128.4 |s|=0.904 frz=8
+t=15.00 WALK   ok=True st=S--S v=(-0.478,+0.024) cmd=(-0.380,+0.000) z=0.427 yaw=-0.039/-0.000 Fz=23.5 |s|=1.222 frz=4
+t=15.50 WALK   ok=True st=-SS- v=(-0.467,-0.096) cmd=(-0.380,+0.000) z=0.418 yaw=-0.012/-0.000 Fz=178.9 |s|=0.887 frz=11
+t=16.00 WALK   ok=True st=-SS- v=(-0.444,-0.011) cmd=(-0.380,+0.000) z=0.428 yaw=+0.037/-0.000 Fz=76.4 |s|=0.864 frz=7
+t=16.50 WALK   ok=True st=S--S v=(-0.545,+0.108) cmd=(-0.380,+0.000) z=0.421 yaw=-0.012/-0.000 Fz=86.7 |s|=2.087 frz=10
+t=17.00 WALK   ok=True st=S--S v=(-0.446,-0.050) cmd=(-0.380,+0.000) z=0.422 yaw=-0.026/-0.000 Fz=128.1 |s|=0.864 frz=9
+t=17.50 WALK   ok=True st=-SS- v=(-0.437,-0.011) cmd=(-0.380,+0.000) z=0.429 yaw=+0.040/-0.000 Fz=25.3 |s|=1.049 frz=4
+t=18.00 WALK   ok=True st=S--S v=(-0.569,+0.117) cmd=(-0.380,+0.000) z=0.415 yaw=+0.014/-0.000 Fz=182.5 |s|=1.287 frz=11
+t=18.50 WALK   ok=True st=S--S v=(-0.391,-0.013) cmd=(-0.380,+0.000) z=0.427 yaw=-0.041/-0.000 Fz=79.5 |s|=0.811 frz=7
+t=19.00 WALK   ok=True st=-SS- v=(-0.487,-0.072) cmd=(-0.380,+0.000) z=0.423 yaw=+0.017/-0.000 Fz=84.0 |s|=1.997 frz=11
+t=19.50 WALK   ok=True st=-SS- v=(-0.555,+0.047) cmd=(-0.380,+0.000) z=0.419 yaw=+0.028/-0.000 Fz=127.1 |s|=0.974 frz=8
+t=20.00 WALK   ok=True st=S--S v=(-0.377,-0.000) cmd=(-0.380,+0.000) z=0.428 yaw=-0.042/-0.000 Fz=31.5 |s|=1.160 frz=3
+t=20.50 WALK   ok=True st=-SS- v=(-0.498,-0.067) cmd=(-0.380,+0.000) z=0.417 yaw=-0.005/-0.000 Fz=177.9 |s|=1.025 frz=11
+t=21.00 WALK   ok=True st=-SS- v=(-0.510,-0.010) cmd=(-0.380,+0.000) z=0.426 yaw=+0.042/-0.000 Fz=76.7 |s|=0.929 frz=7
+t=21.50 WALK   ok=True st=S--S v=(-0.453,+0.070) cmd=(-0.380,+0.000) z=0.422 yaw=-0.014/-0.000 Fz=88.4 |s|=2.053 frz=10
+t=22.00 WALK   ok=True st=S--S v=(-0.464,-0.027) cmd=(-0.380,+0.000) z=0.422 yaw=-0.021/-0.000 Fz=128.3 |s|=0.885 frz=8
+t=22.50 WALK   ok=True st=-SS- v=(-0.476,-0.014) cmd=(-0.380,+0.000) z=0.428 yaw=+0.040/-0.000 Fz=22.8 |s|=1.179 frz=3
+t=23.00 WALK   ok=True st=S--S v=(-0.494,+0.099) cmd=(-0.380,+0.000) z=0.417 yaw=+0.013/-0.000 Fz=178.3 |s|=0.914 frz=11
+t=23.50 WALK   ok=True st=S--S v=(-0.411,+0.006) cmd=(-0.380,+0.000) z=0.428 yaw=-0.038/-0.000 Fz=77.8 |s|=0.831 frz=7
+t=24.00 WALK   ok=True st=-SS- v=(-0.553,-0.111) cmd=(-0.380,+0.000) z=0.422 yaw=+0.014/-0.000 Fz=84.6 |s|=2.059 frz=10
+t=24.50 WALK   ok=True st=-SS- v=(-0.482,+0.064) cmd=(-0.380,+0.000) z=0.420 yaw=+0.026/-0.000 Fz=127.6 |s|=0.902 frz=8
+t=25.00 WALK   ok=True st=S--S v=(-0.383,+0.017) cmd=(-0.380,+0.000) z=0.429 yaw=-0.041/-0.000 Fz=28.6 |s|=1.083 frz=4
+t=25.50 WALK   ok=True st=-SS- v=(-0.594,-0.124) cmd=(-0.380,+0.000) z=0.415 yaw=-0.008/-0.000 Fz=180.4 |s|=1.365 frz=11
+t=26.00 WALK   ok=True st=-SS- v=(-0.442,+0.023) cmd=(-0.380,+0.000) z=0.426 yaw=+0.038/-0.000 Fz=78.9 |s|=0.861 frz=7
+t=26.50 WALK   ok=True st=S--S v=(-0.470,+0.090) cmd=(-0.380,+0.000) z=0.424 yaw=-0.016/-0.000 Fz=85.4 |s|=2.017 frz=10
+t=27.00 WALK   ok=True st=S--S v=(-0.526,-0.045) cmd=(-0.380,+0.000) z=0.421 yaw=-0.023/-0.000 Fz=127.1 |s|=0.946 frz=8
+t=27.50 WALK   ok=True st=-SS- v=(-0.399,+0.009) cmd=(-0.380,+0.000) z=0.428 yaw=+0.040/-0.000 Fz=31.0 |s|=1.188 frz=3
+t=28.00 WALK   ok=True st=S--S v=(-0.477,+0.081) cmd=(-0.380,+0.000) z=0.419 yaw=+0.007/-0.000 Fz=178.7 |s|=0.897 frz=11
+t=28.50 WALK   ok=True st=S--S v=(-0.507,+0.004) cmd=(-0.380,+0.000) z=0.426 yaw=-0.038/-0.000 Fz=74.6 |s|=0.926 frz=7
+t=29.00 WALK   ok=True st=-SS- v=(-0.464,-0.078) cmd=(-0.380,+0.000) z=0.422 yaw=+0.015/-0.000 Fz=87.7 |s|=2.051 frz=10
+t=29.50 WALK   ok=True st=-SS- v=(-0.463,+0.035) cmd=(-0.380,+0.000) z=0.422 yaw=+0.022/-0.000 Fz=128.1 |s|=0.883 frz=8
+t=30.00 WALK   ok=True st=S--S v=(-0.477,+0.016) cmd=(-0.380,+0.000) z=0.428 yaw=-0.040/-0.000 Fz=22.9 |s|=1.170 frz=3
+t=30.50 WALK   ok=True st=-SS- v=(-0.493,-0.099) cmd=(-0.380,+0.000) z=0.417 yaw=-0.013/-0.000 Fz=178.4 |s|=0.913 frz=11
+t=31.00 WALK   ok=True st=-SS- v=(-0.411,-0.006) cmd=(-0.380,+0.000) z=0.428 yaw=+0.038/-0.000 Fz=77.8 |s|=0.830 frz=7
+Traceback (most recent call last):
+  File "/home/ulone/ros2_ws/src/quins_ros2/MUJOCO/MujocoSim.py", line 186, in <module>
+    main()
+  File "/home/ulone/ros2_ws/src/quins_ros2/MUJOCO/MujocoSim.py", line 126, in main
+    q_act = data.qpos[qpos_idx].copy()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+/home/ulone/ros2_ws/src/quins_ros2/.venv/lib/python3.12/site-packages/glfw/__init__.py:917: GLFWError: (65537) b'The GLFW library is not initialized'
+  warnings.warn(message, GLFWError)

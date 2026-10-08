@@ -4,18 +4,18 @@
 
   <asset>
     <mesh name="BODY"     file="QUINS_BODY.stl"     scale="0.001 0.001 0.001"/>
-    <mesh name="LF_HIP"   file="QUINS_LF_HIP.stl"   scale="0.001 0.001 0.001"/>
-    <mesh name="LF_THIGH" file="QUINS_LF_THIGH.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="LF_SHANK" file="QUINS_LF_SHANK.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="RF_HIP"   file="QUINS_RF_HIP.stl"   scale="0.001 0.001 0.001"/>
-    <mesh name="RF_THIGH" file="QUINS_RF_THIGH.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="RF_SHANK" file="QUINS_RF_SHANK.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="LH_HIP"   file="QUINS_LH_HIP.stl"   scale="0.001 0.001 0.001"/>
-    <mesh name="LH_THIGH" file="QUINS_LH_THIGH.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="LH_SHANK" file="QUINS_LH_SHANK.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="RH_HIP"   file="QUINS_RH_HIP.stl"   scale="0.001 0.001 0.001"/>
-    <mesh name="RH_THIGH" file="QUINS_RH_THIGH.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="RH_SHANK" file="QUINS_RH_SHANK.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="LH_HIP"   file="QUINS_LF_HIP.stl"   scale="0.001 0.001 0.001"/>
+    <mesh name="LH_THIGH" file="QUINS_LF_THIGH.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="LH_SHANK" file="QUINS_LF_SHANK.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="RH_HIP"   file="QUINS_RF_HIP.stl"   scale="0.001 0.001 0.001"/>
+    <mesh name="RH_THIGH" file="QUINS_RF_THIGH.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="RH_SHANK" file="QUINS_RF_SHANK.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="LF_HIP"   file="QUINS_LH_HIP.stl"   scale="0.001 0.001 0.001"/>
+    <mesh name="LF_THIGH" file="QUINS_LH_THIGH.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="LF_SHANK" file="QUINS_LH_SHANK.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="RF_HIP"   file="QUINS_RH_HIP.stl"   scale="0.001 0.001 0.001"/>
+    <mesh name="RF_THIGH" file="QUINS_RH_THIGH.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="RF_SHANK" file="QUINS_RH_SHANK.stl" scale="0.001 0.001 0.001"/>
   </asset>
 
   <asset>
@@ -55,54 +55,12 @@
         <inertial pos="0 0 0" mass="3.0" diaginertia="0.008125 0.025 0.028125"/>
         <geom type="mesh" mesh="BODY"/>
 
-        <!-- LF -->
-        <body name="LF_HIP" pos="-0.157 0.060 0">
-          <inertial pos="-0.0265 0.015 0" mass="0.7" diaginertia="0.000793 0.001289 0.000916"/>
-          <joint name="LF_HAA" class="HAA"/>
-          <geom class="visual" mesh="LF_HIP" rgba="1 0.45 0 1"/>
-          <body name="LF_THIGH" pos="-0.053 0.030 0">
-            <inertial pos="0 0.086 -0.0899" mass="0.8" diaginertia="0.004087 0.002327 0.002093"/>
-            <joint name="LF_HFE" class="pitch"/>
-            <geom class="visual" mesh="LF_THIGH" rgba="1 0.45 0 1"/>
-            <body name="LF_SHANK" pos="0 0.172 -0.17985">
-              <inertial pos="0.020 0.01225 -0.11508" mass="0.3" diaginertia="0.001345 0.001345 0.000045"/>
-              <joint name="LF_KFE" class="pitch"/>
-              <geom class="visual" mesh="LF_SHANK" rgba="1 0.45 0 1"/>
-              <body name="LF_FOOT" pos="0.040 0.0245 -0.23015">
-                <geom name="LF_FOOT_collision" class="foot"/>
-                <site name="LF_FOOT_site" pos="0 0 0" size="0.01"/>
-              </body>
-            </body>
-          </body>
-        </body>
-
-        <!-- RF -->
-        <body name="RF_HIP" pos="-0.157 -0.060 0">
-          <inertial pos="-0.0265 -0.015 0" mass="0.7" diaginertia="0.000793 0.001289 0.000916"/>
-          <joint name="RF_HAA" class="HAA"/>
-          <geom class="visual" mesh="RF_HIP" rgba="1 0.45 0 1"/>
-          <body name="RF_THIGH" pos="-0.053 -0.030 0">
-            <inertial pos="0 -0.086 -0.0899" mass="0.8" diaginertia="0.004087 0.002327 0.002093"/>
-            <joint name="RF_HFE" class="pitch"/>
-            <geom class="visual" mesh="RF_THIGH" rgba="1 0.45 0 1"/>
-            <body name="RF_SHANK" pos="0 -0.172 -0.17985">
-              <inertial pos="0.020 -0.01225 -0.11508" mass="0.3" diaginertia="0.001345 0.001345 0.000045"/>
-              <joint name="RF_KFE" class="pitch"/>
-              <geom class="visual" mesh="RF_SHANK" rgba="1 0.45 0 1"/>
-              <body name="RF_FOOT" pos="0.040 -0.0245 -0.23015">
-                <geom name="RF_FOOT_collision" class="foot"/>
-                <site name="RF_FOOT_site" pos="0 0 0" size="0.01"/>
-              </body>
-            </body>
-          </body>
-        </body>
-
         <!-- LH -->
-        <body name="LH_HIP" pos="0.157 0.060 0">
-          <inertial pos="0.0265 0.015 0" mass="0.7" diaginertia="0.000793 0.001289 0.000916"/>
+        <body name="LH_HIP" pos="-0.157 0.060 0">
+          <inertial pos="-0.0265 0.015 0" mass="0.7" diaginertia="0.000793 0.001289 0.000916"/>
           <joint name="LH_HAA" class="HAA"/>
           <geom class="visual" mesh="LH_HIP" rgba="1 0.45 0 1"/>
-          <body name="LH_THIGH" pos="0.053 0.030 0">
+          <body name="LH_THIGH" pos="-0.053 0.030 0">
             <inertial pos="0 0.086 -0.0899" mass="0.8" diaginertia="0.004087 0.002327 0.002093"/>
             <joint name="LH_HFE" class="pitch"/>
             <geom class="visual" mesh="LH_THIGH" rgba="1 0.45 0 1"/>
@@ -119,11 +77,11 @@
         </body>
 
         <!-- RH -->
-        <body name="RH_HIP" pos="0.157 -0.060 0">
-          <inertial pos="0.0265 -0.015 0" mass="0.7" diaginertia="0.000793 0.001289 0.000916"/>
+        <body name="RH_HIP" pos="-0.157 -0.060 0">
+          <inertial pos="-0.0265 -0.015 0" mass="0.7" diaginertia="0.000793 0.001289 0.000916"/>
           <joint name="RH_HAA" class="HAA"/>
           <geom class="visual" mesh="RH_HIP" rgba="1 0.45 0 1"/>
-          <body name="RH_THIGH" pos="0.053 -0.030 0">
+          <body name="RH_THIGH" pos="-0.053 -0.030 0">
             <inertial pos="0 -0.086 -0.0899" mass="0.8" diaginertia="0.004087 0.002327 0.002093"/>
             <joint name="RH_HFE" class="pitch"/>
             <geom class="visual" mesh="RH_THIGH" rgba="1 0.45 0 1"/>
@@ -138,6 +96,48 @@
             </body>
           </body>
         </body>
+
+        <!-- LF -->
+        <body name="LF_HIP" pos="0.157 0.060 0">
+          <inertial pos="0.0265 0.015 0" mass="0.7" diaginertia="0.000793 0.001289 0.000916"/>
+          <joint name="LF_HAA" class="HAA"/>
+          <geom class="visual" mesh="LF_HIP" rgba="1 0.45 0 1"/>
+          <body name="LF_THIGH" pos="0.053 0.030 0">
+            <inertial pos="0 0.086 -0.0899" mass="0.8" diaginertia="0.004087 0.002327 0.002093"/>
+            <joint name="LF_HFE" class="pitch"/>
+            <geom class="visual" mesh="LF_THIGH" rgba="1 0.45 0 1"/>
+            <body name="LF_SHANK" pos="0 0.172 -0.17985">
+              <inertial pos="0.020 0.01225 -0.11508" mass="0.3" diaginertia="0.001345 0.001345 0.000045"/>
+              <joint name="LF_KFE" class="pitch"/>
+              <geom class="visual" mesh="LF_SHANK" rgba="1 0.45 0 1"/>
+              <body name="LF_FOOT" pos="0.040 0.0245 -0.23015">
+                <geom name="LF_FOOT_collision" class="foot"/>
+                <site name="LF_FOOT_site" pos="0 0 0" size="0.01"/>
+              </body>
+            </body>
+          </body>
+        </body>
+
+        <!-- RF -->
+        <body name="RF_HIP" pos="0.157 -0.060 0">
+          <inertial pos="0.0265 -0.015 0" mass="0.7" diaginertia="0.000793 0.001289 0.000916"/>
+          <joint name="RF_HAA" class="HAA"/>
+          <geom class="visual" mesh="RF_HIP" rgba="1 0.45 0 1"/>
+          <body name="RF_THIGH" pos="0.053 -0.030 0">
+            <inertial pos="0 -0.086 -0.0899" mass="0.8" diaginertia="0.004087 0.002327 0.002093"/>
+            <joint name="RF_HFE" class="pitch"/>
+            <geom class="visual" mesh="RF_THIGH" rgba="1 0.45 0 1"/>
+            <body name="RF_SHANK" pos="0 -0.172 -0.17985">
+              <inertial pos="0.020 -0.01225 -0.11508" mass="0.3" diaginertia="0.001345 0.001345 0.000045"/>
+              <joint name="RF_KFE" class="pitch"/>
+              <geom class="visual" mesh="RF_SHANK" rgba="1 0.45 0 1"/>
+              <body name="RF_FOOT" pos="0.040 -0.0245 -0.23015">
+                <geom name="RF_FOOT_collision" class="foot"/>
+                <site name="RF_FOOT_site" pos="0 0 0" size="0.01"/>
+              </body>
+            </body>
+          </body>
+        </body>
       </body>
       <freejoint name="root_floating_base"/>
       <camera name="track_cam" mode="trackcom" pos="0 -2 1"/>
@@ -145,24 +145,24 @@
   </worldbody>
 
   <actuator>
-    <motor name="LF_HAA_motor" joint="LF_HAA" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
-    <motor name="LF_HFE_motor" joint="LF_HFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
-    <motor name="LF_KFE_motor" joint="LF_KFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
-    <motor name="RF_HAA_motor" joint="RF_HAA" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
-    <motor name="RF_HFE_motor" joint="RF_HFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
-    <motor name="RF_KFE_motor" joint="RF_KFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
     <motor name="LH_HAA_motor" joint="LH_HAA" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
     <motor name="LH_HFE_motor" joint="LH_HFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
     <motor name="LH_KFE_motor" joint="LH_KFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
     <motor name="RH_HAA_motor" joint="RH_HAA" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
     <motor name="RH_HFE_motor" joint="RH_HFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
     <motor name="RH_KFE_motor" joint="RH_KFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
+    <motor name="LF_HAA_motor" joint="LF_HAA" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
+    <motor name="LF_HFE_motor" joint="LF_HFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
+    <motor name="LF_KFE_motor" joint="LF_KFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
+    <motor name="RF_HAA_motor" joint="RF_HAA" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
+    <motor name="RF_HFE_motor" joint="RF_HFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
+    <motor name="RF_KFE_motor" joint="RF_KFE" gear="1" ctrllimited="true" ctrlrange="-1500 1500"/>
   </actuator>
 
   <sensor>
-    <force name="LF_FOOT_force_sensor" site="LF_FOOT_site"/>
-    <force name="RF_FOOT_force_sensor" site="RF_FOOT_site"/>
     <force name="LH_FOOT_force_sensor" site="LH_FOOT_site"/>
     <force name="RH_FOOT_force_sensor" site="RH_FOOT_site"/>
+    <force name="LF_FOOT_force_sensor" site="LF_FOOT_site"/>
+    <force name="RF_FOOT_force_sensor" site="RF_FOOT_site"/>
   </sensor>
 </mujoco>

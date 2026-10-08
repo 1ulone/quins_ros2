@@ -15,24 +15,20 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(current_dir))
 sys.stdout.reconfigure(line_buffering=True)
 
-from LOGIC.GaitPlanner import GaitPlanner
 from LOGIC.GaitLogic import GaitLogic, LEG_NAMES, JOINT_NAMES
-from LOGIC.FOSMCLogic import FOSMC
-from LOGIC.MpcLogic import WholeBodyMPC
+from LOGIC.WbcLogic import WholeBodyController
+from LOGIC.TaskLogic import TaskController
+from LOGIC.GaitPlanner import FORWARD
 from ROS.BaseGUI import GUI
 
-NOMINAL_STANCE = np.tile([0.0, 0.60, -1.10], 4) 
-USE_FOSMC = False
-MPC_HZ = 50
-MPC_WEIGHTS = [100.0, 1700.0, 0.04, 4.4e-7, 0.0004]   # qj, v_base, v_j, tau, a
-BASE_W = (47000.0, 3000.0)                            # base height, base orientation
-SWING_W = 5000.0
-
-
-def yaw_rot(psi):
-    c, s = m.cos(psi), m.sin(psi)
-    return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
-
+NOMINAL_STANCE = np.tile([0.0, -0.83, 1.113], 4)
+WBC_DEC = 1     # run the WBC every N physics steps (1 = every step)
+USE_FOSMC = True 
+FOSMC_TEST_A = False 
+AUTO_WALK_T = 2.0
+RUN_T = 20.0
+GROUP_ROWS = {"lin": slice(0, 3), "ang": slice(3, 6), "swing": slice(6, 18)}
+WALK_DROP = 0.085
 
 def main():
     # ---------------- 1. Model ----------------
@@ -49,10 +45,14 @@ def main():
     qvel_idx = model.jnt_dofadr[jids]
     act_idx = np.array([mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, f"{j}_motor") for j in joints_name_list])
     foot_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, f) for f in ('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT')]
+    foot_geoms = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, f"{f}_collision") for f in ('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT')]
+    # The front legs must sit on the FORWARD side of the body, or the gait walks against itself
+    lf_hip_x = model.body_pos[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'LF_HIP')][0]
+    assert np.sign(lf_hip_x) == FORWARD, f"LF_HIP is at x = {lf_hip_x:+.3f} but FORWARD = {FORWARD}"
 
-    # The MPC's RNEA must use the same joint damping as the simulator (eq. 5)
+    # The WBC's RNEA must use the same joint damping as the simulator (eq. 5)
     joint_damping = model.dof_damping[qvel_idx]
-    assert np.allclose(joint_damping, joint_damping[0]), "MPC expects one damping value for all joints"
+    assert np.allclose(joint_damping, joint_damping[0]), "WBC expects one damping value for all joints"
 
     # Start in NOMINAL_STANCE with the feet just clear of the floor
     data.qpos[qpos_idx] = NOMINAL_STANCE
@@ -64,7 +64,6 @@ def main():
         mujoco.mj_forward(model, data)
     z_nom = float(data.qpos[2])
     foot_nom_xy = np.array([data.xpos[f][0:2] - data.qpos[0:2] for f in foot_ids])
-    print(f"[init] base z = {z_nom:.3f}", flush=True)
 
     # ---------------- 2. Logic & GUI ----------------
     graph_queue = queue.Queue()
@@ -97,22 +96,23 @@ def main():
     threading.Thread(target=start_gui, daemon=True).start()
 
     # ---------------- 3. Controllers ----------------
-    mpc = WholeBodyMPC(
-        urdf_path,
-        joints_name_list,
-        n=37,
-        dt=0.015,
-        joint_damping=float(joint_damping[0]),
-        base_w=BASE_W,
-        swing_w=SWING_W
+    wbc = WholeBodyController(urdf_path, joints_name_list, joint_damping=float(joint_damping[0]))
+    task = TaskController(
+        logic,
+        NOMINAL_STANCE,
+        z_nom,
+        foot_nom_xy,
+        use_fosmc=USE_FOSMC,
+        fosmc_dt=model.opt.timestep * WBC_DEC,
+        walk_drop=WALK_DROP,
     )
+    print(f"[init] walk pose (FL) = {np.round(task.q_walk[0:3], 3)}", flush=True)
 
-    fosmc = FOSMC(dof=12, dt=model.opt.timestep, lam=0.5, alpha=1.5, Ke1=0.5, Ke2=0.5,
-                  Ks=5.0, Kr=2.0, gamma_c=0.01, gamma_a=0.01) if USE_FOSMC else None
+    if task.fosmc is not None and FOSMC_TEST_A:
+        task.fosmc.update_gains(lam=0.95)
 
     physics_hz = 1.0 / model.opt.timestep
     logic_dec = int(physics_hz / logic.control_rate)
-    mpc_dec = int(physics_hz / MPC_HZ)
     print_dec = int(physics_hz / 2)
 
     record_hz = 60
@@ -120,20 +120,16 @@ def main():
     renderer = mujoco.Renderer(model, height=480, width=640)
     video_writer = imageio.get_writer('simulation.mp4', fps=record_hz)
 
-    # Trajectory currently being executed (hold pose until the first solve)
-    traj = {
-        "tau": np.zeros((mpc.nj, mpc.n)),
-        "qj": np.tile(data.qpos[qpos_idx].reshape(-1, 1), (1, mpc.n + 1)),
-        "vj": np.zeros((mpc.nj, mpc.n + 1)),
-        "t0": data.time,
-    }
-
-    turn_anchor_xy = np.zeros(2)
-    was_turning = False
+    tau = np.zeros(len(joints_name_list))
     continuous_yaw, prev_raw_yaw = 0.0, 0.0
-    target_v = np.zeros(2)
     step = 0
     last_render = time.time()
+    # Diagnostics, collected from 1 s after WALK starts (skips the stride ramp)
+    stats = {"n": 0, "n_st": 0, "n_sw": 0, "v_err2": 0.0, "z_err2": 0.0, "late": 0, "early": 0,
+             "fell": None, "s": {g: 0.0 for g in GROUP_ROWS}, "miss": {g: 0.0 for g in GROUP_ROWS},
+             "cnt": {g: 0 for g in GROUP_ROWS}}
+    win = {g: [0.0, 0.0] for g in GROUP_ROWS}   # per print window: peak |s|, peak mean miss
+    walk_t0 = None
 
     try:
         with mujoco.viewer.launch_passive(model, data) as viewer:
@@ -149,10 +145,6 @@ def main():
                 mujoco.mju_quat2Mat(R_act, data.qpos[3:7])
                 R_act = R_act.reshape(3, 3)
 
-                if logic.turning and not was_turning:
-                    turn_anchor_xy = data.qpos[0:2].copy()
-                was_turning = logic.turning
-
                 # ---- Gait logic (schedule + heading) ----
                 if step % logic_dec == 0:
                     raw_yaw = m.atan2(R_act[1, 0], R_act[0, 0])
@@ -160,69 +152,64 @@ def main():
                     prev_raw_yaw = raw_yaw
                     logic.current_q, logic.current_q_dot = q_act, qd_act
                     logic.current_yaw = continuous_yaw
+                    if AUTO_WALK_T is not None and logic.current_state == "TUNING" and data.time >= AUTO_WALK_T:
+                        logic.update_state("WALK")
+                        walk_t0 = data.time
                     logic.loop_step(data.time)
 
-                # ---- MPC (synchronous: the sim waits for the solve) ----
-                if step % mpc_dec == 0:
-                    target_v[:] = 0.0
-                    if logic.walking and isinstance(logic.planner, GaitPlanner):
-                        gp = logic.planner.p
-                        v_fwd = -(gp.step_len * logic.planner.stride_scale * gp.freq) / gp.duty   # body -x is forward
-                        target_v[:] = v_fwd * np.array([m.cos(logic.target_yaw), m.sin(logic.target_yaw)])
-                    elif logic.turning:
-                        target_v[:] = np.clip(1.5 * (turn_anchor_xy - data.qpos[0:2]), -0.2, 0.2)
-
-                    horizon = logic.mpc_horizon(data.time, mpc.n, mpc.dt)
-                    # swing x, y targets: base moving at the commanded velocity + planner offset from the nominal foot
-                    R_yaw = yaw_rot(logic.target_yaw)[0:2, 0:2]
-                    swing_xy = np.zeros((8, mpc.n))
-                    for k in range(mpc.n):
-                        base_xy = data.qpos[0:2] + target_v * k * mpc.dt
-                        for i in range(4):
-                            swing_xy[2 * i: 2 * i + 2, k] = base_xy + R_yaw @ (foot_nom_xy[i] + np.array(horizon["swing_xy"][k][i]))
-
-                    v0 = np.concatenate([data.qvel[0:3], R_act @ data.qvel[3:6], qd_act])   # MuJoCo free-joint omega is body frame
-
-                    try:
-                        tau, qj, vj = mpc.solve(
-                            p0=data.qpos[0:3].copy(), R0=R_act, qj0=q_act, v0=v0,
-                            q_nom=NOMINAL_STANCE,
-                            v_base_des=np.array([target_v[0], target_v[1], 0.0, 0.0, 0.0, logic.yaw_rate]),
-                            swing_vz_schedule=np.array(horizon["swing_vz"]).T,
-                            stance_schedule=np.array(horizon["stance"]).T,
-                            mpc_weights=MPC_WEIGHTS,
-                            vz_active_schedule=np.array(horizon["vz_active"]).T,
-                            fc_guess=np.array(horizon["fc_guess"]).reshape(mpc.n, 12).T,
-                            z_des=z_nom,
-                            R_des=yaw_rot(logic.target_yaw),
-                            swing_xy=swing_xy,
-                            xy_active=np.array(horizon["xy_active"]).T,
-                        )
-                        traj.update(tau=tau, qj=qj, vj=vj, t0=data.time)
-                    except RuntimeError as e:
-                        print(f"[mpc t={data.time:.2f}] solve failed, keeping previous plan: {e}", flush=True)
-
-                # ---- Interpolate the plan (eq. 9) ----
-                k_f = np.clip((data.time - traj["t0"]) / mpc.dt, 0.0, mpc.n)
-                k0 = int(k_f)
-                k1 = min(k0 + 1, mpc.n)
-                a = k_f - k0
-                q_des = (1 - a) * traj["qj"][:, k0] + a * traj["qj"][:, k1]
-                qd_des = (1 - a) * traj["vj"][:, k0] + a * traj["vj"][:, k1]
-                tau = traj["tau"][:, min(k0, mpc.n - 1)].copy()
-
-                if fosmc is not None:
-                    tau += fosmc.compute(q=q_act, q_dot=qd_act, q_d=q_des, q_dot_d=qd_des)
+                # ---- WBC (synchronous, sim time only) ----
+                if step % WBC_DEC == 0:
+                    p = data.qpos[0:3].copy()
+                    v_base = np.concatenate([data.qvel[0:3], R_act @ data.qvel[3:6]])   # free joint omega is body frame
+                    wbc.update_state(p=p, R=R_act, q=q_act, v_base=v_base, v_joints=qd_act)
+                    cmd = task.compute(t=data.time, dt=model.opt.timestep * WBC_DEC,
+                                       p=p, R=R_act, v_base=v_base, q=q_act, v_joints=qd_act,
+                                       pf=wbc.pf, vf=wbc.vf,
+                                       acc_achieved=np.concatenate([wbc.last["acc_base"], wbc.last["acc_foot"]]))
+                    tau = wbc.solve(**cmd)["tau"]
+                    # ---- Diagnostics ----
+                    g1, g2 = data.contact.geom1[:data.ncon], data.contact.geom2[:data.ncon]
+                    in_contact = np.array([np.any(g1 == gid) or np.any(g2 == gid) for gid in foot_geoms])
+                    dbg = task.debug
+                    for g, rows in GROUP_ROWS.items():
+                        act = dbg["active"][rows]
+                        if np.any(act):
+                            win[g][0] = max(win[g][0], float(np.max(np.abs(dbg["s"][rows][act]))))
+                            win[g][1] = max(win[g][1], float(np.mean(dbg["miss"][rows][act])))
+                    if walk_t0 is not None and stats["fell"] is None and data.time >= walk_t0 + 1.0:
+                        sched = dbg["stance"] > 0.5
+                        stats["n"] += 1
+                        stats["n_st"] += int(np.sum(sched))
+                        stats["n_sw"] += int(np.sum(~sched))
+                        stats["v_err2"] += float(np.sum((data.qvel[0:2] - task.v_cmd) ** 2))
+                        stats["z_err2"] += float((data.qpos[2] - z_nom) ** 2)
+                        stats["late"] += int(np.sum(sched & ~in_contact))
+                        stats["early"] += int(np.sum(~sched & in_contact))
+                        for g, rows in GROUP_ROWS.items():
+                            act = dbg["active"][rows]
+                            if np.any(act):
+                                stats["s"][g] += float(np.mean(np.abs(dbg["s"][rows][act])))
+                                stats["miss"][g] += float(np.mean(dbg["miss"][rows][act]))
+                                stats["cnt"][g] += 1
+                    if stats["fell"] is None and (data.qpos[2] < 0.2 or R_act[2, 2] < 0.5):
+                        stats["fell"] = data.time
 
                 data.ctrl[act_idx] = tau
 
+                # Graph: FL foot height, target vs actual
                 if step % logic_dec == 0:
-                    graph_queue.put([float(data.time), float(q_des[1]), float(q_act[1])])
+                    graph_queue.put([float(data.time), float(task.debug["pf_d"][2]), float(wbc.pf[2])])
 
                 if step % print_dec == 0:
-                    print(f"t={data.time:.2f} {logic.current_state:<6} conv={mpc.converged} "
-                          f"v=({data.qvel[0]:+.3f},{data.qvel[1]:+.3f}) cmd=({target_v[0]:+.3f},{target_v[1]:+.3f}) "
-                          f"z={data.qpos[2]:.3f} yaw={continuous_yaw:+.3f}/{logic.target_yaw:+.3f}", flush=True)
+                    st = ''.join('S' if s > 0.5 else '-' for s in task.debug["stance"])
+                    fz = wbc.last["Fc"][2::3].sum()
+                    print(f"t={data.time:.2f} {logic.current_state:<6} ok={wbc.ok} st={st} "
+                          f"v=({data.qvel[0]:+.3f},{data.qvel[1]:+.3f}) cmd=({task.v_cmd[0]:+.3f},{task.v_cmd[1]:+.3f}) "
+                          f"z={data.qpos[2]:.3f} yaw={continuous_yaw:+.3f}/{logic.target_yaw:+.3f} Fz={fz:.1f} "
+                          f"|s|={task.debug['s_max']:.3f} frz={task.debug['frozen']}", flush=True)
+                    print("      peak |s| lin/ang/swing = " + "/".join(f"{win[g][0]:.2f}" for g in GROUP_ROWS)
+                          + "   peak miss lin/ang/swing = " + "/".join(f"{win[g][1]:.2f}" for g in GROUP_ROWS), flush=True)
+                    win = {g: [0.0, 0.0] for g in GROUP_ROWS}
 
                 mujoco.mj_step(model, data)
 
@@ -235,11 +222,25 @@ def main():
                     video_writer.append_data(renderer.render())
 
                 step += 1
+                if (stats["fell"] is not None and data.time > stats["fell"] + 1.0) or (RUN_T is not None and data.time >= RUN_T):
+                    break
                 elapsed = time.time() - step_start
                 if elapsed < model.opt.timestep:
                     time.sleep(model.opt.timestep - elapsed)
     finally:
         video_writer.close()
+        renderer.close()
+        n = max(stats["n"], 1)
+        fell = "no" if stats["fell"] is None else f"yes, at t = {stats['fell']:.2f} s"
+        print("\n===== SUMMARY =====", flush=True)
+        print(f"fell               : {fell}")
+        print(f"speed error RMS    : {np.sqrt(stats['v_err2'] / n):.3f} m/s")
+        print(f"height error RMS   : {100 * np.sqrt(stats['z_err2'] / n):.1f} cm")
+        print(f"stance, no contact : {100 * stats['late'] / max(stats['n_st'], 1):.1f} %")
+        print(f"swing, in contact  : {100 * stats['early'] / max(stats['n_sw'], 1):.1f} %")
+        for g in GROUP_ROWS:
+            c = max(stats["cnt"][g], 1)
+            print(f"{g:<6} mean |s| = {stats['s'][g] / c:.3f}   mean miss = {stats['miss'][g] / c:.2f}", flush=True)
 
 
 if __name__ == '__main__':
