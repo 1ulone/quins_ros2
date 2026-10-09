@@ -44,6 +44,7 @@ class GUI:
 
         self.ly = 0.0
         self.rx = 0.0
+        self.pad_state = None
         
         self.fig = Figure(figsize=(5.0, 2.5), dpi=100)
         self.ax = self.fig.add_subplot(111)
@@ -58,9 +59,9 @@ class GUI:
         grid_container = tk.Frame(self.root)
         grid_container.pack(pady=10, padx=10)
 
-        self.ax.set_title("Joint Position Tracking")
+        self.ax.set_title("FL Foot Height Tracking")
         self.ax.set_xlabel("Time (s)")
-        self.ax.set_ylabel("Position (rad)")
+        self.ax.set_ylabel("Height (m)")
         self.ax.grid(True)
 
         self.ly_display = tk.StringVar(master=self.root, value="Left Stick Y: 0.0")
@@ -540,9 +541,9 @@ class GUI:
             self.ax.plot(t_data, list(self.measured_history), 'y-', label="Measured")
             
             # Restore formatting stripped by ax.clear()
-            self.ax.set_title("Joint Position Tracking")
+            self.ax.set_title("FL Foot Height Tracking")
             self.ax.set_xlabel("Time (s)")
-            self.ax.set_ylabel("Position (rad)")
+            self.ax.set_ylabel("Height (m)")
             self.ax.grid(True)
             self.ax.legend(loc="upper right")
             
@@ -577,24 +578,13 @@ class GUI:
     def update_gamepad_input(self):
         if self.joystick is None:
             return
-        
-        button_mapping = {
-            0: "IDLE",   # Cross / A
-            1: "WALK_BACK", # Circle / B
-            2: "IDLE",   # Square / X
-            3: "WALK",   # Triangle / Y
-            4: "TURN",  # L1
-            5: "TURN_RIGHT"     # R1
-        }
 
-        # 1. Process discrete button events directly from the queue
-        for event in pygame.event.get():
-            if event.type == pygame.JOYBUTTONDOWN:
-                print(f"[DEBUG] Raw Event Button {event.button} pressed")
-                if event.button in button_mapping:
-                    self.set_quad_state(button_mapping[event.button])
+        TURN_LEFT_BTN, TURN_RIGHT_BTN = 4, 5    # L1, R1
+        STICK_ON = 0.5                          # stick must pass half travel to walk
 
-        # 2. Poll continuous axis states
+        pygame.event.pump()     # refresh the joystick state before reading it
+
+        # 1. Read the inputs
         raw_ly = self.joystick.get_axis(1)
         raw_rx = self.joystick.get_axis(0)
 
@@ -605,5 +595,19 @@ class GUI:
         self.ly_display.set(f"Left Stick Y: {self.ly:.2f}")
         self.rx_display.set(f"Right Stick X: {self.rx:.2f}")
 
-        if self.callbacks.get("gamepad"):
-            self.callbacks["gamepad"]([self.ly, self.rx])
+        # 2. Inputs -> state: held turn buttons win, then the stick (up is negative), else IDLE
+        if self.joystick.get_button(TURN_LEFT_BTN):
+            want = "TURN"
+        elif self.joystick.get_button(TURN_RIGHT_BTN):
+            want = "TURN_RIGHT"
+        elif self.ly < -STICK_ON:
+            want = "WALK"
+        elif self.ly > STICK_ON:
+            want = "WALK_BACK"
+        else:
+            want = "IDLE"
+
+        # 3. Only send on a change: re-sending the same state restarts its gait clock
+        if want != self.pad_state:
+            self.pad_state = want
+            self.set_quad_state(want)

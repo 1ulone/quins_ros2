@@ -6,3 +6,5 @@ scipy==1.13.1
 imageio[ffmpeg]==2.37.3
 pygame==2.6.1
 matplotlib==3.8.4
+pandas
+openpyxl

@@ -63,6 +63,7 @@ class TaskController:
         aw_rel=0.2,
         walk_drop=0.0,
         yaw_leash=0.2,
+        idle_drop=0.0,
     ):
         self.logic = logic
         self.q_nom = np.asarray(nominal_stance, dtype=float)
@@ -90,6 +91,8 @@ class TaskController:
 
         self.walk_drop = walk_drop
         self.q_walk = self._lowered_pose(walk_drop)
+        self.idle_drop = idle_drop
+        self.q_idle = self._lowered_pose(idle_drop)
         self.blend = 0.0
 
     def command_velocity(self):
@@ -115,6 +118,10 @@ class TaskController:
             knee_dir = -int(np.sign(self.q_nom[3 * i + 2]))   # IK seed on the same knee side as the nominal pose
             q.extend(kin.ik(leg, x, y, z + drop, knee_dir=knee_dir))
         return np.array(q)
+
+    def z_target(self):
+        # body height target: idle height at blend 0, walking height at blend 1
+        return self.z_nom - self.idle_drop - self.blend * (self.walk_drop - self.idle_drop)
 
     def compute(self, t, dt, p, R, v_base, q, v_joints, pf, vf, acc_achieved=None):
         """Returns the keyword arguments for wbc.solve().
@@ -142,7 +149,7 @@ class TaskController:
         # ---- Body height ----
         goal = 1.0 if (lg.walking or lg.turning) else 0.0
         self.blend += float(np.clip(goal - self.blend, -dt, dt))
-        e[2] = p[2] - (self.z_nom - self.blend * self.walk_drop)
+        e[2] = p[2] - self.z_target()
         e_dot[2] = v_base[2]
 
         # ---- Body rotation: level, facing target_yaw ----
@@ -215,7 +222,7 @@ class TaskController:
 
         # ---- Posture: weak pull toward the nominal stance ----
         kp, kd = self.g["posture"]
-        q_post = (1.0 - self.blend) * self.q_nom + self.blend * self.q_walk
+        q_post = (1.0 - self.blend) * self.q_idle + self.blend * self.q_walk
         a_joint_ref = kp * (q_post - q) - kd * v_joints
 
         fc_ref = np.zeros(12)

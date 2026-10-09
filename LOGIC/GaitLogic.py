@@ -156,7 +156,7 @@ class GaitLogic():
             case "CROUCH":
                 self.setup_transition(0.00, 1.30, -2.70)
             case "IDLE":
-                self.setup_transition(0.00, 0.45, -0.60)
+                self.setup_transition(0.00, 0.60, -0.90)
             case "WALK" | "WALK_BACK" | "CRAWL" | "RUN" | "TURN" | "TURN_RIGHT":
                 gait = {"WALK_BACK": "WALK", "TURN_RIGHT": "TURN"}.get(msg, msg)
                 self.planner = GaitPlanner(replace(GAIT_TABLE[gait]), self.nominal_feet)

@@ -4,6 +4,7 @@ import time
 import queue
 import threading
 import math as m
+import pandas as pd
 from pathlib import Path
 
 import imageio
@@ -30,6 +31,7 @@ AUTO_STATE = None
 RUN_T = None 
 GROUP_ROWS = {"lin": slice(0, 3), "ang": slice(3, 6), "swing": slice(6, 18)}
 WALK_DROP = 0.085
+IDLE_DROP = 0.05
 
 def main():
     # ---------------- 1. Model ----------------
@@ -107,6 +109,7 @@ def main():
         use_fosmc=USE_FOSMC,
         fosmc_dt=model.opt.timestep * WBC_DEC,
         walk_drop=WALK_DROP,
+        idle_drop=IDLE_DROP,
     )
     print(f"[init] walk pose (FL) = {np.round(task.q_walk[0:3], 3)}", flush=True)
 
@@ -123,6 +126,7 @@ def main():
     video_writer = imageio.get_writer('simulation.mp4', fps=record_hz)
 
     tau = np.zeros(len(joints_name_list))
+    v_base = np.zeros(6)
     continuous_yaw, prev_raw_yaw = 0.0, 0.0
     step = 0
     last_render = time.time()
@@ -132,6 +136,7 @@ def main():
              "cnt": {g: 0 for g in GROUP_ROWS}}
     win = {g: [0.0, 0.0] for g in GROUP_ROWS}   # per print window: peak |s|, peak mean miss
     walk_t0 = None
+    log = []
 
     try:
         with mujoco.viewer.launch_passive(model, data) as viewer:
@@ -186,7 +191,7 @@ def main():
                         stats["v_err2"] += float(np.sum((data.qvel[0:2] - task.v_cmd) ** 2))
                         w_cmd = logic.yaw_rate if logic.turning else 0.0
                         stats["wz_err2"] += float((v_base[5] - w_cmd) ** 2)
-                        z_tgt = task.z_nom - task.blend * task.walk_drop
+                        z_tgt = task.z_target()
                         stats["z_err2"] += float((data.qpos[2] - z_tgt) ** 2)
                         stats["z_bias"] += float(data.qpos[2] - z_tgt)
                         stats["late"] += int(np.sum(sched & ~in_contact))
@@ -205,6 +210,21 @@ def main():
                 # Graph: FL foot height, target vs actual
                 if step % logic_dec == 0:
                     graph_queue.put([float(data.time), float(task.debug["pf_d"][2]), float(wbc.pf[2])])
+                    # ---- Data log (Excel export): target vs actual per task, |s| per gain group ----
+                    dbg = task.debug
+                    s_abs = np.abs(dbg["s"])
+                    row = {"t": data.time, "state": logic.current_state,
+                           "stance": ''.join('S' if s > 0.5 else '-' for s in dbg["stance"]),
+                           "FL_z_des": dbg["pf_d"][2], "FL_z": wbc.pf[2],
+                           "z_des": task.z_target(), "z": data.qpos[2],
+                           "vx_cmd": task.v_cmd[0], "vx": data.qvel[0],
+                           "vy_cmd": task.v_cmd[1], "vy": data.qvel[1],
+                           "yaw_des": task.yaw_d, "yaw": continuous_yaw,
+                           "wz_cmd": logic.yaw_rate if logic.turning else 0.0, "wz": v_base[5]}
+                    for g, rows in GROUP_ROWS.items():
+                        act = dbg["active"][rows]
+                        row[f"s_{g}"] = float(np.mean(s_abs[rows][act])) if np.any(act) else 0.0
+                    log.append(row)
 
                 if step % print_dec == 0:
                     st = ''.join('S' if s > 0.5 else '-' for s in task.debug["stance"])
@@ -236,6 +256,9 @@ def main():
     finally:
         video_writer.close()
         renderer.close()
+        if log:
+            pd.DataFrame(log).to_excel("sim_log.xlsx", index=False)
+            print(f"[log] {len(log)} rows saved to sim_log.xlsx", flush=True)
         n = max(stats["n"], 1)
         fell = "no" if stats["fell"] is None else f"yes, at t = {stats['fell']:.2f} s"
         print("\n===== SUMMARY =====", flush=True)
