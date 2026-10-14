@@ -2,6 +2,9 @@
 
 Whole-Body Control of a Quadruped Robot Using Fractional-Order Sliding Mode Control with Online Reinforcement Learning Gain Tuning
 
+## Results test with full control on Mujoco
+<video src="[https://github.com/user-attachments/assets/<id>](https://github.com/user-attachments/assets/4a860f7c-2341-4d47-98c1-48d64cff3f99)" controls width="600"></video>
+
 ## Installation 
 If by any chance anybody needs this. then you can clone this repo onto your src/ ros2 workspace. i worked with ros2 jazzy running on Ubuntu 24.04.4 LTS.
 To install ROS2 Jazzy you can follow this guide :
