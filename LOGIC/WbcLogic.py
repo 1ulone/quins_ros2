@@ -27,12 +27,16 @@ class WholeBodyController:
         fz_max=400.0,
         knee_min=0.2,
         bound_dt=0.02,
+        q_limit=np.pi,
+        limit_margin=0.05,
     ):
         self.mu = mu
         self.tau_max = tau_max
         self.fz_max = fz_max
         self.joint_damping = joint_damping
+        q_max = q_limit - limit_margin
         self.q_lo = np.array([knee_min if "KFE" in j else -np.inf for j in joints_name_list])
+        self.q_hi = np.full(len(joints_name_list), q_max)
         self.bound_dt = bound_dt
         self.q = np.zeros(len(joints_name_list))
         self.foot_names = list(foot_names)
@@ -110,6 +114,7 @@ class WholeBodyController:
         a_joint_ref = opti.parameter(nj)
         fc_ref = opti.parameter(3 * nf)
         a_lo = opti.parameter(nj)
+        a_hi = opti.parameter(nj)
         w = opti.parameter(len(WEIGHT_KEYS))
         W = {k: w[i] for i, k in enumerate(WEIGHT_KEYS)}
 
@@ -133,7 +138,7 @@ class WholeBodyController:
         opti.subject_to(net[0:6] == 0)
         opti.subject_to(net[6:] + self.joint_damping * v[6:] - tau == 0)
         opti.subject_to(opti.bounded(-self.tau_max, tau, self.tau_max))
-        opti.subject_to(a[6:] >= a_lo)
+        opti.subject_to(opti.bounded(a_lo, a[6:], a_hi))
 
         for i in range(nf):
             fx, fy, fz = Fc[3 * i], Fc[3 * i  + 1], Fc[3 * i + 2]
@@ -148,7 +153,7 @@ class WholeBodyController:
 
         self.qp_fun = opti.to_function(
             'wbc_qp',
-            [M, h, Jc, Jdv, v, stance, acc_base, acc_foot, a_joint_ref, fc_ref, w, a_lo],
+            [M, h, Jc, Jdv, v, stance, acc_base, acc_foot, a_joint_ref, fc_ref, w, a_lo, a_hi],
             [a, Fc, tau],
         )
 
@@ -175,13 +180,15 @@ class WholeBodyController:
 
         # joint position limit as an acceleration bound: the joint stops before reaching q_lo within bound_dt
         T = self.bound_dt
-        a_lo = np.where(np.isfinite(self.q_lo), 2.0 * (self.q_lo - self.q - self.v[6:] * T) / T ** 2, -1e6)
-        a_lo = np.minimum(a_lo, 200.0)      # already past the limit: push back firmly but keep the QP feasible
+        q_next = self.q + self.v[6:] * T
+        a_lo = np.minimum(2.0 * (self.q_lo - q_next) / T ** 2, 200.0)
+        a_hi = np.maximum(2.0 * (self.q_hi - q_next) / T ** 2, -200.0)
+        a_lo = np.minimum(a_lo, a_hi)
         try:
             a, Fc, tau = self.qp_fun(
                 self.M, self.h, self.Jc, self.Jdv, self.v,
                 np.asarray(stance, dtype=float), acc_base, acc_foot,
-                a_joint_ref, fc_ref, w, a_lo,
+                a_joint_ref, fc_ref, w, a_lo, a_hi,
             )
         except RuntimeError as e:
             self.ok = False
