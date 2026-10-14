@@ -25,11 +25,16 @@ class WholeBodyController:
         foot_names=('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT'),
         tau_max=100.0,
         fz_max=400.0,
+        knee_min=0.2,
+        bound_dt=0.02,
     ):
         self.mu = mu
         self.tau_max = tau_max
         self.fz_max = fz_max
         self.joint_damping = joint_damping
+        self.q_lo = np.array([knee_min if "KFE" in j else -np.inf for j in joints_name_list])
+        self.bound_dt = bound_dt
+        self.q = np.zeros(len(joints_name_list))
         self.foot_names = list(foot_names)
         self.nj = len(joints_name_list)     # 12 joints
         self.nv = 6 + self.nj               # 18 = 6 base + 12 joints
@@ -104,6 +109,7 @@ class WholeBodyController:
         acc_foot = opti.parameter(3 * nf)
         a_joint_ref = opti.parameter(nj)
         fc_ref = opti.parameter(3 * nf)
+        a_lo = opti.parameter(nj)
         w = opti.parameter(len(WEIGHT_KEYS))
         W = {k: w[i] for i, k in enumerate(WEIGHT_KEYS)}
 
@@ -127,6 +133,7 @@ class WholeBodyController:
         opti.subject_to(net[0:6] == 0)
         opti.subject_to(net[6:] + self.joint_damping * v[6:] - tau == 0)
         opti.subject_to(opti.bounded(-self.tau_max, tau, self.tau_max))
+        opti.subject_to(a[6:] >= a_lo)
 
         for i in range(nf):
             fx, fy, fz = Fc[3 * i], Fc[3 * i  + 1], Fc[3 * i + 2]
@@ -141,7 +148,7 @@ class WholeBodyController:
 
         self.qp_fun = opti.to_function(
             'wbc_qp',
-            [M, h, Jc, Jdv, v, stance, acc_base, acc_foot, a_joint_ref, fc_ref, w],
+            [M, h, Jc, Jdv, v, stance, acc_base, acc_foot, a_joint_ref, fc_ref, w, a_lo],
             [a, Fc, tau],
         )
 
@@ -157,6 +164,7 @@ class WholeBodyController:
         self.Jdv = np.array(Jdv).flatten()
         self.pf = np.array(pf).flatten()
         self.v = np.concatenate([v_base, v_joints])
+        self.q = np.asarray(q, dtype=float)
         self.vf = self.Jc @ self.v
 
     def solve(self, stance, acc_base, acc_foot, a_joint_ref, fc_ref, weights=None):
@@ -165,11 +173,15 @@ class WholeBodyController:
             W.update(weights)
         w = np.array([W[k] for k in WEIGHT_KEYS])
 
+        # joint position limit as an acceleration bound: the joint stops before reaching q_lo within bound_dt
+        T = self.bound_dt
+        a_lo = np.where(np.isfinite(self.q_lo), 2.0 * (self.q_lo - self.q - self.v[6:] * T) / T ** 2, -1e6)
+        a_lo = np.minimum(a_lo, 200.0)      # already past the limit: push back firmly but keep the QP feasible
         try:
             a, Fc, tau = self.qp_fun(
                 self.M, self.h, self.Jc, self.Jdv, self.v,
                 np.asarray(stance, dtype=float), acc_base, acc_foot,
-                a_joint_ref, fc_ref, w,
+                a_joint_ref, fc_ref, w, a_lo,
             )
         except RuntimeError as e:
             self.ok = False

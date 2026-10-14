@@ -1,0 +1,207 @@
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+[episode] conditions = nominal
+[INPUT] Connected : Xbox 360 Controller
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+[load] critic n = 0 (step restarts at 0.2), rbf width = 1.00
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+t=0.00 IDLE   ok=True st=SSSS v=(+0.000,+0.000) cmd=(+0.000,+0.000) z=0.351 yaw=+0.000/+0.000 Fz=59.4 |s|=0.587 frz=0
+      peak |s| lin/ang/swing = 0.59/0.00/0.00   peak miss lin/ang/swing = 0.00/0.00/0.00
+t=0.50 IDLE   ok=True st=SSSS v=(-0.001,-0.000) cmd=(+0.000,+0.000) z=0.302 yaw=+0.000/+0.000 Fz=99.5 |s|=0.063 frz=0
+      peak |s| lin/ang/swing = 0.58/0.06/0.00   peak miss lin/ang/swing = 0.04/0.00/0.00
+t=1.00 WALK   ok=True st=-SS- v=(+0.047,-0.033) cmd=(+0.106,+0.000) z=0.294 yaw=-0.002/+0.000 Fz=26.1 |s|=0.155 frz=0
+      peak |s| lin/ang/swing = 0.16/0.10/0.49   peak miss lin/ang/swing = 1.26/0.08/0.35
+t=1.50 WALK   ok=True st=S--S v=(+0.257,-0.064) cmd=(+0.296,+0.000) z=0.277 yaw=+0.001/+0.000 Fz=141.8 |s|=0.764 frz=2
+      peak |s| lin/ang/swing = 0.45/0.34/0.84   peak miss lin/ang/swing = 2.58/0.19/0.49
+t=2.00 WALK   ok=True st=S--S v=(+0.418,+0.090) cmd=(+0.380,+0.000) z=0.266 yaw=+0.001/+0.000 Fz=101.7 |s|=0.513 frz=2
+      peak |s| lin/ang/swing = 0.58/0.38/1.50   peak miss lin/ang/swing = 4.01/0.40/0.86
+t=2.50 WALK   ok=True st=-SS- v=(+0.369,-0.080) cmd=(+0.380,+0.000) z=0.264 yaw=-0.003/+0.000 Fz=94.6 |s|=0.495 frz=2
+      peak |s| lin/ang/swing = 0.53/0.40/1.79   peak miss lin/ang/swing = 3.82/0.42/0.90
+t=3.00 WALK   ok=True st=-SS- v=(+0.364,-0.125) cmd=(+0.380,+0.000) z=0.264 yaw=+0.001/+0.000 Fz=162.4 |s|=0.579 frz=2
+      peak |s| lin/ang/swing = 0.60/0.42/1.81   peak miss lin/ang/swing = 3.65/0.43/0.89
+t=3.50 IDLE   ok=True st=SSSS v=(-0.061,+0.032) cmd=(+0.000,+0.000) z=0.273 yaw=-0.000/+0.000 Fz=95.9 |s|=0.052 frz=0
+      peak |s| lin/ang/swing = 0.58/0.22/2.57   peak miss lin/ang/swing = 4.81/0.49/0.73
+t=4.00 WALK_BACK ok=True st=-SS- v=(-0.080,-0.007) cmd=(-0.114,-0.000) z=0.279 yaw=-0.001/+0.000 Fz=27.5 |s|=0.199 frz=3
+      peak |s| lin/ang/swing = 0.14/0.19/1.38   peak miss lin/ang/swing = 1.95/0.28/0.54
+t=4.50 WALK_BACK ok=True st=S--S v=(-0.283,-0.019) cmd=(-0.304,-0.000) z=0.265 yaw=+0.001/+0.000 Fz=156.5 |s|=0.319 frz=2
+      peak |s| lin/ang/swing = 0.28/0.22/0.61   peak miss lin/ang/swing = 3.30/0.57/0.78
+t=5.00 WALK_BACK ok=True st=S--S v=(-0.351,-0.086) cmd=(-0.380,-0.000) z=0.267 yaw=-0.000/+0.000 Fz=99.8 |s|=0.381 frz=1
+      peak |s| lin/ang/swing = 0.35/0.35/0.96   peak miss lin/ang/swing = 5.16/1.02/1.29
+t=5.50 WALK_BACK ok=True st=-SS- v=(-0.396,+0.052) cmd=(-0.380,-0.000) z=0.267 yaw=-0.001/+0.000 Fz=88.0 |s|=0.328 frz=0
+      peak |s| lin/ang/swing = 0.25/0.33/0.94   peak miss lin/ang/swing = 4.90/1.00/1.26
+t=6.00 WALK_BACK ok=True st=-SS- v=(-0.394,+0.026) cmd=(-0.380,-0.000) z=0.267 yaw=+0.001/+0.000 Fz=131.9 |s|=0.238 frz=0
+      peak |s| lin/ang/swing = 0.30/0.33/0.86   peak miss lin/ang/swing = 4.87/0.97/1.23
+t=6.50 WALK_BACK ok=True st=S--S v=(-0.378,-0.067) cmd=(-0.380,-0.000) z=0.266 yaw=+0.001/+0.000 Fz=44.0 |s|=0.420 frz=6
+      peak |s| lin/ang/swing = 0.30/0.32/0.85   peak miss lin/ang/swing = 4.87/0.98/1.24
+[critic] steps=250 td rms=0.841 cost=0.700 J=52.69 max act=0.865
+t=7.00 WALK_BACK ok=True st=-SS- v=(-0.397,+0.023) cmd=(-0.380,-0.000) z=0.267 yaw=+0.000/+0.000 Fz=159.4 |s|=0.331 frz=2
+      peak |s| lin/ang/swing = 0.26/0.32/0.83   peak miss lin/ang/swing = 4.83/0.98/1.23
+t=7.50 IDLE   ok=True st=-SS- v=(+0.027,-0.136) cmd=(+0.000,+0.000) z=0.271 yaw=+0.000/+0.000 Fz=126.4 |s|=0.651 frz=2
+      peak |s| lin/ang/swing = 0.79/0.33/2.25   peak miss lin/ang/swing = 6.19/0.95/1.20
+t=8.00 TURN_RIGHT ok=True st=S--S v=(+0.105,-0.058) cmd=(+0.000,+0.000) z=0.278 yaw=-0.075/-0.079 Fz=152.3 |s|=0.216 frz=2
+      peak |s| lin/ang/swing = 0.58/0.50/5.46   peak miss lin/ang/swing = 2.98/0.34/0.46
+t=8.50 TURN_RIGHT ok=True st=-SS- v=(-0.109,-0.010) cmd=(+0.000,+0.000) z=0.270 yaw=-0.330/-0.329 Fz=31.4 |s|=0.237 frz=1
+      peak |s| lin/ang/swing = 0.26/0.33/2.74   peak miss lin/ang/swing = 2.94/0.36/0.57
+t=9.00 IDLE   ok=True st=S--S v=(-0.057,-0.006) cmd=(+0.000,+0.000) z=0.263 yaw=-0.494/-0.488 Fz=136.5 |s|=1.250 frz=1
+      peak |s| lin/ang/swing = 0.29/0.54/1.39   peak miss lin/ang/swing = 2.17/0.41/0.69
+t=9.50 WALK_BACK ok=True st=S--S v=(+0.045,-0.074) cmd=(-0.007,+0.004) z=0.277 yaw=-0.489/-0.489 Fz=149.8 |s|=0.611 frz=2
+      peak |s| lin/ang/swing = 0.28/0.19/1.19   peak miss lin/ang/swing = 2.37/0.25/0.52
+t=10.00 WALK_BACK ok=True st=S--S v=(-0.248,+0.141) cmd=(-0.174,+0.093) z=0.276 yaw=-0.493/-0.489 Fz=73.5 |s|=0.529 frz=1
+      peak |s| lin/ang/swing = 1.15/0.77/4.57   peak miss lin/ang/swing = 13.05/3.66/1.39
+t=10.50 WALK_BACK ok=True st=-SS- v=(-0.316,+0.223) cmd=(-0.335,+0.178) z=0.267 yaw=-0.490/-0.489 Fz=117.8 |s|=0.288 frz=1
+      peak |s| lin/ang/swing = 0.50/0.29/2.88   peak miss lin/ang/swing = 3.95/0.92/1.33
+t=11.00 WALK_BACK ok=True st=-SS- v=(-0.335,+0.216) cmd=(-0.335,+0.178) z=0.268 yaw=-0.489/-0.489 Fz=148.3 |s|=0.288 frz=0
+      peak |s| lin/ang/swing = 0.34/0.35/0.88   peak miss lin/ang/swing = 4.70/1.11/1.49
+t=11.50 IDLE   ok=True st=S--S v=(-0.198,+0.213) cmd=(+0.000,+0.000) z=0.269 yaw=-0.488/-0.489 Fz=30.2 |s|=0.620 frz=3
+      peak |s| lin/ang/swing = 0.42/0.34/2.00   peak miss lin/ang/swing = 4.40/1.10/1.50
+[critic] steps=500 td rms=1.071 cost=0.762 J=52.01 max act=0.854
+t=12.00 IDLE   ok=True st=SSSS v=(+0.082,-0.050) cmd=(+0.000,+0.000) z=0.277 yaw=-0.488/-0.489 Fz=100.8 |s|=0.071 frz=0
+      peak |s| lin/ang/swing = 0.74/0.58/2.75   peak miss lin/ang/swing = 5.51/0.45/0.79
+t=12.50 TURN   ok=True st=S--S v=(-0.034,+0.054) cmd=(+0.000,+0.000) z=0.275 yaw=-0.280/-0.279 Fz=139.5 |s|=0.618 frz=0
+      peak |s| lin/ang/swing = 0.31/0.51/4.81   peak miss lin/ang/swing = 4.87/0.56/0.56
+t=13.00 TURN   ok=True st=S--S v=(-0.024,+0.017) cmd=(+0.000,+0.000) z=0.264 yaw=-0.030/-0.029 Fz=138.7 |s|=0.215 frz=2
+      peak |s| lin/ang/swing = 0.19/0.29/0.83   peak miss lin/ang/swing = 2.27/0.42/0.78
+t=13.50 TURN   ok=True st=-SS- v=(+0.008,-0.041) cmd=(+0.000,+0.000) z=0.264 yaw=+0.218/+0.221 Fz=45.0 |s|=0.187 frz=0
+      peak |s| lin/ang/swing = 0.25/0.27/0.67   peak miss lin/ang/swing = 2.31/0.43/0.75
+t=14.00 TURN   ok=True st=-SS- v=(+0.045,-0.043) cmd=(+0.000,+0.000) z=0.262 yaw=+0.470/+0.471 Fz=116.7 |s|=0.269 frz=0
+      peak |s| lin/ang/swing = 0.38/0.30/0.53   peak miss lin/ang/swing = 2.35/0.39/0.66
+t=14.50 TURN   ok=True st=S--S v=(-0.027,+0.000) cmd=(+0.000,+0.000) z=0.263 yaw=+0.721/+0.721 Fz=34.9 |s|=0.183 frz=2
+      peak |s| lin/ang/swing = 0.31/0.25/1.10   peak miss lin/ang/swing = 2.48/0.43/0.74
+t=15.00 TURN   ok=True st=-SS- v=(-0.017,-0.016) cmd=(+0.000,+0.000) z=0.263 yaw=+0.968/+0.971 Fz=146.9 |s|=0.201 frz=1
+      peak |s| lin/ang/swing = 0.29/0.24/0.84   peak miss lin/ang/swing = 2.17/0.39/0.87
+t=15.50 TURN   ok=True st=-SS- v=(+0.051,+0.037) cmd=(+0.000,+0.000) z=0.263 yaw=+1.221/+1.221 Fz=135.9 |s|=0.340 frz=1
+      peak |s| lin/ang/swing = 0.31/0.23/0.69   peak miss lin/ang/swing = 2.37/0.49/0.88
+t=16.00 TURN   ok=True st=S--S v=(-0.028,-0.059) cmd=(+0.000,+0.000) z=0.264 yaw=+1.471/+1.471 Fz=51.9 |s|=0.177 frz=2
+      peak |s| lin/ang/swing = 0.22/0.24/0.97   peak miss lin/ang/swing = 2.41/0.55/0.90
+t=16.50 TURN   ok=True st=S--S v=(-0.054,-0.076) cmd=(+0.000,+0.000) z=0.263 yaw=+1.719/+1.721 Fz=117.2 |s|=0.321 frz=2
+      peak |s| lin/ang/swing = 0.26/0.28/0.57   peak miss lin/ang/swing = 2.33/0.45/0.77
+[critic] steps=750 td rms=0.992 cost=0.572 J=47.88 max act=0.858
+t=17.00 TURN   ok=True st=-SS- v=(-0.011,+0.078) cmd=(+0.000,+0.000) z=0.264 yaw=+1.969/+1.971 Fz=24.8 |s|=0.278 frz=1
+      peak |s| lin/ang/swing = 0.33/0.27/0.61   peak miss lin/ang/swing = 2.20/0.42/0.68
+t=17.50 IDLE   ok=True st=S--S v=(+0.027,-0.003) cmd=(+0.000,+0.000) z=0.262 yaw=+2.217/+2.210 Fz=144.9 |s|=0.545 frz=1
+      peak |s| lin/ang/swing = 0.36/0.54/1.05   peak miss lin/ang/swing = 2.25/0.44/0.69
+t=18.00 IDLE   ok=True st=SSSS v=(-0.049,+0.042) cmd=(+0.000,+0.000) z=0.274 yaw=+2.212/+2.210 Fz=99.0 |s|=0.104 frz=0
+      peak |s| lin/ang/swing = 0.32/0.47/1.49   peak miss lin/ang/swing = 1.91/0.21/0.57
+t=18.50 WALK_BACK ok=True st=-SS- v=(+0.014,-0.107) cmd=(+0.082,-0.110) z=0.276 yaw=+2.213/+2.211 Fz=155.8 |s|=0.216 frz=0
+      peak |s| lin/ang/swing = 0.24/0.13/2.60   peak miss lin/ang/swing = 2.09/0.36/0.47
+t=19.00 WALK_BACK ok=True st=S--S v=(+0.244,-0.244) cmd=(+0.195,-0.262) z=0.265 yaw=+2.214/+2.211 Fz=28.0 |s|=0.208 frz=1
+      peak |s| lin/ang/swing = 0.28/0.28/0.58   peak miss lin/ang/swing = 3.75/0.77/0.79
+t=19.50 WALK_BACK ok=True st=-SS- v=(+0.252,-0.340) cmd=(+0.227,-0.304) z=0.267 yaw=+2.211/+2.211 Fz=150.3 |s|=0.379 frz=1
+      peak |s| lin/ang/swing = 0.35/0.32/0.60   peak miss lin/ang/swing = 5.33/1.17/1.49
+t=20.00 WALK_BACK ok=True st=-SS- v=(+0.149,-0.290) cmd=(+0.227,-0.304) z=0.267 yaw=+2.211/+2.211 Fz=37.5 |s|=0.442 frz=2
+      peak |s| lin/ang/swing = 0.30/0.29/0.73   peak miss lin/ang/swing = 4.96/1.07/1.46
+t=20.50 WALK_BACK ok=True st=S--S v=(+0.275,-0.282) cmd=(+0.227,-0.304) z=0.266 yaw=+2.213/+2.211 Fz=130.4 |s|=0.255 frz=1
+      peak |s| lin/ang/swing = 0.29/0.29/0.74   peak miss lin/ang/swing = 4.85/1.08/1.43
+t=21.00 IDLE   ok=True st=S--S v=(-0.147,-0.044) cmd=(+0.000,+0.000) z=0.271 yaw=+2.212/+2.211 Fz=157.0 |s|=0.396 frz=1
+      peak |s| lin/ang/swing = 0.78/0.29/1.94   peak miss lin/ang/swing = 6.00/1.06/1.52
+t=21.50 WALK   ok=True st=S--S v=(-0.112,+0.477) cmd=(-0.041,+0.055) z=0.263 yaw=+2.207/+2.211 Fz=47.8 |s|=1.411 frz=8
+      peak |s| lin/ang/swing = 1.00/0.62/3.19   peak miss lin/ang/swing = 14.60/9.95/15.14
+[critic] steps=1000 td rms=1.322 cost=0.733 J=53.90 max act=0.849
+t=22.00 WALK   ok=True st=-SS- v=(+0.036,+0.052) cmd=(-0.154,+0.207) z=0.267 yaw=+2.210/+2.211 Fz=27.7 |s|=0.565 frz=1
+      peak |s| lin/ang/swing = 1.12/0.72/7.93   peak miss lin/ang/swing = 13.63/7.60/4.08
+t=22.50 WALK   ok=True st=S--S v=(-0.231,+0.323) cmd=(-0.227,+0.305) z=0.266 yaw=+2.211/+2.211 Fz=142.7 |s|=1.336 frz=1
+      peak |s| lin/ang/swing = 0.81/0.44/1.75   peak miss lin/ang/swing = 3.97/0.39/0.92
+t=23.00 WALK   ok=True st=S--S v=(-0.329,+0.246) cmd=(-0.227,+0.305) z=0.264 yaw=+2.211/+2.211 Fz=141.2 |s|=0.463 frz=1
+      peak |s| lin/ang/swing = 0.66/0.44/1.75   peak miss lin/ang/swing = 3.40/0.33/1.00
+t=23.50 IDLE   ok=True st=-SS- v=(-0.031,-0.026) cmd=(+0.000,+0.000) z=0.267 yaw=+2.209/+2.211 Fz=73.3 |s|=0.254 frz=0
+      peak |s| lin/ang/swing = 0.49/0.33/2.14   peak miss lin/ang/swing = 3.56/0.63/0.73
+t=24.00 IDLE   ok=True st=SSSS v=(+0.001,-0.010) cmd=(+0.000,+0.000) z=0.278 yaw=+2.211/+2.211 Fz=103.4 |s|=0.196 frz=0
+      peak |s| lin/ang/swing = 0.25/0.20/1.60   peak miss lin/ang/swing = 2.17/0.42/0.59
+t=24.50 IDLE   ok=True st=S--S v=(+0.020,-0.104) cmd=(+0.000,+0.000) z=0.278 yaw=+2.213/+2.211 Fz=26.7 |s|=0.327 frz=1
+      peak |s| lin/ang/swing = 0.28/0.20/1.15   peak miss lin/ang/swing = 2.25/0.29/0.50
+t=25.00 IDLE   ok=True st=SSSS v=(-0.042,+0.047) cmd=(+0.000,+0.000) z=0.288 yaw=+2.212/+2.211 Fz=101.2 |s|=0.111 frz=0
+      peak |s| lin/ang/swing = 0.48/0.25/1.01   peak miss lin/ang/swing = 2.60/0.28/0.47
+t=25.50 TURN   ok=True st=S--S v=(+0.003,-0.030) cmd=(+0.000,+0.000) z=0.287 yaw=+2.421/+2.421 Fz=139.3 |s|=0.504 frz=0
+      peak |s| lin/ang/swing = 0.16/0.51/2.57   peak miss lin/ang/swing = 3.66/0.86/0.53
+t=26.00 TURN   ok=True st=S--S v=(+0.013,-0.026) cmd=(+0.000,+0.000) z=0.271 yaw=+2.670/+2.671 Fz=138.0 |s|=0.227 frz=2
+      peak |s| lin/ang/swing = 0.17/0.20/0.57   peak miss lin/ang/swing = 1.63/0.32/0.65
+t=26.50 TURN   ok=True st=-SS- v=(+0.012,+0.028) cmd=(+0.000,+0.000) z=0.264 yaw=+2.918/+2.921 Fz=45.7 |s|=0.135 frz=0
+      peak |s| lin/ang/swing = 0.22/0.23/0.63   peak miss lin/ang/swing = 2.10/0.44/0.82
+[critic] steps=1250 td rms=1.294 cost=0.735 J=45.57 max act=0.860
+t=27.00 TURN   ok=True st=-SS- v=(-0.018,+0.051) cmd=(+0.000,+0.000) z=0.263 yaw=+3.170/+3.171 Fz=115.6 |s|=0.319 frz=0
+      peak |s| lin/ang/swing = 0.28/0.26/0.46   peak miss lin/ang/swing = 2.41/0.42/0.78
+t=27.50 TURN   ok=True st=S--S v=(+0.025,+0.001) cmd=(+0.000,+0.000) z=0.263 yaw=+3.421/+3.421 Fz=36.9 |s|=0.249 frz=1
+      peak |s| lin/ang/swing = 0.30/0.28/1.09   peak miss lin/ang/swing = 2.37/0.52/0.76
+t=28.00 TURN   ok=True st=-SS- v=(+0.023,+0.005) cmd=(+0.000,+0.000) z=0.263 yaw=+3.669/+3.671 Fz=146.6 |s|=0.233 frz=1
+      peak |s| lin/ang/swing = 0.29/0.30/0.66   peak miss lin/ang/swing = 2.37/0.46/0.69
+t=28.50 IDLE   ok=True st=-SS- v=(-0.066,-0.004) cmd=(+0.000,+0.000) z=0.264 yaw=+3.856/+3.850 Fz=138.5 |s|=0.258 frz=1
+      peak |s| lin/ang/swing = 0.33/0.45/1.02   peak miss lin/ang/swing = 1.87/0.58/0.65
+t=29.00 IDLE   ok=True st=SSSS v=(-0.017,-0.005) cmd=(+0.000,+0.000) z=0.277 yaw=+3.850/+3.850 Fz=102.8 |s|=0.111 frz=0
+      peak |s| lin/ang/swing = 0.14/0.20/1.03   peak miss lin/ang/swing = 1.38/0.39/0.51
+t=29.50 WALK   ok=True st=S--S v=(+0.006,-0.107) cmd=(-0.138,-0.118) z=0.275 yaw=+3.851/+3.850 Fz=30.6 |s|=0.462 frz=1
+      peak |s| lin/ang/swing = 0.50/0.34/2.65   peak miss lin/ang/swing = 3.80/0.70/1.06
+t=30.00 WALK   ok=True st=-SS- v=(-0.207,-0.266) cmd=(-0.283,-0.242) z=0.266 yaw=+3.849/+3.850 Fz=144.3 |s|=0.954 frz=1
+      peak |s| lin/ang/swing = 0.61/0.42/1.27   peak miss lin/ang/swing = 2.93/0.32/0.77
+t=30.50 WALK   ok=True st=-SS- v=(-0.382,-0.198) cmd=(-0.288,-0.247) z=0.265 yaw=+3.849/+3.850 Fz=127.1 |s|=0.501 frz=2
+      peak |s| lin/ang/swing = 0.58/0.42/1.52   peak miss lin/ang/swing = 3.36/0.32/0.92
+t=31.00 WALK   ok=True st=S--S v=(-0.204,-0.290) cmd=(-0.288,-0.247) z=0.264 yaw=+3.852/+3.850 Fz=73.6 |s|=0.476 frz=1
+      peak |s| lin/ang/swing = 0.60/0.38/1.37   peak miss lin/ang/swing = 3.30/0.32/0.92
+t=31.50 WALK   ok=True st=S--S v=(-0.200,-0.348) cmd=(-0.288,-0.247) z=0.264 yaw=+3.849/+3.850 Fz=158.9 |s|=0.490 frz=1
+      peak |s| lin/ang/swing = 0.63/0.39/1.25   peak miss lin/ang/swing = 3.37/0.33/0.93
+[critic] steps=1500 td rms=1.254 cost=0.826 J=49.28 max act=0.867
+t=32.00 WALK   ok=True st=-SS- v=(-0.341,-0.193) cmd=(-0.288,-0.247) z=0.265 yaw=+3.847/+3.850 Fz=28.8 |s|=0.325 frz=1
+      peak |s| lin/ang/swing = 0.50/0.36/1.30   peak miss lin/ang/swing = 3.30/0.32/0.95
+[log] 1606 rows saved to sim_log.xlsx
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.104 m/s
+yaw rate error RMS : 0.043 rad/s
+height error RMS   : 0.6 cm
+height bias (mean) : +0.29 cm
+min knee FL/FR/BL/BR: +0.67 / +1.03 / +1.04 / +1.04 rad
+stance, no contact : 1.6 %
+swing, in contact  : 11.3 %
+lin    mean |s| = 0.138   mean miss = 1.43
+ang    mean |s| = 0.095   mean miss = 0.18
+swing  mean |s| = 0.203   mean miss = 0.35
+
+===== rl tuner (piece 1) =====
+obs size            : 37
+rl steps            : 1606
+test mode           : None
+lam / alpha         : 0.9505 / 1.3591
+max gain deviation  : 12.9172
+base_lin  |s| p25/p50/p90/p99 = 0.023/0.052/0.224/0.457
+base_ang  |s| p25/p50/p90/p99 = 0.023/0.049/0.163/0.313
+swing     |s| p25/p50/p90/p99 = 0.040/0.078/0.200/0.793
+||tau||^2 mean / p99 = 431.1 / 936.6
+td rms first / last third : 0.952 / 1.319   (constant-J level = std of cost: 0.690)
+critic last third         : corr(J, G) = 0.50   rms(J - G) / mean(G) = 0.375   mean J / G = 46.14 / 37.39   std G = 12.08
+cost per step first / last 10% : 0.788 / 1.095
+gains (baseline -> mean over the run) [bounds]:
+  base_lin.Ke1      8.000 ->    9.181   [6.00, 12.00]
+  base_lin.Ke2      1.000 ->    1.218   [0.50, 1.50]
+  base_lin.Ks       8.000 ->    7.967   [6.00, 12.00]
+  base_lin.Kr       0.500 ->    0.583   [0.25, 1.00]
+  base_ang.Ke1     14.000 ->   16.350   [10.50, 21.00]
+  base_ang.Ke2      1.000 ->    0.910   [0.50, 1.50]
+  base_ang.Ks      14.000 ->   12.365   [10.50, 21.00]
+  base_ang.Kr       1.000 ->    1.555   [0.50, 2.00]
+  swing.Ke1        30.000 ->   38.567   [22.50, 45.00]
+  swing.Ke2         0.750 ->    0.486   [0.38, 1.00]
+  swing.Ks         30.000 ->   39.080   [22.50, 45.00]
+  swing.Kr          2.000 ->    1.368   [1.00, 4.00]
+  lam               0.950 ->    0.952   [0.95, 1.00]
+  alpha             1.500 ->    1.435   [1.25, 1.75]

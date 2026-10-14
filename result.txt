@@ -1,0 +1,733 @@
+[compare] 15 runs on 11 workers, 60 s sim each
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.3)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 2}
+[load] critic n = 0 (step restarts at 0.2), rbf width = 1.00
+[load] critic n = 0 (step restarts at 0.2), rbf width = 1.00
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 1}
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 0}
+[load] critic n = 0 (step restarts at 0.2), rbf width = 1.00
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 3}
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 0}
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 1}
+[load] critic n = 0 (step restarts at 0.2), rbf width = 1.00
+[load] critic n = 0 (step restarts at 0.2), rbf width = 1.00
+[load] critic n = 0 (step restarts at 0.2), rbf width = 1.00
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 0}
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 1}
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 3}
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 2}
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[load] critic n = 0 (step restarts at 0.2), rbf width = 1.00
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 2}
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[critic] started on a 1000-unit grid, rbf width = 1.00   warm-up max act = 0.871
+[critic] started on a 1000-unit grid, rbf width = 1.00   warm-up max act = 0.871
+[critic] started on a 1000-unit grid, rbf width = 1.00   warm-up max act = 0.871
+[critic] started on a 1000-unit grid, rbf width = 1.00   warm-up max act = 0.871
+[critic] steps=250 td rms=0.528 cost=1.005 J=56.05 max act=0.866
+[critic] steps=250 td rms=0.562 cost=1.027 J=58.52 max act=0.863
+[critic] steps=250 td rms=0.562 cost=1.027 J=58.52 max act=0.863
+[critic] steps=250 td rms=0.528 cost=1.005 J=56.05 max act=0.866
+[critic] steps=250 td rms=0.562 cost=1.027 J=58.52 max act=0.863
+[critic] steps=250 td rms=0.562 cost=1.027 J=58.52 max act=0.863
+[critic] steps=250 td rms=0.528 cost=1.005 J=56.05 max act=0.866
+[critic] steps=250 td rms=0.290 cost=1.028 J=51.92 max act=0.871
+[critic] steps=250 td rms=0.292 cost=1.030 J=51.92 max act=0.871
+[critic] steps=500 td rms=0.969 cost=1.277 J=57.92 max act=0.865
+[critic] steps=250 td rms=0.291 cost=1.029 J=51.92 max act=0.871
+[critic] steps=250 td rms=0.289 cost=1.027 J=51.92 max act=0.871
+[critic] steps=500 td rms=1.211 cost=1.342 J=57.86 max act=0.860
+[critic] steps=500 td rms=0.715 cost=1.058 J=55.62 max act=0.859
+[critic] steps=500 td rms=0.753 cost=1.168 J=53.33 max act=0.863
+[critic] steps=750 td rms=0.552 cost=0.774 J=52.40 max act=0.818
+[critic] steps=500 td rms=0.846 cost=1.226 J=58.05 max act=0.863
+[critic] steps=500 td rms=0.529 cost=0.897 J=50.05 max act=0.804
+[critic] steps=500 td rms=0.916 cost=1.203 J=56.18 max act=0.860
+[critic] steps=500 td rms=0.524 cost=1.024 J=53.38 max act=0.859
+[critic] steps=500 td rms=0.850 cost=1.103 J=51.01 max act=0.813
+[critic] steps=500 td rms=1.202 cost=1.280 J=51.41 max act=0.816
+[critic] steps=500 td rms=0.805 cost=1.082 J=51.08 max act=0.812
+[critic] steps=750 td rms=0.679 cost=0.782 J=55.41 max act=0.830
+[critic] steps=750 td rms=0.693 cost=0.751 J=55.43 max act=0.827
+[critic] steps=1000 td rms=0.601 cost=0.772 J=51.21 max act=0.822
+[critic] steps=750 td rms=0.406 cost=0.905 J=50.74 max act=0.825
+[critic] steps=750 td rms=0.512 cost=0.721 J=51.88 max act=0.819
+[critic] steps=750 td rms=0.471 cost=0.908 J=51.81 max act=0.825
+[critic] steps=750 td rms=0.471 cost=0.903 J=51.77 max act=0.825
+[critic] steps=750 td rms=0.696 cost=0.768 J=55.47 max act=0.827
+[critic] steps=750 td rms=0.492 cost=0.907 J=52.32 max act=0.825
+[critic] steps=750 td rms=0.683 cost=0.759 J=55.44 max act=0.827
+[critic] steps=750 td rms=0.485 cost=0.722 J=51.24 max act=0.824
+[critic] steps=1250 td rms=0.632 cost=0.806 J=50.89 max act=0.810
+[critic] steps=1000 td rms=0.739 cost=0.844 J=57.62 max act=0.820
+[critic] steps=1000 td rms=0.733 cost=0.833 J=57.61 max act=0.820
+[critic] steps=1000 td rms=0.323 cost=1.141 J=51.25 max act=0.883
+[critic] steps=1000 td rms=0.598 cost=0.777 J=50.77 max act=0.826
+[critic] steps=1000 td rms=0.392 cost=1.114 J=52.18 max act=0.880
+[critic] steps=1000 td rms=0.390 cost=1.113 J=52.01 max act=0.879
+[critic] steps=1000 td rms=0.424 cost=1.151 J=52.70 max act=0.882
+[critic] steps=1500 td rms=0.702 cost=0.501 J=48.04 max act=0.851
+[critic] steps=1000 td rms=0.730 cost=0.810 J=57.60 max act=0.822
+[critic] steps=1000 td rms=0.579 cost=0.810 J=51.09 max act=0.826
+[critic] steps=1250 td rms=0.749 cost=0.871 J=57.97 max act=0.811
+[critic] steps=1000 td rms=0.736 cost=0.815 J=57.29 max act=0.821
+[critic] steps=1250 td rms=0.516 cost=0.805 J=48.89 max act=0.879
+[critic] steps=1250 td rms=0.623 cost=0.802 J=50.49 max act=0.811
+[critic] steps=1250 td rms=0.542 cost=0.805 J=49.28 max act=0.879
+[critic] steps=1250 td rms=0.749 cost=0.871 J=57.97 max act=0.812
+[critic] steps=1250 td rms=0.538 cost=0.804 J=49.38 max act=0.879
+[critic] steps=1250 td rms=0.556 cost=0.805 J=49.67 max act=0.879
+[critic] steps=1500 td rms=0.858 cost=0.488 J=55.65 max act=0.849
+[critic] steps=1250 td rms=0.589 cost=0.849 J=50.95 max act=0.821
+[critic] steps=1750 td rms=0.823 cost=0.968 J=52.50 max act=0.869
+[critic] steps=1250 td rms=0.749 cost=0.871 J=57.97 max act=0.811
+[critic] steps=1250 td rms=0.751 cost=0.866 J=57.97 max act=0.811
+[critic] steps=1500 td rms=0.817 cost=0.712 J=49.38 max act=0.865
+[critic] steps=1500 td rms=0.782 cost=0.733 J=48.76 max act=0.880
+[critic] steps=1500 td rms=0.696 cost=0.498 J=48.05 max act=0.858
+[critic] steps=1500 td rms=0.750 cost=0.785 J=49.51 max act=0.890
+[critic] steps=1500 td rms=0.850 cost=0.720 J=49.89 max act=0.860
+[critic] steps=1500 td rms=0.866 cost=0.483 J=55.79 max act=0.860
+[critic] steps=1500 td rms=0.680 cost=0.522 J=48.04 max act=0.855
+[critic] steps=1750 td rms=0.639 cost=0.900 J=59.74 max act=0.873
+[critic] steps=1750 td rms=0.780 cost=1.115 J=49.33 max act=0.882
+[critic] steps=2000 td rms=0.766 cost=1.163 J=52.93 max act=0.865
+[critic] steps=1500 td rms=0.857 cost=0.492 J=55.57 max act=0.854
+[critic] steps=1500 td rms=0.866 cost=0.481 J=55.77 max act=0.857
+[critic] steps=1750 td rms=0.800 cost=0.933 J=52.10 max act=0.858
+[critic] steps=1750 td rms=0.704 cost=1.113 J=48.74 max act=0.883
+[critic] steps=1750 td rms=0.758 cost=1.117 J=49.43 max act=0.883
+[critic] steps=1750 td rms=0.840 cost=1.115 J=49.75 max act=0.883
+[critic] steps=1750 td rms=0.638 cost=0.889 J=59.74 max act=0.886
+[critic] steps=2000 td rms=0.725 cost=1.035 J=48.66 max act=0.833
+[critic] steps=1750 td rms=0.784 cost=0.950 J=51.78 max act=0.868
+[critic] steps=2000 td rms=0.517 cost=1.125 J=59.72 max act=0.877
+[critic] steps=2000 td rms=0.759 cost=1.165 J=52.48 max act=0.866
+[critic] steps=2000 td rms=0.718 cost=1.100 J=48.33 max act=0.838
+[critic] steps=2250 td rms=0.727 cost=0.881 J=50.03 max act=0.819
+[critic] steps=2000 td rms=0.694 cost=1.034 J=48.80 max act=0.835
+[critic] steps=1750 td rms=0.620 cost=0.910 J=59.74 max act=0.889
+[critic] steps=1750 td rms=0.638 cost=0.886 J=59.74 max act=0.875
+[critic] steps=2000 td rms=0.772 cost=1.046 J=49.00 max act=0.840
+[critic] steps=2250 td rms=0.542 cost=0.811 J=47.88 max act=0.802
+[critic] steps=2000 td rms=0.780 cost=1.208 J=52.27 max act=0.869
+[critic] steps=2250 td rms=0.709 cost=0.888 J=57.09 max act=0.843
+[critic] steps=2000 td rms=0.544 cost=1.152 J=59.69 max act=0.874
+[critic] steps=2500 td rms=0.549 cost=0.420 J=45.76 max act=0.855
+[critic] steps=2250 td rms=0.721 cost=0.881 J=49.49 max act=0.817
+[critic] steps=2250 td rms=0.544 cost=0.811 J=47.54 max act=0.802
+[critic] steps=2250 td rms=0.529 cost=0.811 J=48.02 max act=0.802
+[critic] steps=2250 td rms=0.563 cost=0.809 J=48.15 max act=0.802
+[critic] steps=2500 td rms=0.585 cost=0.683 J=47.75 max act=0.825
+[critic] steps=2000 td rms=0.533 cost=1.109 J=59.74 max act=0.875
+[critic] steps=2000 td rms=0.539 cost=1.110 J=59.76 max act=0.872
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.066 m/s
+yaw rate error RMS : 0.046 rad/s
+height error RMS   : 1.4 cm
+height bias (mean) : -1.32 cm
+stance, no contact : 3.2 %
+swing, in contact  : 8.2 %
+lin    mean |s| = 0.141   mean miss = 1.16
+ang    mean |s| = 0.102   mean miss = 0.14
+swing  mean |s| = 0.234   mean miss = 0.33
+[load] critic n = 0 (step restarts at 0.2), rbf width = 1.00
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 3}
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[critic] steps=2250 td rms=0.694 cost=0.880 J=49.43 max act=0.825
+[critic] steps=2500 td rms=0.767 cost=0.668 J=55.77 max act=0.841
+[critic] steps=2250 td rms=0.709 cost=0.888 J=57.09 max act=0.843
+[critic] steps=2500 td rms=0.545 cost=0.410 J=45.38 max act=0.877
+[critic] steps=2500 td rms=0.557 cost=0.407 J=45.88 max act=0.864
+[critic] steps=2500 td rms=0.541 cost=0.674 J=47.54 max act=0.820
+[critic] steps=2500 td rms=0.577 cost=0.422 J=45.70 max act=0.880
+[critic] steps=2750 td rms=0.739 cost=0.177 J=44.33 max act=0.875
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.060 m/s
+yaw rate error RMS : 0.046 rad/s
+height error RMS   : 1.4 cm
+height bias (mean) : -1.31 cm
+stance, no contact : 3.2 %
+swing, in contact  : 8.2 %
+lin    mean |s| = 0.141   mean miss = 1.14
+ang    mean |s| = 0.101   mean miss = 0.14
+swing  mean |s| = 0.231   mean miss = 0.32
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 4}
+[critic] steps=2750 td rms=0.883 cost=0.233 J=55.73 max act=0.926
+[critic] steps=2500 td rms=0.523 cost=0.677 J=47.43 max act=0.821
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.075 m/s
+yaw rate error RMS : 0.050 rad/s
+height error RMS   : 1.4 cm
+height bias (mean) : -1.27 cm
+stance, no contact : 3.3 %
+swing, in contact  : 8.1 %
+lin    mean |s| = 0.145   mean miss = 1.20
+ang    mean |s| = 0.105   mean miss = 0.17
+swing  mean |s| = 0.239   mean miss = 0.37
+[load] critic n = 0 (step restarts at 0.2), rbf width = 1.00
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 4}
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[critic] steps=2250 td rms=0.709 cost=0.887 J=57.09 max act=0.843
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[critic] steps=2250 td rms=0.709 cost=0.887 J=57.09 max act=0.843
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.068 m/s
+yaw rate error RMS : 0.046 rad/s
+height error RMS   : 1.4 cm
+height bias (mean) : -1.30 cm
+stance, no contact : 3.2 %
+swing, in contact  : 8.1 %
+lin    mean |s| = 0.140   mean miss = 1.15
+ang    mean |s| = 0.103   mean miss = 0.14
+swing  mean |s| = 0.235   mean miss = 0.33
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[load] critic n = 0 (step restarts at 0.2), rbf width = 1.00
+[episode] conditions = {'mass': 1.1, 'friction': 0.7, 'motor': 0.9, 'push': 0.3, 'seed': 4}
+[critic] steps=2750 td rms=0.667 cost=0.242 J=43.64 max act=0.880
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+[init] walk pose (FL) = [ 0.    -1.236  1.706]
+
+qpOASES -- An Implementation of the Online Active Set Strategy.
+Copyright (C) 2007-2015 by Hans Joachim Ferreau, Andreas Potschka,
+Christian Kirches et al. All rights reserved.
+
+qpOASES is distributed under the terms of the 
+GNU Lesser General Public License 2.1 in the hope that it will be 
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+See the GNU Lesser General Public License for more details.
+
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.079 m/s
+yaw rate error RMS : 0.055 rad/s
+height error RMS   : 1.2 cm
+height bias (mean) : -1.01 cm
+stance, no contact : 2.8 %
+swing, in contact  : 7.5 %
+lin    mean |s| = 0.160   mean miss = 1.43
+ang    mean |s| = 0.114   mean miss = 0.18
+swing  mean |s| = 0.248   mean miss = 0.40
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.079 m/s
+yaw rate error RMS : 0.054 rad/s
+height error RMS   : 1.1 cm
+height bias (mean) : -0.87 cm
+stance, no contact : 3.0 %
+swing, in contact  : 7.6 %
+lin    mean |s| = 0.142   mean miss = 1.41
+ang    mean |s| = 0.114   mean miss = 0.19
+swing  mean |s| = 0.249   mean miss = 0.43
+[critic] steps=250 td rms=0.528 cost=1.005 J=56.05 max act=0.866
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.069 m/s
+yaw rate error RMS : 0.053 rad/s
+height error RMS   : 1.2 cm
+height bias (mean) : -1.04 cm
+stance, no contact : 2.8 %
+swing, in contact  : 7.5 %
+lin    mean |s| = 0.158   mean miss = 1.41
+ang    mean |s| = 0.110   mean miss = 0.16
+swing  mean |s| = 0.241   mean miss = 0.39
+[critic] steps=2500 td rms=0.754 cost=0.672 J=55.87 max act=0.842
+[critic] steps=2750 td rms=0.664 cost=0.245 J=43.70 max act=0.892
+[critic] started on a 1000-unit grid, rbf width = 1.00   warm-up max act = 0.871
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.064 m/s
+yaw rate error RMS : 0.052 rad/s
+height error RMS   : 1.1 cm
+height bias (mean) : -1.01 cm
+stance, no contact : 2.8 %
+swing, in contact  : 7.6 %
+lin    mean |s| = 0.153   mean miss = 1.39
+ang    mean |s| = 0.113   mean miss = 0.16
+swing  mean |s| = 0.237   mean miss = 0.38
+[critic] steps=500 td rms=1.088 cost=1.308 J=56.29 max act=0.865
+[critic] steps=2750 td rms=0.904 cost=0.213 J=55.76 max act=0.911
+[critic] steps=2500 td rms=0.779 cost=0.688 J=56.01 max act=0.844
+[critic] steps=2500 td rms=0.770 cost=0.674 J=55.74 max act=0.842
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.062 m/s
+yaw rate error RMS : 0.052 rad/s
+height error RMS   : 1.0 cm
+height bias (mean) : -0.92 cm
+stance, no contact : 2.9 %
+swing, in contact  : 7.6 %
+lin    mean |s| = 0.137   mean miss = 1.33
+ang    mean |s| = 0.109   mean miss = 0.16
+swing  mean |s| = 0.238   mean miss = 0.37
+[critic] steps=250 td rms=0.528 cost=1.005 J=56.05 max act=0.866
+[critic] steps=250 td rms=0.289 cost=1.027 J=51.92 max act=0.871
+[critic] steps=750 td rms=0.504 cost=0.711 J=52.11 max act=0.816
+
+===== SUMMARY =====
+fell               : yes, at t = 12.42 s
+speed error RMS    : 0.144 m/s
+yaw rate error RMS : 0.077 rad/s
+height error RMS   : 1.1 cm
+height bias (mean) : -0.96 cm
+stance, no contact : 5.5 %
+swing, in contact  : 8.3 %
+lin    mean |s| = 0.175   mean miss = 2.06
+ang    mean |s| = 0.123   mean miss = 0.54
+swing  mean |s| = 0.274   mean miss = 0.79
+[critic] steps=2750 td rms=0.954 cost=0.165 J=55.77 max act=0.904
+[critic] steps=250 td rms=0.562 cost=1.027 J=58.52 max act=0.863
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.073 m/s
+yaw rate error RMS : 0.052 rad/s
+height error RMS   : 1.0 cm
+height bias (mean) : -0.91 cm
+stance, no contact : 2.9 %
+swing, in contact  : 7.6 %
+lin    mean |s| = 0.137   mean miss = 1.36
+ang    mean |s| = 0.110   mean miss = 0.16
+swing  mean |s| = 0.247   mean miss = 0.38
+
+===== SUMMARY =====
+fell               : yes, at t = 12.43 s
+speed error RMS    : 0.146 m/s
+yaw rate error RMS : 0.098 rad/s
+height error RMS   : 0.8 cm
+height bias (mean) : -0.64 cm
+stance, no contact : 5.0 %
+swing, in contact  : 7.6 %
+lin    mean |s| = 0.205   mean miss = 2.70
+ang    mean |s| = 0.153   mean miss = 0.73
+swing  mean |s| = 0.286   mean miss = 1.15
+[critic] steps=2750 td rms=0.872 cost=0.243 J=55.72 max act=0.933
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.068 m/s
+yaw rate error RMS : 0.053 rad/s
+height error RMS   : 1.0 cm
+height bias (mean) : -0.92 cm
+stance, no contact : 2.9 %
+swing, in contact  : 7.6 %
+lin    mean |s| = 0.138   mean miss = 1.36
+ang    mean |s| = 0.111   mean miss = 0.16
+swing  mean |s| = 0.244   mean miss = 0.37
+[critic] steps=1000 td rms=0.635 cost=0.801 J=51.30 max act=0.820
+
+===== SUMMARY =====
+fell               : yes, at t = 12.82 s
+speed error RMS    : 0.184 m/s
+yaw rate error RMS : 1.767 rad/s
+height error RMS   : 5.8 cm
+height bias (mean) : +0.23 cm
+stance, no contact : 7.4 %
+swing, in contact  : 7.9 %
+lin    mean |s| = 0.268   mean miss = 5.08
+ang    mean |s| = 0.408   mean miss = 16.87
+swing  mean |s| = 0.544   mean miss = 14.48
+[critic] steps=1250 td rms=0.613 cost=0.808 J=50.79 max act=0.817
+[critic] steps=1500 td rms=0.698 cost=0.492 J=47.99 max act=0.851
+[critic] steps=1750 td rms=0.825 cost=0.947 J=52.53 max act=0.857
+[critic] steps=2000 td rms=0.778 cost=1.198 J=53.11 max act=0.860
+[critic] steps=2250 td rms=0.729 cost=0.871 J=49.90 max act=0.816
+[critic] steps=2500 td rms=0.532 cost=0.659 J=47.68 max act=0.820
+[critic] steps=2750 td rms=0.666 cost=0.247 J=43.86 max act=0.877
+
+===== SUMMARY =====
+fell               : no
+speed error RMS    : 0.078 m/s
+yaw rate error RMS : 0.054 rad/s
+height error RMS   : 1.2 cm
+height bias (mean) : -1.02 cm
+stance, no contact : 2.9 %
+swing, in contact  : 7.5 %
+lin    mean |s| = 0.164   mean miss = 1.47
+ang    mean |s| = 0.116   mean miss = 0.20
+swing  mean |s| = 0.244   mean miss = 0.46
+
+seed mode  fell   cost  last10  speed  height  late%  early%  tau_p99
+   0    A    no  0.885   0.295  0.068    1.37    3.2     8.1   1133.7
+   0    C    no  0.719   0.139  0.073    1.01    2.9     7.6   1170.9
+   0    D    no  0.758   0.147  0.079    1.20    2.8     7.5   1168.0
+   1    A    no  0.884   0.345  0.066    1.38    3.2     8.2   1133.6
+   1    C    no  0.720   0.195  0.068    1.02    2.9     7.6   1170.3
+   1    D    no  0.748   0.192  0.069    1.17    2.8     7.5   1163.9
+   2    A    no  0.872   0.306  0.060    1.38    3.2     8.2   1130.7
+   2    C    no  0.709   0.175  0.062    1.01    2.9     7.6   1165.1
+   2    D    no  0.749   0.196  0.064    1.13    2.8     7.6   1157.2
+   3    A    no  0.902   0.333  0.075    1.40    3.3     8.1   1135.0
+   3    C    no  0.739   0.188  0.079    1.06    3.0     7.6   1170.9
+   3    D    no  0.767   0.197  0.078    1.20    2.9     7.5   1165.6
+   4    A   12s  1.162   3.349  0.144    1.10    5.5     8.3   1049.5
+   4    C   13s  1.892  11.379  0.184    5.80    7.4     7.9  43275.9
+   4    D   12s  1.069   2.459  0.146    0.79    5.0     7.6   1065.5
+
+mean over seeds (A = fixed gains, B = RL tuner):
+  A: falls 1/5  cost 0.941  last10 0.926  speed 0.083  height 1.327  late 3.677  early 8.181  tau_p99 1116.492
+  C: falls 1/5  cost 0.956  last10 2.415  speed 0.093  height 1.982  late 3.803  early 7.656  tau_p99 9590.650
+  D: falls 1/5  cost 0.818  last10 0.639  speed 0.087  height 1.098  late 3.236  early 7.541  tau_p99 1144.048
+  C vs A cost: +1.6 %   (lower in 4/5 seeds)
+  D vs A cost: -13.0 %   (lower in 5/5 seeds)

@@ -227,9 +227,24 @@ class TaskController:
 
         fc_ref = np.zeros(12)
         fc_ref[2::3] = tg["fz"]
+        
+        phase = 0.0
+        if isinstance(lg.planner, GaitPlanner) and lg.state_start_time is not None and not lg.transitioning:
+            gp = lg.planner.p
+            phase = ((t - lg.state_start_time) * gp.freq + gp.offsets['FL']) % 1.0
 
-        self.debug = {"pf_d": pf_d, "stance": tg["stance"], "base_xy_d": self.base_xy_d.copy(),
-                      "s_max": s_max, "frozen": int(frozen.sum()),
-                      "s": s, "miss": miss, "active": active.copy()}
+        self.debug = {
+            "pf_d": pf_d,
+            "stance": tg["stance"],
+            "base_xy_d": self.base_xy_d.copy(),
+            "s_max": s_max,
+            "frozen": int(frozen.sum()),
+            "s": s,
+            "miss": miss,
+            "active": active.copy(),
+            "e": e.copy(),
+            "e_dot": e_dot.copy(),
+            "phase": phase,
+        }
         return dict(stance=tg["stance"], acc_base=acc_cmd[0:6], acc_foot=acc_cmd[6:],
                     a_joint_ref=a_joint_ref, fc_ref=fc_ref)

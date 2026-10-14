@@ -39,18 +39,14 @@ class GaitLogic():
         self.control_rate = 50.0 
         self.dt = 1.0 / self.control_rate # Time step (0.02s)
         self.t = 0.0 # global timer (s) incremented everey walk_process cycle (0 on enter)
-        self.graph_t = 0.0
         self.robot_mass = 10.2
 
-        self.current_roll = 0.0
-        self.current_pitch = 0.0
         self.current_yaw = 0.0
         self.target_yaw = 0.0
         self.yaw_rate = 0.0
 
         # NOTE: Inverse Dynamics Parameters (Velocity & Acceleration)
         self.current_q = np.zeros(12)
-        self.current_q_dot = np.zeros(12)
         self.filtered_fz = np.zeros(4)
 
         # NOTE: Every leg part index / tag
@@ -66,25 +62,21 @@ class GaitLogic():
         self.turning = False
         self.yaw_rate = 0.0
         self.jump_state = ""
-        self.jump_q_history = np.zeros(12)
-        self.jump_qd_history = np.zeros(12)
 
         self.pending_state = None
         self.half_cycle = None
+        self.settle_until = None
+        self.ready_at = 0.0
 
         self.transitioning = False
-        self.transition_elapsed = 0.0
         self.transition_duration = 1.0
         self.transition_initial = {}
         self.transition_target = (0.0, 0.0, 0.0)
 
         # NOTE: WALK Tune Parameters 
-        self.gait_freq = 1.0
         self.x_off = 0.25
         self.z_off = 2.7
         self.step_len = 2.0
-        self.step_h = 0.75
-        self.sc_yaw = 0.9
 
         # NOTE: JUMP Tune Parameters
         self.y_crouch = 1.0
@@ -101,20 +93,8 @@ class GaitLogic():
         self.catch_time = 0.1
         self.x_stabilize = 1.5
         self.back_thrust = 1.5
-        self.pitch_threshold = 0.0
 
         self.current_state = "TUNING"
-        self.duty_factor = 0.5 
-
-        # NOTE: Phase Offsets
-        # 3.14 -> 360 degree, radian to angle 
-        # phase offsets results in a full radian cycle 0 - 3.14
-        self.phase_offsets = {
-            'FL': 0.0, # (0 / 360 degree)
-            'BR': 0.0, # (90 degree)
-            'FR': m.pi, # (180 degree)
-            'BL': m.pi, # (270 degree)
-        }
 
     # NOTE: -------- Callback --------
     def request_state(self, msg: str):
@@ -123,8 +103,8 @@ class GaitLogic():
 
     def _apply_pending(self, sim_time):
         msg = self.pending_state
-        if msg is None:
-            return
+        if msg is None or self.settle_until is not None or sim_time < self.ready_at:
+            return      # nothing asked, or still re-posing / settling in IDLE: the request waits
         # NOTE: a running gait only switches when all four feet are down; with the 0.5 duty
         # trot that is every half cycle (one pair lands as the other lifts)
         if isinstance(self.planner, GaitPlanner) and self.state_start_time is not None:
@@ -133,12 +113,20 @@ class GaitLogic():
                 self.half_cycle = half
             if half == self.half_cycle:
                 return
-        self.pending_state = None
         self.half_cycle = None
+        if msg != "IDLE" and isinstance(self.planner, GaitPlanner):
+            self.update_state("IDLE")   # every change passes through IDLE: re-pose first, the request stays pending
+            return
+        self.pending_state = None
         self.update_state(msg)
+
     def update_state(self, msg: str):
         # NOTE: if state_callback is triggered again, 
         # it will cancel the walk timer, to avoid duplicated process
+        old = self.planner if isinstance(self.planner, GaitPlanner) else None
+        old_t0 = self.state_start_time
+        self.settle_until = None
+
         self.walking = False
         self.turning = False
         self.jump_state = ""
@@ -156,7 +144,12 @@ class GaitLogic():
             case "CROUCH":
                 self.setup_transition(0.00, 1.30, -2.70)
             case "IDLE":
-                self.setup_transition(0.00, 0.60, -0.90)
+                if old is not None and old_t0 is not None:
+                    self.planner = GaitPlanner(replace(GAIT_TABLE["WALK"], step_len=0.0), self.nominal_feet)
+                    p = self.planner.p
+                    c = ((self.sim_time - old_t0) * old.p.freq + old.p.offsets['FL']) % 1.0   # FL phase at the switch
+                    self.state_start_time = self.sim_time - ((c - p.offsets['FL']) % 1.0) / p.freq
+                    self.settle_until = self.sim_time + 1.0 / p.freq
             case "WALK" | "WALK_BACK" | "CRAWL" | "RUN" | "TURN" | "TURN_RIGHT":
                 gait = {"WALK_BACK": "WALK", "TURN_RIGHT": "TURN"}.get(msg, msg)
                 self.planner = GaitPlanner(replace(GAIT_TABLE[gait]), self.nominal_feet)
@@ -183,50 +176,6 @@ class GaitLogic():
                     landing_time=self.landing_time,
                 ))
                 self.jump_state = "PREPARE"
-                self.jump_q_history = np.copy(self.current_q)
-                self.jump_qd_history = np.zeros(12)
-
-
-    def update_wt_params(self, msg: list):
-        # NOTE: just sets the Walk Tune Param into a new Value from msg
-
-        self.x_off = msg[1]
-        self.z_off = msg[2]
-        if isinstance(self.planner, GaitPlanner):
-            p = self.planner.p
-            p.freq, p.x_off, p.z_off, p.step_len, p.step_h, p.sc_yaw = msg[0:6]
-
-    def update_jt_params(self, msg: list):
-        # NOTE: just sets the Jump Tune Param into a new Value from msg
-        self.y_crouch = msg[0]
-        self.y_thrust = msg[1] 
-        self.y_flight = msg[2] 
-        self.x_thrust = msg[3]
-        self.x_flight = msg[4]
-        self.x_catch = msg[5]
-        self.prepare_time = msg[6] 
-        self.front_thrust_time = msg[7] 
-        self.back_thrust_time = msg[8] 
-        self.flight_time = msg[9]
-        self.landing_time = msg[10]
-        self.catch_time = msg[11]
-        self.x_stabilize = msg[12]
-        self.back_thrust = msg[13]
-        self.pitch_threshold = msg[14]
-
-    def update_phase_offsets(self, msg: list):
-        # NOTE: just sets the Phase Offsets into a new Value from msg
-        self.phase_offsets = {
-            'FL': msg[0],
-            'BR': msg[1],
-            'FR': msg[2],
-            'BL': msg[3],
-        }
-
-        if isinstance(self.planner, GaitPlanner):
-            self.planner.p.offsets = {
-                leg: (msg[i] / (2.0 * m.pi)) % 1.0 for i, leg in enumerate(['FL', 'BR', 'FR', 'BL'])
-            }
 
     def update_gamepad_params(self, msg: list):
         if not self.walking:
@@ -257,7 +206,6 @@ class GaitLogic():
 
     def setup_transition(self, target_s, target_t, target_k, duration=1.0):
         self.transitioning = True
-        self.transition_elapsed = 0.0
         self.transition_duration = duration
         self.transition_target = (target_s, target_t, target_k)
         
@@ -397,6 +345,11 @@ class GaitLogic():
 
     def loop_step(self, sim_time):
         self.sim_time = sim_time
+        if self.settle_until is not None and sim_time >= self.settle_until:
+            self.settle_until = None
+            self.planner = None                     # re-posed: stand on all four feet
+            self.state_start_time = sim_time
+            self.ready_at = sim_time + 0.25         # short stand so the last pair takes the load before the next gait
         self._apply_pending(sim_time)
         if self.state_start_time is None:
             self.state_start_time = sim_time
