@@ -1,19 +1,6 @@
-# Quadruped Simulation System
+# Full Control Quadruped Simulation System
 
-A Quadruped Simulation System that can be run for either ROS2 + Gazebo or Pure Mujoco with almost (95%) similar results in simulation, made by yours truly.
-
-## Simulation Results (on Mujoco) 
-#### Walk Simulation
-![Walk Simulation](./result_res/walk.gif)
-
-#### Run Simulation
-![Walk Simulation](./result_res/run.gif)
-
-#### Jump Simulation
-![Walk Simulation](./result_res/jump.gif)
-
-#### Crawl Simulation
-![Walk Simulation](./result_res/crawl.gif)
+Whole-Body Control of a Quadruped Robot Using Fractional-Order Sliding Mode Control with Online Reinforcement Learning Gain Tuning
 
 ## Installation 
 If by any chance anybody needs this. then you can clone this repo onto your src/ ros2 workspace. i worked with ros2 jazzy running on Ubuntu 24.04.4 LTS.
@@ -58,11 +45,9 @@ if by any means you would edit the .urdf for gazebo and wanted it to be used on 
 python3 MUJOCO/convert_urdf.py
 ```
 
-some other stuff are also here like the rl simulation. you can run it with python3 the visualize.py on RL folder.
-
-soon to add isaac sim compability. and more rl stuff.
-
 credits to these stuff : 
 - https://github.com/mjbots/quad
 - https://www.researchgate.net/publication/368939713_Simultaneous_locomotion_and_manipulation_control_of_quadruped_robots_using_reinforcement_learning-based_adaptive_fractional-order_sliding-mode_control
 - https://pmc.ncbi.nlm.nih.gov/articles/PMC8725662/ 
+- https://arxiv.org/html/2503.04613v3
+- and the holy bible of rl : Reinforcement Learning: An Introduction by Andrew Barto and Richard S. Sutton
