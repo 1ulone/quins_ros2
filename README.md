@@ -2,6 +2,11 @@
 
 Whole-Body Control of a Quadruped Robot Using Fractional-Order Sliding Mode Control with Online Reinforcement Learning Gain Tuning
 
+## Results test with full control on Mujoco
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/4a860f7c-2341-4d47-98c1-48d64cff3f99" controls width="600"></video>
+</div>
+
 ## Installation 
 If by any chance anybody needs this. then you can clone this repo onto your src/ ros2 workspace. i worked with ros2 jazzy running on Ubuntu 24.04.4 LTS.
 To install ROS2 Jazzy you can follow this guide :
@@ -44,6 +49,12 @@ if by any means you would edit the .urdf for gazebo and wanted it to be used on 
 ```
 python3 MUJOCO/convert_urdf.py
 ```
+## Controls
+You can either use the programmed tuner. by switching the state, or use a controller.
+for the controller command :
+- Forward / Backward Left Stick -> Move Forward / Backward
+- Left Shoulder Button -> Turn Left
+- Right Shoulder Button -> Turn Right
 
 credits to these stuff : 
 - https://github.com/mjbots/quad
