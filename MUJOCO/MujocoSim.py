@@ -41,6 +41,8 @@ RAND_EDGE = {"mass": 1.2, "friction": 0.5, "motor": 0.8, "push": 0.5, "seed": 0}
 RAND_MID = {"mass": 1.1, "friction": 0.7, "motor": 0.9, "push": 0.3, "seed": 0}    # halfway to the edge: long online A/B tests
 PUSH_EVERY = 10.0   # s between pushes while walking
 RAND = None         # viewer runs: None = nominal; set to RAND_EDGE for the edge test
+DAMP_KD = 1.0
+SAFE_TILT = 0.82
 # TUNER_LOAD = None
 TUNER_LOAD = os.path.join(os.path.dirname(current_dir), "RL", "tuner_pretrained.npz")   # None = start from scratch
 SEQ_MIXED = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "WALK_BACK"), (30.0, "IDLE"), (34.0, "WALK"), (44.0, "TURN_RIGHT"), (52.0, "IDLE")]
@@ -214,6 +216,9 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
                                        pf=wbc.pf, vf=wbc.vf,
                                        acc_achieved=np.concatenate([wbc.last["acc_base"], wbc.last["acc_foot"]]))
                     tau = wbc.solve(**cmd)["tau"]
+                    if stats["fell"] is not None:
+                        tau = -DAMP_KD * qd_act
+
                     knee_min = np.minimum(knee_min, q_act[2::3])
                     # ---- Diagnostics ----
                     g1, g2 = data.contact.geom1[:data.ncon], data.contact.geom2[:data.ncon]
@@ -243,7 +248,9 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
                                 stats["s"][g] += float(np.mean(np.abs(dbg["s"][rows][act])))
                                 stats["miss"][g] += float(np.mean(dbg["miss"][rows][act]))
                                 stats["cnt"][g] += 1
-                    if stats["fell"] is None and (data.qpos[2] < 0.5 * z_nom or R_act[2, 2] < 0.5):   # body halfway to the floor, or tilted past 60 deg
+
+                    falling = R_act[2, 2] < SAFE_TILT or data.qvel[2] > 1.0
+                    if stats["fell"] is None and (data.qpos[2] < 0.5 * z_nom or falling):
                         stats["fell"] = data.time
 
                     if tuner is not None:
