@@ -22,7 +22,7 @@
     <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="32" height="32"/>
     <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1="0.1 0.2 0.3" rgb2="0.2 0.3 0.4"/>
     <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance="0.2"/>
-    <hfield name="terrain_hfield" file="../heightmap.png" size="25 25 0.1 0.1"/>
+    <hfield name="terrain_hfield" file="../heightmap.png" size="25 25 0.125 1.0"/>
   </asset>
 
   <default>
@@ -32,7 +32,7 @@
       <geom type="mesh" contype="0" conaffinity="0" group="2"/>
     </default>
     <default class="foot">
-      <geom type="sphere" size="0.014" condim="4" friction="1.0 0.01 0.001" rgba="0.8 0.2 0.2 1"/>
+      <geom type="sphere" size="0.01725" condim="4" friction="1.0 0.01 0.001" rgba="0.8 0.2 0.2 1"/>
     </default>
     <default class="leg">
       <joint range="-3.14 3.14" actuatorfrcrange="-100 100" damping="0.5" frictionloss="0.05"/>
@@ -50,7 +50,26 @@
     <!-- <geom name="floor" type="plane" pos="0 0 0" size="100 100 0.1" material="grid" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
     <geom name="uneven_floor" type="hfield" hfield="terrain_hfield" pos="0 0 0" material="grid" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/>
 
-    <body name="dummy" pos="0 0 0">
+    <!-- RAMP HILL: 10 deg up (x 4.00-4.85), 15 cm plateau (x 4.85-7.15), 10 deg down (x 7.15-8.00) -->
+    <!-- <geom name="ramp_up"   type="box" size="0.43157 4.0 0.05" pos="4.43369 0 0.02576" euler="0 -0.17469 0" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!-- <geom name="plateau"   type="box" size="1.15 4.0 0.075"   pos="6.0 0 0.075"                             rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!-- <geom name="ramp_down" type="box" size="0.43157 4.0 0.05" pos="7.56631 0 0.02576" euler="0 0.17469 0"  rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!---->
+    <!-- STEP PYRAMID: three 4 cm steps, 0.35 m treads, top at 12 cm (x 4.70-7.30) -->
+    <!-- <geom name="step1" type="box" size="2.0 4.0 0.02"  pos="6.0 0 0.02" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!-- <geom name="step2" type="box" size="1.65 4.0 0.04" pos="6.0 0 0.04" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!-- <geom name="step3" type="box" size="1.3 4.0 0.06"  pos="6.0 0 0.06" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!-- <body name="staircase" mocap="false"> -->
+    <!--     <geom name="step1" type="box" size="0.15 0.5 0.05" pos="4.00 0 0" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!--     <geom name="step2" type="box" size="0.15 0.5 0.10" pos="4.10 0 0" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!--     <geom name="step3" type="box" size="0.15 0.5 0.15" pos="4.20 0 0" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!--     <geom name="step4" type="box" size="0.15 0.5 0.20" pos="4.30 0 0" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!--     <geom name="step5" type="box" size="0.15 0.5 0.25" pos="4.40 0 0" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!--     <geom name="step6" type="box" size="0.15 0.5 0.30" pos="4.50 0 0" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!--     <geom name="step7" type="box" size="0.15 0.5 0.35" pos="4.60 0 0" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
+    <!-- </body> -->
+
+    <body name="dummy" pos="3 0 0">
       <body name="base_link">
         <inertial pos="0 0 0" mass="3.0" diaginertia="0.008125 0.025 0.028125"/>
         <geom type="mesh" mesh="BODY"/>

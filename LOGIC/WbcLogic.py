@@ -25,10 +25,13 @@ class WholeBodyController:
         foot_names=('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT'),
         tau_max=100.0,
         fz_max=400.0,
-        knee_min=0.2,
+        knee_min=0.838,
+        knee_max=2.723,
         bound_dt=0.02,
         q_limit=np.pi,
         limit_margin=0.05,
+        ddq_max=200.0,
+        ctrl_dt=0.002,
     ):
         self.mu = mu
         self.tau_max = tau_max
@@ -36,7 +39,9 @@ class WholeBodyController:
         self.joint_damping = joint_damping
         q_max = q_limit - limit_margin
         self.q_lo = np.array([knee_min if "KFE" in j else -np.inf for j in joints_name_list])
-        self.q_hi = np.full(len(joints_name_list), q_max)
+        self.q_hi = np.array([knee_max if "KFE" in j else q_max for j in joints_name_list])
+        self.ddq_max = ddq_max
+        self.dt = ctrl_dt
         self.bound_dt = bound_dt
         self.q = np.zeros(len(joints_name_list))
         self.foot_names = list(foot_names)
@@ -178,11 +183,21 @@ class WholeBodyController:
             W.update(weights)
         w = np.array([W[k] for k in WEIGHT_KEYS])
 
-        # joint position limit as an acceleration bound: the joint stops before reaching q_lo within bound_dt
+        # joint position limit as an acceleration bound (Del Prete et al. 2018):
+        # 1) position: the joint does not pass the limit within bound_dt
         T = self.bound_dt
-        q_next = self.q + self.v[6:] * T
-        a_lo = np.minimum(2.0 * (self.q_lo - q_next) / T ** 2, 200.0)
-        a_hi = np.maximum(2.0 * (self.q_hi - q_next) / T ** 2, -200.0)
+        q, v = self.q, self.v[6:]
+        q_next = q + v * T
+        a_lo = 2.0 * (self.q_lo - q_next) / T ** 2
+        a_hi = 2.0 * (self.q_hi - q_next) / T ** 2
+        # 2) viability: the joint is never faster than it can still stop at the limit with ddq_max
+        v_hi = np.sqrt(2.0 * self.ddq_max * np.maximum(self.q_hi - q, 0.0))
+        v_lo = -np.sqrt(2.0 * self.ddq_max * np.maximum(q - self.q_lo, 0.0))
+        a_hi = np.minimum(a_hi, (v_hi - v) / self.dt)
+        a_lo = np.maximum(a_lo, (v_lo - v) / self.dt)
+        # never ask for more than ddq_max toward the safe side (keeps the QP feasible)
+        a_lo = np.minimum(a_lo, self.ddq_max)
+        a_hi = np.maximum(a_hi, -self.ddq_max)
         a_lo = np.minimum(a_lo, a_hi)
         try:
             a, Fc, tau = self.qp_fun(

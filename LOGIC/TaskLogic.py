@@ -1,7 +1,9 @@
 import math as m
 import numpy as np
-from LOGIC.GaitPlanner import GaitPlanner, LEG_NAMES, FORWARD
+from LOGIC.GaitPlanner import GaitPlanner, LEG_NAMES, FORWARD, GRAVITY
 from LOGIC.FOSMCLogic import FOSMC
+from LOGIC.ContactLogic import ContactEstimator 
+from LOGIC.TerrainLogic import GroundEstimator
 
 FOOT_R = 0.014    # foot sphere radius: foot center height when touching the floor
 
@@ -43,6 +45,14 @@ def _pd_rows(g):
     kp[6:], kd[6:] = g["swing"]
     return kp, kd
 
+def min_jerk(s):
+    # 0 -> 1 blend with zero speed and acceleration at both ends (same quintic as the walk path);
+    # returns the blend and its first and second derivative with respect to s
+    s = min(max(float(s), 0.0), 1.0)
+    return (10.0 * s**3 - 15.0 * s**4 + 6.0 * s**5,
+            30.0 * s**2 - 60.0 * s**3 + 30.0 * s**4,
+            60.0 * s - 180.0 * s**2 + 120.0 * s**3)
+
 
 class TaskController:
     """Turns gait targets + robot state into task accelerations for the WBC.
@@ -64,6 +74,8 @@ class TaskController:
         walk_drop=0.0,
         yaw_leash=0.2,
         idle_drop=0.0,
+        foot_r=FOOT_R,
+        ground_tau=0.2,
     ):
         self.logic = logic
         self.q_nom = np.asarray(nominal_stance, dtype=float)
@@ -94,6 +106,14 @@ class TaskController:
         self.idle_drop = idle_drop
         self.q_idle = self._lowered_pose(idle_drop)
         self.blend = 0.0
+        self.contact = ContactEstimator()
+        self.foot_r = foot_r
+        self.ground = GroundEstimator(tau=ground_tau)
+        self.ground_set = False         # True once the plane was started from a real four-foot stand
+        self.z_lo = np.zeros(4)         # ground height under each foot at its last lift-off
+        self.z_des = z_nom              # body height target in the world (ground + walking / idle height)
+        self.prev_stance = np.ones(4, dtype=bool)
+        self.prev_sched = np.ones(4, dtype=bool)
 
     def command_velocity(self):
         # NOTE: same formula the MPC used: stride covered during stance, body -x is forward
@@ -120,15 +140,52 @@ class TaskController:
         return np.array(q)
 
     def z_target(self):
-        # body height target: idle height at blend 0, walking height at blend 1
+        # body height above the ground estimate: idle height at blend 0, walking height at blend 1
         return self.z_nom - self.idle_drop - self.blend * (self.walk_drop - self.idle_drop)
 
-    def compute(self, t, dt, p, R, v_base, q, v_joints, pf, vf, acc_achieved=None):
+    def compute(
+        self,
+        t,
+        dt,
+        p,
+        R,
+        v_base,
+        q,
+        v_joints,
+        pf,
+        vf,
+        acc_achieved=None,
+        fz=None,
+    ):
         """Returns the keyword arguments for wbc.solve().
         acc_achieved: last WBC result [acc_base (6), acc_foot (12)], used for anti-windup."""
         lg = self.logic
         tg = lg.wbc_targets(t)
+        schedule = tg["stance"]
+        if fz is None:
+            stance = schedule.copy()
+            drop = np.zeros(4)
+        else:
+            stance = self.contact.update(t, fz, schedule, tg["s"]).astype(float)
+            drop = self.contact.search_drop(t)
+
+        searching = (schedule > 0.5) & (stance < 0.5)
         self.v_cmd = self.command_velocity()
+
+        # ---- Ground estimate (blind): plane through the last touchdown point of each foot ----
+        foot_g = pf.reshape(4, 3) - np.array([0.0, 0.0, self.foot_r])     # foot center -> ground under it
+        st_now, sched_now = stance > 0.5, schedule > 0.5
+        all_down = fz is not None and bool(np.all(np.asarray(fz) > self.contact.f_on))
+        if self.ground.pts is None or (all_down and not self.ground_set):
+            self.ground.reset(foot_g, p[0:2])       # restart on the first real stand (feet spawn just above the floor)
+            self.z_lo = foot_g[:, 2].copy()
+            self.ground_set = all_down
+        for i in np.flatnonzero(st_now & ~self.prev_stance):   # confirmed touchdown (early, on time, or after search)
+            self.ground.touchdown(i, foot_g[i])
+        lifted = self.prev_sched & ~sched_now                   # lift-off always follows the schedule
+        self.z_lo[lifted] = foot_g[lifted, 2]
+        self.prev_stance, self.prev_sched = st_now, sched_now
+        self.ground.update(p[0:2], dt)
 
         e = np.zeros(N_TASK)
         e_dot = np.zeros(N_TASK)
@@ -149,8 +206,11 @@ class TaskController:
         # ---- Body height ----
         goal = 1.0 if (lg.walking or lg.turning) else 0.0
         self.blend += float(np.clip(goal - self.blend, -dt, dt))
-        e[2] = p[2] - self.z_target()
-        e_dot[2] = v_base[2]
+        # vertical height above the ground estimate under the body (matches the vertically placed
+        # footholds); the target slides with the plane as the body moves
+        self.z_des = self.ground.height(p[0:2]) + self.z_target()
+        e[2] = p[2] - self.z_des
+        e_dot[2] = v_base[2] - float(self.ground.slope @ v_base[0:2])
 
         # ---- Body rotation: level, facing target_yaw ----
         # WALK / stand: GaitLogic owns the heading. TURN: integrate the yaw rate here
@@ -174,6 +234,9 @@ class TaskController:
         R_yaw = R_d[0:2, 0:2]
         v_err = v_base[0:2] - self.v_cmd
         pf_d = np.zeros(12)
+        sdot = 0.0                      # swing progress rate (1/s): s goes 0 -> 1 over one swing
+        if isinstance(lg.planner, GaitPlanner):
+            sdot = lg.planner.p.freq / (1.0 - lg.planner.p.duty)
         for i in range(4):
             r = slice(3 * i, 3 * i + 3)
             tr = slice(6 + 3 * i, 9 + 3 * i)
@@ -181,8 +244,9 @@ class TaskController:
 
             rel = R_yaw @ (self.foot_nom_xy[i] + off[0:2])   # foot from body center, world frame
             xy_d = p[0:2] + rel
-            # foot placement correction (Raibert): 0 at lift-off, full at touchdown
-            xy_d = xy_d + self.k_foot * tg["s"][i] * v_err
+            # foot placement correction (Raibert): 0 at lift-off, full at touchdown (and while searching)
+            s_place = 1.0 if searching[i] else tg["s"][i]
+            xy_d = xy_d + self.k_foot * s_place * v_err
 
             # rel turns with the yaw target, so add its spin to the feed-forward terms
             wz = w_d[2]
@@ -190,12 +254,24 @@ class TaskController:
             spin_v = wz * np.array([-rel[1], rel[0]])                              # w x rel
             spin_a = 2.0 * wz * np.array([-vel_w[1], vel_w[0]]) - wz ** 2 * rel   # Coriolis + centripetal
 
-            pos_d = np.array([xy_d[0], xy_d[1], FOOT_R + off[2]])
-            vel_d = np.concatenate([self.v_cmd + vel_w + spin_v, [vel[2]]])
-            acc_d = np.concatenate([R_yaw @ acc[0:2] + spin_a, [acc[2]]])
+            # ground under the foot: a swing goes from its real lift-off height to the plane at the
+            # target (min-jerk blend, so the target never jumps at lift-off); stance / search sit on the plane
+            g_td = self.ground.height(xy_d)
+            b, db, ddb = (1.0, 0.0, 0.0) if schedule[i] > 0.5 else min_jerk(tg["s"][i])
+            rise = g_td - self.z_lo[i]
+            vel_xy = self.v_cmd + vel_w + spin_v
+            z_g = self.z_lo[i] + b * rise
+            vz_g = rise * db * sdot + b * float(self.ground.slope @ vel_xy)
+            az_g = rise * ddb * sdot ** 2
+
+            # late touchdown: keep lowering the foot slowly until it touches (drop = 0 otherwise)
+            vz_search = -self.contact.v_search if searching[i] and drop[i] < self.contact.search_max else 0.0
+            pos_d = np.array([xy_d[0], xy_d[1], z_g + self.foot_r + off[2] - drop[i]])
+            vel_d = np.concatenate([vel_xy, [vz_g + vel[2] + vz_search]])
+            acc_d = np.concatenate([R_yaw @ acc[0:2] + spin_a, [az_g + acc[2]]])
             pf_d[r] = pos_d
 
-            if tg["stance"][i] > 0.5:
+            if stance[i] > 0.5:
                 active[tr] = False
             else:
                 e[tr] = pf[r] - pos_d
@@ -226,7 +302,9 @@ class TaskController:
         a_joint_ref = kp * (q_post - q) - kd * v_joints
 
         fc_ref = np.zeros(12)
-        fc_ref[2::3] = tg["fz"]
+        n_st = float(np.sum(stance))
+        if n_st > 0:
+            fc_ref[2::3] = lg.robot_mass * GRAVITY / n_st * stance
         
         phase = 0.0
         if isinstance(lg.planner, GaitPlanner) and lg.state_start_time is not None and not lg.transitioning:
@@ -235,7 +313,9 @@ class TaskController:
 
         self.debug = {
             "pf_d": pf_d,
-            "stance": tg["stance"],
+            "stance": stance,
+            "schedule": schedule,
+            "searching": searching,
             "base_xy_d": self.base_xy_d.copy(),
             "s_max": s_max,
             "frozen": int(frozen.sum()),
@@ -245,6 +325,13 @@ class TaskController:
             "e": e.copy(),
             "e_dot": e_dot.copy(),
             "phase": phase,
+            "ground_z": self.ground.height(p[0:2]),
+            "slope": self.ground.slope.copy(),
         }
-        return dict(stance=tg["stance"], acc_base=acc_cmd[0:6], acc_foot=acc_cmd[6:],
-                    a_joint_ref=a_joint_ref, fc_ref=fc_ref)
+        return dict(
+            stance=stance,
+            acc_base=acc_cmd[0:6],
+            acc_foot=acc_cmd[6:],
+            a_joint_ref=a_joint_ref,
+            fc_ref=fc_ref
+        )

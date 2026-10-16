@@ -5,6 +5,7 @@ import queue
 import threading
 import contextlib
 import math as m
+from matplotlib.transforms import interval_contains
 import pandas as pd
 from pathlib import Path
 
@@ -45,8 +46,9 @@ DAMP_KD = 1.0
 SAFE_TILT = 0.82
 # TUNER_LOAD = None
 TUNER_LOAD = os.path.join(os.path.dirname(current_dir), "RL", "tuner_pretrained.npz")   # None = start from scratch
-SEQ_MIXED = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "WALK_BACK"), (30.0, "IDLE"), (34.0, "WALK"), (44.0, "TURN_RIGHT"), (52.0, "IDLE")]
-SCRIPT = None       # list of (sim time s, state), sent like a GUI press; None = AUTO_STATE / manual
+SEQ_MIXED = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "WALK_BACK"), (30.0, "IDLE"), (34.0, "WALK"), (44.0, "TURN_RIGHT"), (25.0, "IDLE")]
+SCRIPT = None 
+GROUND_TAU = 0.2
 
 def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
     # ---------------- 1. Model ----------------
@@ -137,6 +139,8 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
         fosmc_dt=model.opt.timestep * WBC_DEC,
         walk_drop=WALK_DROP,
         idle_drop=IDLE_DROP,
+        foot_r= foot_r,
+        ground_tau=GROUND_TAU,
     )
     print(f"[init] walk pose (FL) = {np.round(task.q_walk[0:3], 3)}", flush=True)
 
@@ -161,18 +165,47 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
     video_writer = None if headless else imageio.get_writer('simulation.mp4', fps=record_hz)
 
     tau = np.zeros(len(joints_name_list))
+    f6 = np.zeros(6)
+    fz_foot = np.zeros(4)
+    pen_foot = np.zeros(4)
+    pen_max = np.zeros(4)
     v_base = np.zeros(6)
     continuous_yaw, prev_raw_yaw = 0.0, 0.0
     step = 0
     last_render = time.time()
     # Diagnostics, collected from 1 s after WALK starts (skips the stride ramp)
-    stats = {"n": 0, "n_st": 0, "n_sw": 0, "v_err2": 0.0, "wz_err2": 0.0, "z_err2": 0.0, "z_bias": 0.0, "late": 0, "early": 0,
-             "fell": None, "s": {g: 0.0 for g in GROUP_ROWS}, "miss": {g: 0.0 for g in GROUP_ROWS},
-             "cnt": {g: 0 for g in GROUP_ROWS}}
+    stats = {
+        "n": 0,
+        "n_st": 0,
+        "n_sw": 0,
+        "v_err2": 0.0,
+        "wz_err2": 0.0,
+        "z_err2": 0.0,
+        "z_bias": 0.0,
+        "late": 0,
+        "early": 0,
+        "g_err2": 0.0,
+        "n_g": 0,
+        "load": [],
+        "fell": None,
+        "s": {g: 0.0 for g in GROUP_ROWS},
+        "miss": {g: 0.0 for g in GROUP_ROWS},
+        "cnt": {g: 0 for g in GROUP_ROWS}
+    }
     win = {g: [0.0, 0.0] for g in GROUP_ROWS}   # per print window: peak |s|, peak mean miss
     walk_t0 = None
     knee_min = np.full(4, np.inf)
     log = []
+
+    base_body = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'base_link')
+    ray_groups = np.array([1, 1, 0, 1, 1, 1], dtype=np.uint8)    # skip group 2 (robot visual meshes)
+    ray_hit = np.zeros(1, dtype=np.int32)
+
+    def true_ground(xy):
+        # real terrain height under x, y: diagnostic only, the controller never sees it
+        top = np.array([xy[0], xy[1], data.qpos[2]])
+        d = mujoco.mj_ray(model, data, top, np.array([0.0, 0.0, -1.0]), ray_groups, 1, base_body, ray_hit)
+        return top[2] - d if d >= 0.0 else np.nan
 
     try:
         with (contextlib.nullcontext() if headless else mujoco.viewer.launch_passive(model, data)) as viewer:
@@ -190,6 +223,7 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
                 R_act = R_act.reshape(3, 3)
 
                 # ---- Gait logic (schedule + heading) ----
+
                 if step % logic_dec == 0:
                     raw_yaw = m.atan2(R_act[1, 0], R_act[0, 0])
                     continuous_yaw += (raw_yaw - prev_raw_yaw + m.pi) % (2.0 * m.pi) - m.pi
@@ -211,24 +245,47 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
                     p = data.qpos[0:3].copy()
                     v_base = np.concatenate([data.qvel[0:3], R_act @ data.qvel[3:6]])   # free joint omega is body frame
                     wbc.update_state(p=p, R=R_act, q=q_act, v_base=v_base, v_joints=qd_act)
-                    cmd = task.compute(t=data.time, dt=model.opt.timestep * WBC_DEC,
-                                       p=p, R=R_act, v_base=v_base, q=q_act, v_joints=qd_act,
-                                       pf=wbc.pf, vf=wbc.vf,
-                                       acc_achieved=np.concatenate([wbc.last["acc_base"], wbc.last["acc_foot"]]))
-                    tau = wbc.solve(**cmd)["tau"]
-                    if stats["fell"] is not None:
-                        tau = -DAMP_KD * qd_act
+                    fz_foot = np.zeros(4)
+                    pen_foot = np.zeros(4)
+                    for k in range(data.ncon):
+                        c = data.contact[k]
+                        for i, gid in enumerate(foot_geoms):
+                            if c.geom1 == gid or c.geom2 == gid:
+                                mujoco.mj_contactForce(model, data, k, f6)
+                                fz_foot[i] += f6[0]
+                                pen_foot[i] = max(pen_foot[i], -c.dist)     # contact.dist < 0 = inside
+                    pen_max = np.maximum(pen_max, pen_foot)
 
-                    knee_min = np.minimum(knee_min, q_act[2::3])
+                    cmd = task.compute(
+                        t=data.time,
+                        dt=model.opt.timestep * WBC_DEC,
+                        p=p,
+                        R=R_act,
+                        v_base=v_base,
+                        q=q_act,
+                        v_joints=qd_act,
+                        pf=wbc.pf,
+                        vf=wbc.vf,
+                        fz=fz_foot,
+                        acc_achieved=np.concatenate([wbc.last["acc_base"], wbc.last["acc_foot"]])
+                    )
+                    tau = wbc.solve(**cmd)["tau"]
+
+                    if stats["fell"] is None:
+                        knee_min = np.minimum(knee_min, q_act[2::3])
                     # ---- Diagnostics ----
-                    g1, g2 = data.contact.geom1[:data.ncon], data.contact.geom2[:data.ncon]
-                    in_contact = np.array([np.any(g1 == gid) or np.any(g2 == gid) for gid in foot_geoms])
+                    # g1, g2 = data.contact.geom1[:data.ncon], data.contact.geom2[:data.ncon]
+                    # in_contact = np.array([np.any(g1 == gid) or np.any(g2 == gid) for gid in foot_geoms])
+                    in_contact = fz_foot > task.contact.f_off
                     dbg = task.debug
+
+
                     for g, rows in GROUP_ROWS.items():
                         act = dbg["active"][rows]
                         if np.any(act):
                             win[g][0] = max(win[g][0], float(np.max(np.abs(dbg["s"][rows][act]))))
                             win[g][1] = max(win[g][1], float(np.mean(dbg["miss"][rows][act])))
+
                     if walk_t0 is not None and stats["fell"] is None and data.time >= walk_t0 + 1.0:
                         sched = dbg["stance"] > 0.5
                         stats["n"] += 1
@@ -237,10 +294,11 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
                         stats["v_err2"] += float(np.sum((data.qvel[0:2] - task.v_cmd) ** 2))
                         w_cmd = logic.yaw_rate if logic.turning else 0.0
                         stats["wz_err2"] += float((v_base[5] - w_cmd) ** 2)
-                        z_tgt = task.z_target()
+                        z_tgt = task.z_des
                         stats["z_err2"] += float((data.qpos[2] - z_tgt) ** 2)
                         stats["z_bias"] += float(data.qpos[2] - z_tgt)
                         stats["late"] += int(np.sum(sched & ~in_contact))
+                        stats["load"].append(float(np.sum(fz_foot)) / (logic.robot_mass * 9.81))
                         stats["early"] += int(np.sum(~sched & in_contact))
                         for g, rows in GROUP_ROWS.items():
                             act = dbg["active"][rows]
@@ -250,11 +308,11 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
                                 stats["cnt"][g] += 1
 
                     falling = R_act[2, 2] < SAFE_TILT or data.qvel[2] > 1.0
-                    if stats["fell"] is None and (data.qpos[2] < 0.5 * z_nom or falling):
+                    if stats["fell"] is None and (data.qpos[2] - dbg["ground_z"] < 0.5 * z_nom or falling):
                         stats["fell"] = data.time
 
                     if tuner is not None:
-                        rec = walk_t0 is not None and data.time >= walk_t0 + 1.0 and stats["fell"] is None
+                        rec = walk_t0 is not None and data.time >= walk_t0 + 1.0 and stats["fell"] is None and (logic.walking or logic.turning)
                         tuner.observe(dbg, tau, record=rec)
                         if step % rl_dec == 0:
                             tuner.step(fell=stats["fell"] is not None)
@@ -273,14 +331,28 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
                     # ---- Data log (Excel export): target vs actual per task, |s| per gain group ----
                     dbg = task.debug
                     s_abs = np.abs(dbg["s"])
+                    g_true = true_ground(data.qpos[0:2])
+                    if walk_t0 is not None and stats["fell"] is None and data.time >= walk_t0 + 1.0 and np.isfinite(g_true):
+                        stats["g_err2"] += float((dbg["ground_z"] - g_true) ** 2)
+                        stats["n_g"] += 1
                     row = {"t": data.time, "state": logic.current_state,
                            "stance": ''.join('S' if s > 0.5 else '-' for s in dbg["stance"]),
                            "FL_z_des": dbg["pf_d"][2], "FL_z": wbc.pf[2],
-                           "z_des": task.z_target(), "z": data.qpos[2],
+                           "z_des": task.z_des, "z": data.qpos[2],
+                           "x": data.qpos[0], "y": data.qpos[1],
+                           "ground_est": dbg["ground_z"], "ground_true": g_true,
+                           "slope_x": dbg["slope"][0], "slope_y": dbg["slope"][1],
                            "vx_cmd": task.v_cmd[0], "vx": data.qvel[0],
                            "vy_cmd": task.v_cmd[1], "vy": data.qvel[1],
                            "yaw_des": task.yaw_d, "yaw": continuous_yaw,
                            "wz_cmd": logic.yaw_rate if logic.turning else 0.0, "wz": v_base[5]}
+                    for i, leg in enumerate(LEG_NAMES):
+                        row[f"{leg}_mode"] = int(task.contact.mode[i])     # 0 swing, 1 stance, 2 search
+                        row[f"{leg}_fz"] = float(fz_foot[i])
+                        row[f"{leg}_z"] = float(wbc.pf[3 * i + 2])
+                        row[f"{leg}_knee"] = float(q_act[3 * i + 2])
+                        row[f"{leg}_hfe"] = float(q_act[3 * i + 1])
+                        row[f"{leg}_pen"] = float(pen_foot[i])
                     for g, rows in GROUP_ROWS.items():
                         act = dbg["active"][rows]
                         row[f"s_{g}"] = float(np.mean(s_abs[rows][act])) if np.any(act) else 0.0
@@ -307,7 +379,7 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
                     video_writer.append_data(renderer.render())  # type: ignore
 
                 step += 1
-                if (stats["fell"] is not None and data.time > stats["fell"] + 1.0) or (run_t is not None and data.time >= run_t):
+                if (headless and stats["fell"] is not None and data.time > stats["fell"] + 1.0) or (run_t is not None and data.time >= run_t):
                     break
                 elapsed = time.time() - step_start
                 if not headless and elapsed < model.opt.timestep:
@@ -328,9 +400,15 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
         print(f"yaw rate error RMS : {np.sqrt(stats['wz_err2'] / n):.3f} rad/s")
         print(f"height error RMS   : {100 * np.sqrt(stats['z_err2'] / n):.1f} cm")
         print(f"height bias (mean) : {100 * stats['z_bias'] / n:+.2f} cm")
+        print(f"ground est err RMS : {100 * np.sqrt(stats['g_err2'] / max(stats['n_g'], 1)):.1f} cm")
         print(f"min knee FL/FR/BL/BR: " + " / ".join(f"{k:+.2f}" for k in knee_min) + " rad")
         print(f"stance, no contact : {100 * stats['late'] / max(stats['n_st'], 1):.1f} %")
+        if stats["load"]:
+            ld = 100 * np.percentile(stats["load"], [1, 5, 50])
+            print(f"foot load / weight : p1 {ld[0]:.0f} %   p5 {ld[1]:.0f} %   p50 {ld[2]:.0f} %")
         print(f"swing, in contact  : {100 * stats['early'] / max(stats['n_sw'], 1):.1f} %")
+        print(f"touchdowns early / late: {task.contact.events['early']} / {task.contact.events['late']}")
+        print(f"max foot penetration FL/FR/BL/BR: " + " / ".join(f"{100 * d:.1f}" for d in pen_max) + " cm")
         for g in GROUP_ROWS:
             c = max(stats["cnt"][g], 1)
             print(f"{g:<6} mean |s| = {stats['s'][g] / c:.3f}   mean miss = {stats['miss'][g] / c:.2f}", flush=True)
