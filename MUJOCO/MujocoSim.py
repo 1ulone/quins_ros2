@@ -108,8 +108,6 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
     def start_gui():
         gui = GUI({
             "state": logic.request_state,
-            "raw_tune": logic.raw_tune,
-            "gamepad": logic.update_gamepad_params,
         })
         gui.setup()
         while True:
@@ -228,7 +226,6 @@ def main(tuner=None, headless=False, run_t=RUN_T, rand=None, script=None):
                     raw_yaw = m.atan2(R_act[1, 0], R_act[0, 0])
                     continuous_yaw += (raw_yaw - prev_raw_yaw + m.pi) % (2.0 * m.pi) - m.pi
                     prev_raw_yaw = raw_yaw
-                    logic.current_q, logic.current_q_dot = q_act, qd_act
                     logic.current_yaw = continuous_yaw
                     while script and sent < len(script) and data.time >= script[sent][0]:
                         logic.request_state(script[sent][1])

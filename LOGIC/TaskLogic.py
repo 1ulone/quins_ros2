@@ -307,7 +307,7 @@ class TaskController:
             fc_ref[2::3] = lg.robot_mass * GRAVITY / n_st * stance
         
         phase = 0.0
-        if isinstance(lg.planner, GaitPlanner) and lg.state_start_time is not None and not lg.transitioning:
+        if isinstance(lg.planner, GaitPlanner) and lg.state_start_time is not None:
             gp = lg.planner.p
             phase = ((t - lg.state_start_time) * gp.freq + gp.offsets['FL']) % 1.0
 
