@@ -8,3 +8,4 @@ pygame==2.6.1
 matplotlib==3.8.4
 pandas
 openpyxl
+adam-robotics[casadi]
