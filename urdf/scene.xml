@@ -47,8 +47,8 @@
 
   <worldbody>
     <light pos="0 0 5" dir="0 0 -1" directional="true"/>
-    <!-- <geom name="floor" type="plane" pos="0 0 0" size="100 100 0.1" material="grid" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
-    <geom name="uneven_floor" type="hfield" hfield="terrain_hfield" pos="0 0 0" material="grid" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/>
+    <geom name="floor" type="plane" pos="0 0 0" size="100 100 0.1" material="grid" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/>
+    <!-- <geom name="uneven_floor" type="hfield" hfield="terrain_hfield" pos="0 0 0" material="grid" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
 
     <!-- RAMP HILL: 10 deg up (x 4.00-4.85), 15 cm plateau (x 4.85-7.15), 10 deg down (x 7.15-8.00) -->
     <!-- <geom name="ramp_up"   type="box" size="0.43157 4.0 0.05" pos="4.43369 0 0.02576" euler="0 -0.17469 0" rgba="0.3 0.5 0.7 1" condim="4" friction="1.0 0.005 0.0001" contype="0" conaffinity="1"/> -->
