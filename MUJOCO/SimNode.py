@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import queue
+import socket
 import threading
 import contextlib
 from pathlib import Path
@@ -17,19 +18,22 @@ sys.stdout.reconfigure(line_buffering=True)
 from LOGIC.GaitLogic import LEG_NAMES, JOINT_NAMES
 from LOGIC.GaitPlanner import FORWARD
 from LOGIC.ControllerCore import ControllerCore, NOMINAL_STANCE
-from LINK.Protocol import pack_state, unpack_state, pack_command, unpack_command
+from LINK.Protocol import (KIND_CMD, KIND_READY, END_PKT, CTRL_PORT, pack_hello,
+                           pack_state, unpack_state, pack_command, unpack_command)
 from ROS.BaseGUI import GUI
 
-RAND = None             # plant mismatch, same dict format as MujocoSim (RAND_EDGE / RAND_MID)
+LINK = "udp"                # "local" = controller in this process (Piece 1), "udp" = separate controller program
+CTRL_HOST = "127.0.0.1"     # 127.0.0.1 = controller on this laptop, "10.10.0.2" = controller on the Jetson
+RAND = None                 # plant mismatch, same dict format as MujocoSim (RAND_EDGE / RAND_MID)
 PUSH_EVERY = 10.0
-# SCRIPT = None           # [(time, state), ...] operator requests; None = GUI / gamepad only
-SCRIPT = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "IDLE")]
-RUN_T = 25.0 
+SCRIPT = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "IDLE")]   # None = GUI / gamepad only
+RUN_T = 25.0
 FOOT_NAMES = ('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT')
+MAX_PKT = 4096
 
 
 class LocalLink:
-    """Controller inside this process (Piece 1). Same byte packets as the network link, zero delay."""
+    """Controller inside this process. Same byte packets as the network link, zero delay."""
 
     def __init__(self, cfg):
         self.core = ControllerCore(cfg)
@@ -48,6 +52,50 @@ class LocalLink:
 
     def close(self):
         self.core.summary()
+
+
+class UdpLink:
+    """Controller in another program, on this machine or another. Never waits once real time has started."""
+
+    def __init__(self, cfg, host, port=CTRL_PORT):
+        self.ctrl_addr = (host, port)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind(("0.0.0.0", 0))
+        self.sock.settimeout(1.0)
+        hello = pack_hello(cfg)
+        print(f"[link] waiting for the controller at {host}:{port} ...", flush=True)
+        while True:     # real time has not started yet, so waiting here is fine
+            self.sock.sendto(hello, self.ctrl_addr)
+            try:
+                pkt, _ = self.sock.recvfrom(MAX_PKT)
+            except socket.timeout:
+                continue
+            except ConnectionRefusedError:
+                time.sleep(1.0)
+                continue
+            if pkt[:1] == KIND_READY:
+                break
+        self.sock.setblocking(False)
+        print("[link] controller ready", flush=True)
+
+    def send(self, pkt):
+        self.sock.sendto(pkt, self.ctrl_addr)
+
+    def poll(self):
+        # newest command that has arrived, or None; never waits
+        newest = None
+        while True:
+            try:
+                pkt, _ = self.sock.recvfrom(MAX_PKT)
+            except (BlockingIOError, ConnectionRefusedError):
+                return newest
+            if pkt[:1] == KIND_CMD:
+                newest = pkt
+
+    def close(self):
+        for _ in range(3):      # UDP can drop a packet; the controller ignores repeats
+            self.sock.sendto(END_PKT, self.ctrl_addr)
+        self.sock.close()
 
 
 def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
@@ -131,9 +179,10 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
         threading.Thread(target=start_gui, daemon=True).start()
 
     # ---------------- 3. Link to the controller ----------------
-    link = LocalLink(cfg)
+    link = LocalLink(cfg) if LINK == "local" else UdpLink(cfg, CTRL_HOST)
 
-    physics_hz = 1.0 / model.opt.timestep
+    dt = model.opt.timestep
+    physics_hz = 1.0 / dt
     print_dec = int(physics_hz / 2)
     graph_dec = int(physics_hz / 50)
     tau = np.zeros(len(joints))
@@ -144,8 +193,11 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
     R_flat = np.zeros(9)
     walk_t0, fell = None, None
     stats = {"n": 0, "v_err2": 0.0, "wz_err2": 0.0, "z_err2": 0.0, "z_bias": 0.0}
+    # per step: state seq, sim t, new command (0/1), command age (steps), round trip (s), controller compute (s), step wall time (s)
+    timing = []
     step = 0
     last_render = time.perf_counter()
+    wall_start = time.perf_counter()
 
     try:
         with (contextlib.nullcontext() if headless else mujoco.viewer.launch_passive(model, data)) as viewer:
@@ -153,6 +205,7 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                 viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
                 viewer.cam.trackbodyid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'base_link')
 
+            wall_start = next_wall = time.perf_counter()
             while headless or viewer.is_running():  # type: ignore
                 step_start = time.perf_counter()
 
@@ -185,12 +238,17 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                 seq += 1
 
                 # ---- Newest command; never wait, hold the last torques until a newer one arrives ----
+                new_cmd, rtt_s, compute_s = 0, np.nan, np.nan
                 pkt = link.poll()
                 if pkt is not None:
-                    answered_seq, _, _, state_name, cmd_tau, cmd_diag = unpack_command(pkt)
+                    answered_seq, t_wall_echo, cmd_compute_s, state_name, cmd_tau, cmd_diag = unpack_command(pkt)
                     if answered_seq > applied_seq:
                         applied_seq, tau, diag, ctrl_state = answered_seq, cmd_tau, cmd_diag, state_name
+                        new_cmd = 1
+                        rtt_s = time.perf_counter() - t_wall_echo
+                        compute_s = cmd_compute_s
                 data.ctrl[act_idx] = motor * tau
+                cmd_age = (seq - 1) - applied_seq if applied_seq >= 0 else -1    # 0 = torque from this step's state
 
                 if diag is not None:
                     if walk_t0 is None and diag["walk_active"] > 0.5:
@@ -226,7 +284,7 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                         print(f"t={data.time:.2f} {ctrl_state:<10} ok={diag['wbc_ok'] > 0.5} st={st_str} "
                               f"v=({data.qvel[0]:+.3f},{data.qvel[1]:+.3f}) cmd=({diag['v_cmd_x']:+.3f},{diag['v_cmd_y']:+.3f}) "
                               f"z={data.qpos[2]:.3f} yaw={diag['yaw']:+.3f}/{diag['target_yaw']:+.3f} "
-                              f"|s|={diag['s_max']:.3f} frz={int(diag['frozen'])}", flush=True)
+                              f"|s|={diag['s_max']:.3f} frz={int(diag['frozen'])} age={cmd_age}", flush=True)
 
                 mujoco.mj_step(model, data)
 
@@ -235,11 +293,17 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                     last_render = time.perf_counter()
 
                 step += 1
+                timing.append((seq - 1, data.time, new_cmd, cmd_age, rtt_s, compute_s, time.perf_counter() - step_start))
                 if (headless and fell is not None and data.time > fell + 1.0) or (run_t is not None and data.time >= run_t):
                     break
-                elapsed = time.perf_counter() - step_start
-                if not headless and elapsed < model.opt.timestep:
-                    time.sleep(model.opt.timestep - elapsed)
+
+                # ---- Real-time pacing on the wall clock (the sim never waits for the controller) ----
+                next_wall += dt
+                lag = time.perf_counter() - next_wall
+                if lag < 0.0:
+                    time.sleep(-lag)
+                elif lag > 0.02:
+                    next_wall = time.perf_counter()     # fell behind: drop the debt instead of bursting steps
     finally:
         link.close()
         n = max(stats["n"], 1)
@@ -249,6 +313,28 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
         print(f"yaw rate error RMS : {np.sqrt(stats['wz_err2'] / n):.3f} rad/s")
         print(f"height error RMS   : {100 * np.sqrt(stats['z_err2'] / n):.1f} cm")
         print(f"height bias (mean) : {100 * stats['z_bias'] / n:+.2f} cm", flush=True)
+
+        if timing:
+            tm = np.array(timing, dtype=float)
+            got = tm[:, 2] > 0.5
+            run_wall = time.perf_counter() - wall_start
+            print("\n===== LINK TIMING =====")
+            print(f"link               : {LINK}" + ("" if LINK == "local" else f" -> {CTRL_HOST}"))
+            print(f"real-time factor   : {data.time / max(run_wall, 1e-9):.3f}")
+            print(f"sim step overrun   : {100 * np.mean(tm[:, 6] > dt):.1f} % of steps took longer than {1e3 * dt:.0f} ms")
+            if np.any(got):
+                age = tm[tm[:, 3] >= 0, 3]
+                rtt_ms, compute_ms = 1e3 * tm[got, 4], 1e3 * tm[got, 5]
+                print(f"control rate       : {np.sum(got) / max(data.time, 1e-9):.0f} Hz achieved (physics {physics_hz:.0f} Hz)")
+                print(f"no new command     : {100 * (1.0 - np.mean(got)):.1f} % of steps (last torque held)")
+                print(f"command age        : mean {np.mean(age):.2f}   p99 {np.percentile(age, 99):.0f}   max {np.max(age):.0f} steps")
+                print(f"round trip         : mean {np.mean(rtt_ms):.2f}   p99 {np.percentile(rtt_ms, 99):.2f}   max {np.max(rtt_ms):.2f} ms")
+                print(f"controller compute : mean {np.mean(compute_ms):.2f}   p99 {np.percentile(compute_ms, 99):.2f}   max {np.max(compute_ms):.2f} ms")
+            else:
+                print("no commands received")
+            np.savetxt("link_timing.csv", tm, delimiter=",",
+                       header="state_seq,sim_t,new_cmd,cmd_age_steps,rtt_s,compute_s,step_wall_s", comments="")
+            print("[log] link_timing.csv saved", flush=True)
 
 
 if __name__ == '__main__':
