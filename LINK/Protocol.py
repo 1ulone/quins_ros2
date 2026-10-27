@@ -52,7 +52,7 @@ DIAG_NAMES = (
 
 #that qddti sounds gibberish but it's supposed to define a compiled layout for when python value is going to be packed and unpacked on c.
 #something like that.
-STATE_HEAD = struct.Struct("<QddTi")
+STATE_HEAD = struct.Struct("<QddIi")
 CMD_HEAD = struct.Struct("<Qddi")
 
 def _code(name):

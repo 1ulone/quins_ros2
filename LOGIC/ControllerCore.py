@@ -96,7 +96,7 @@ class ControllerCore:
             self.yaw += (raw_yaw - self.prev_raw_yaw + m.pi) % (2.0 * m.pi) - m.pi
             self.prev_raw_yaw = raw_yaw
 
-            lg.current_yaw = self.yayw
+            lg.current_yaw = self.yaw
             lg.loop_step(t)
 
             if self.walk_t0 is None and (lg.walking or lg.turning):

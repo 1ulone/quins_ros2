@@ -22,8 +22,9 @@ from ROS.BaseGUI import GUI
 
 RAND = None             # plant mismatch, same dict format as MujocoSim (RAND_EDGE / RAND_MID)
 PUSH_EVERY = 10.0
-SCRIPT = None           # [(time, state), ...] operator requests; None = GUI / gamepad only
-RUN_T = None
+# SCRIPT = None           # [(time, state), ...] operator requests; None = GUI / gamepad only
+SCRIPT = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "IDLE")]
+RUN_T = 25.0 
 FOOT_NAMES = ('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT')
 
 
