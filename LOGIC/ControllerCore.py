@@ -1,3 +1,4 @@
+import time
 import math as m
 from pathlib import Path
 import numpy as np
@@ -71,8 +72,10 @@ class ControllerCore:
         self.walk_t0 = None
         self.fell = None
         self.req_id = None
+        self.part_s = np.zeros(5)
 
     def step(self, t, st):
+        marks = [time.perf_counter()]
         lg, task, wbc = self.logic, self.task, self.wbc
         p, q, qd = st["p"], st["q"], st["qd"]
         R = quat_to_rot(st["quat"])
@@ -104,7 +107,9 @@ class ControllerCore:
 
 
         # wbc 
+        marks.append(time.perf_counter())
         wbc.update_state(p=p, R=R, q=q, v_base=v_base, v_joints=qd)
+        marks.append(time.perf_counter())
         cmd = task.compute(
             t=t,
             dt=dt,
@@ -118,13 +123,20 @@ class ControllerCore:
             fz=st["fz"],
             acc_achieved=np.concatenate([wbc.last["acc_base"], wbc.last["acc_foot"]]),
         )
+        marks.append(time.perf_counter())
         tau = wbc.solve(**cmd)["tau"]
+        marks.append(time.perf_counter())
         dbg = task.debug
 
         # fall check 
-        falling = R[2, 2] < SAFE_TILT or st["v_lin"][2] > 1.0
-        if self.fell is None and (p[2] - dbg["ground_z"] < 0.5 * self.z_nom or falling):
+        tilted = R[2, 2] < SAFE_TILT
+        jumped = st["v_lin"][2] > 1.0
+        too_low = p[2] - dbg["ground_z"] < 0.5 * self.z_nom
+        if self.fell is None and (tilted or jumped or too_low):
             self.fell = t
+            print(f"[ctrl] fall check tripped at t = {t:.3f} s: tilt R22 = {R[2, 2]:.3f} (trip < {SAFE_TILT}), "
+                  f"vz = {st['v_lin'][2]:+.3f} m/s (trip > 1.0), "
+                  f"height above ground = {p[2] - dbg['ground_z']:.3f} m (trip < {0.5 * self.z_nom:.3f})", flush=True)
 
         # reinforcement learning gain tuner
         if self.tuner is not None:
@@ -137,6 +149,8 @@ class ControllerCore:
 
                 self.tuner.step(fell=self.fell is not None)
 
+        marks.append(time.perf_counter())
+        self.part_s = np.diff(np.array(marks))     # prep + gait logic, dynamics terms, task targets, QP, fall check + tuner
         return np.array(tau, dtype=float), self._diag(dbg), lg.current_state
 
     def _diag(self, dbg):

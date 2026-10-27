@@ -23,7 +23,8 @@ from LINK.Protocol import (KIND_CMD, KIND_READY, END_PKT, CTRL_PORT, pack_hello,
 from ROS.BaseGUI import GUI
 
 LINK = "udp"                # "local" = controller in this process (Piece 1), "udp" = separate controller program
-CTRL_HOST = "127.0.0.1"     # 127.0.0.1 = controller on this laptop, "10.10.0.2" = controller on the Jetson
+# CTRL_HOST = "127.0.0.1"
+CTRL_HOST = "10.10.0.2"
 RAND = None                 # plant mismatch, same dict format as MujocoSim (RAND_EDGE / RAND_MID)
 PUSH_EVERY = 10.0
 SCRIPT = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "IDLE")]   # None = GUI / gamepad only

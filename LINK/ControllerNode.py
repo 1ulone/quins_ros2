@@ -81,7 +81,7 @@ def serve_one_run(sock):
         tau, diag, state_name = core.step(t, st)
         compute_s = time.perf_counter() - t0
         sock.sendto(pack_command(seq, t_wall, compute_s, state_name, tau, diag), addr)
-        log.append((seq, t, compute_s, skipped))
+        log.append((seq, t, compute_s, skipped, *core.part_s))
 
     core.summary()
     return np.array(log, dtype=float)
@@ -109,8 +109,12 @@ def main():
                 print(f"compute time       : mean {np.mean(compute_ms):.2f}   p99 {np.percentile(compute_ms, 99):.2f}   "
                       f"max {np.max(compute_ms):.2f} ms")
                 print(f"states skipped     : mean {np.mean(log[:, 3]):.2f} per command", flush=True)
+                split_ms = 1e3 * np.mean(log[:, 4:9], axis=0)
+                print("compute split (ms) : prep+gait {:.2f} | dynamics {:.2f} | task {:.2f} | QP {:.2f} | fall+tuner {:.2f}"
+                      .format(*split_ms), flush=True)
                 path = f"ctrl_timing_run{run_index}.csv"
-                np.savetxt(path, log, delimiter=",", header="state_seq,sim_t,compute_s,skipped", comments="")
+                np.savetxt(path, log, delimiter=",",
+                           header="state_seq,sim_t,compute_s,skipped,prep_s,dyn_s,task_s,qp_s,post_s", comments="")
                 print(f"[log] {path} saved, waiting for the next run", flush=True)
     except KeyboardInterrupt:
         print("\n[ctrl] stopped", flush=True)
