@@ -196,6 +196,7 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
     ctrl_state = "TUNING"
     seq, applied_seq, sent = 0, -1, 0
     periods, missed = 0, 0
+    on_time = 0
     f6 = np.zeros(6)
     R_flat = np.zeros(9)
     walk_t0, fell = None, None
@@ -224,9 +225,6 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                 # ---- Sensors -> state packet ----
                 # ---- Sensors -> state packet, once per control period ----
                 if step % CTRL_DECIM == 0:
-                    if seq > 0:
-                        periods += 1
-                        missed += int(applied_seq < seq - 1)    # last period's state got no answer in time
                     fz = np.zeros(4)
                     for k in range(data.ncon):
                         c = data.contact[k]
@@ -257,6 +255,7 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                     if answered_seq > applied_seq:
                         applied_seq, tau, diag, ctrl_state = answered_seq, cmd_tau, cmd_diag, state_name
                         new_cmd = 1
+                        on_time += int(step - answered_seq * CTRL_DECIM <= CTRL_DECIM)
                         rtt_s = time.perf_counter() - t_wall_echo
                         compute_s = cmd_compute_s
                 data.ctrl[act_idx] = motor * tau
@@ -339,7 +338,7 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                 rtt_ms, compute_ms = 1e3 * tm[got, 4], 1e3 * tm[got, 5]
                 print(f"control rate       : {np.sum(got) / max(data.time, 1e-9):.0f} Hz achieved (physics {physics_hz:.0f} Hz)")
                 print(f"control period     : {1e3 * dt * CTRL_DECIM:.0f} ms ({physics_hz / CTRL_DECIM:.0f} Hz target)")
-                print(f"deadline miss      : {100 * missed / max(periods, 1):.1f} % of control periods")
+                print(f"deadline miss      : {100 * (1.0 - on_time / max(seq, 1)):.1f} % of control periods")
                 print(f"command age        : mean {np.mean(age):.2f}   p99 {np.percentile(age, 99):.0f}   max {np.max(age):.0f} control periods")
                 print(f"round trip         : mean {np.mean(rtt_ms):.2f}   p99 {np.percentile(rtt_ms, 99):.2f}   max {np.max(rtt_ms):.2f} ms")
                 print(f"controller compute : mean {np.mean(compute_ms):.2f}   p99 {np.percentile(compute_ms, 99):.2f}   max {np.max(compute_ms):.2f} ms")
