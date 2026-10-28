@@ -15,6 +15,8 @@ RL_TEST = None
 WALK_DROP = 0.085
 IDLE_DROP = 0.05
 GROUND_TAU = 0.2
+FOSMC_MEMORY_S = 0.2
+DEBOUNCE_S = 0.006
 SAFE_TILT = 0.82
 ROOT = Path(__file__).resolve().parent.parent
 TUNER_LOAD = str(ROOT / "RL" / "tuner_pretrained.npz")   # None = start from scratch
@@ -39,7 +41,7 @@ class ControllerCore:
         self.logic = GaitLogic()
         self.logic.robot_mass = cfg["robot_mass"]
         self.logic_dt = 1.0 / self.logic.control_rate
-        self.wbc = WholeBodyController(str(ROOT / "urdf" / "quadruped.urdf"), joints, joint_damping=cfg["joint_damping"])
+        self.wbc = WholeBodyController(str(ROOT / "urdf" / "quadruped.urdf"), joints, joint_damping=cfg["joint_damping"], ctrl_dt=self.ctrl_dt)
 
         self.task = TaskController(
             self.logic,
@@ -52,6 +54,8 @@ class ControllerCore:
             idle_drop=IDLE_DROP,
             foot_r=cfg["foot_r"],
             ground_tau=GROUND_TAU,
+            fosmc_memory=max(1, round(FOSMC_MEMORY_S / self.ctrl_dt)),
+            contact_debounce=max(1, round(DEBOUNCE_S / self.ctrl_dt)),
         )
 
         self.tuner = None

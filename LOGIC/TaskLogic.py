@@ -76,6 +76,8 @@ class TaskController:
         idle_drop=0.0,
         foot_r=FOOT_R,
         ground_tau=0.2,
+        fosmc_memory=100,
+        contact_debounce=3,
     ):
         self.logic = logic
         self.q_nom = np.asarray(nominal_stance, dtype=float)
@@ -89,7 +91,7 @@ class TaskController:
             self.g.update(gains)
         self.kp, self.kd = _pd_rows(self.g)
 
-        self.fosmc = FOSMC(N_TASK, fosmc_dt) if use_fosmc else None
+        self.fosmc = FOSMC(N_TASK, fosmc_dt, memory=fosmc_memory) if use_fosmc else None
         self.aw_abs = aw_abs        # anti-windup: freeze a row when achieved and commanded
         self.aw_rel = aw_rel        # differ by more than aw_abs + aw_rel * |command|
         self.last_cmd = None
@@ -106,7 +108,7 @@ class TaskController:
         self.idle_drop = idle_drop
         self.q_idle = self._lowered_pose(idle_drop)
         self.blend = 0.0
-        self.contact = ContactEstimator()
+        self.contact = ContactEstimator(n_debounce=contact_debounce)
         self.foot_r = foot_r
         self.ground = GroundEstimator(tau=ground_tau)
         self.ground_set = False         # True once the plane was started from a real four-foot stand

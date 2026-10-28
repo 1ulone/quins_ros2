@@ -25,12 +25,17 @@ from ROS.BaseGUI import GUI
 LINK = "udp"                # "local" = controller in this process (Piece 1), "udp" = separate controller program
 # CTRL_HOST = "127.0.0.1"
 CTRL_HOST = "10.10.0.2"
+CTRL_DECIM = 4 #physics step per control period
 RAND = None                 # plant mismatch, same dict format as MujocoSim (RAND_EDGE / RAND_MID)
 PUSH_EVERY = 10.0
-SCRIPT = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "IDLE")]   # None = GUI / gamepad only
-RUN_T = 25.0
 FOOT_NAMES = ('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT')
 MAX_PKT = 4096
+
+# SCRIPT = None 
+# RUN_T = None
+
+SCRIPT = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "IDLE")]   # None = GUI / gamepad only
+RUN_T = 25.0
 
 
 class LocalLink:
@@ -131,7 +136,7 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
 
     # Robot constants the controller needs (nominal model, before any mismatch below)
     cfg = {
-        "ctrl_dt": float(model.opt.timestep),
+        "ctrl_dt": float(model.opt.timestep) * CTRL_DECIM,
         "z_nom": z_nom,
         "foot_nom_xy": foot_nom_xy,
         "foot_r": float(foot_r),
@@ -190,11 +195,12 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
     diag = None
     ctrl_state = "TUNING"
     seq, applied_seq, sent = 0, -1, 0
+    periods, missed = 0, 0
     f6 = np.zeros(6)
     R_flat = np.zeros(9)
     walk_t0, fell = None, None
     stats = {"n": 0, "v_err2": 0.0, "wz_err2": 0.0, "z_err2": 0.0, "z_bias": 0.0}
-    # per step: state seq, sim t, new command (0/1), command age (steps), round trip (s), controller compute (s), step wall time (s)
+    # per physics step: state seq, sim t, new command (0/1), command age (control periods), round trip (s), controller compute (s), step wall time (s)
     timing = []
     step = 0
     last_render = time.perf_counter()
@@ -216,27 +222,32 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                     sent += 1
 
                 # ---- Sensors -> state packet ----
-                fz = np.zeros(4)
-                for k in range(data.ncon):
-                    c = data.contact[k]
-                    for i, gid in enumerate(foot_geoms):
-                        if c.geom1 == gid or c.geom2 == gid:
-                            mujoco.mj_contactForce(model, data, k, f6)
-                            fz[i] += f6[0]
-                req_id = req["id"]
-                st = {
-                    "p": data.qpos[0:3],
-                    "quat": data.qpos[3:7],
-                    "v_lin": data.qvel[0:3],        # free joint: linear velocity in world frame
-                    "omega": data.qvel[3:6],        # free joint: angular velocity in body frame
-                    "q": data.qpos[qpos_idx],
-                    "qd": data.qvel[qvel_idx],
-                    "fz": fz,
-                    "req": req["name"],
-                    "req_id": req_id,
-                }
-                link.send(pack_state(seq, data.time, time.perf_counter(), st))
-                seq += 1
+                # ---- Sensors -> state packet, once per control period ----
+                if step % CTRL_DECIM == 0:
+                    if seq > 0:
+                        periods += 1
+                        missed += int(applied_seq < seq - 1)    # last period's state got no answer in time
+                    fz = np.zeros(4)
+                    for k in range(data.ncon):
+                        c = data.contact[k]
+                        for i, gid in enumerate(foot_geoms):
+                            if c.geom1 == gid or c.geom2 == gid:
+                                mujoco.mj_contactForce(model, data, k, f6)
+                                fz[i] += f6[0]
+                    req_id = req["id"]
+                    st = {
+                        "p": data.qpos[0:3],
+                        "quat": data.qpos[3:7],
+                        "v_lin": data.qvel[0:3],        # free joint: linear velocity in world frame
+                        "omega": data.qvel[3:6],        # free joint: angular velocity in body frame
+                        "q": data.qpos[qpos_idx],
+                        "qd": data.qvel[qvel_idx],
+                        "fz": fz,
+                        "req": req["name"],
+                        "req_id": req_id,
+                    }
+                    link.send(pack_state(seq, data.time, time.perf_counter(), st))
+                    seq += 1
 
                 # ---- Newest command; never wait, hold the last torques until a newer one arrives ----
                 new_cmd, rtt_s, compute_s = 0, np.nan, np.nan
@@ -249,7 +260,7 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                         rtt_s = time.perf_counter() - t_wall_echo
                         compute_s = cmd_compute_s
                 data.ctrl[act_idx] = motor * tau
-                cmd_age = (seq - 1) - applied_seq if applied_seq >= 0 else -1    # 0 = torque from this step's state
+                cmd_age = (seq - 1) - applied_seq if applied_seq >= 0 else -1    # control periods: 0 = torque from the newest state
 
                 if diag is not None:
                     if walk_t0 is None and diag["walk_active"] > 0.5:
@@ -327,16 +338,23 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                 age = tm[tm[:, 3] >= 0, 3]
                 rtt_ms, compute_ms = 1e3 * tm[got, 4], 1e3 * tm[got, 5]
                 print(f"control rate       : {np.sum(got) / max(data.time, 1e-9):.0f} Hz achieved (physics {physics_hz:.0f} Hz)")
-                print(f"no new command     : {100 * (1.0 - np.mean(got)):.1f} % of steps (last torque held)")
-                print(f"command age        : mean {np.mean(age):.2f}   p99 {np.percentile(age, 99):.0f}   max {np.max(age):.0f} steps")
+                print(f"control period     : {1e3 * dt * CTRL_DECIM:.0f} ms ({physics_hz / CTRL_DECIM:.0f} Hz target)")
+                print(f"deadline miss      : {100 * missed / max(periods, 1):.1f} % of control periods")
+                print(f"command age        : mean {np.mean(age):.2f}   p99 {np.percentile(age, 99):.0f}   max {np.max(age):.0f} control periods")
                 print(f"round trip         : mean {np.mean(rtt_ms):.2f}   p99 {np.percentile(rtt_ms, 99):.2f}   max {np.max(rtt_ms):.2f} ms")
                 print(f"controller compute : mean {np.mean(compute_ms):.2f}   p99 {np.percentile(compute_ms, 99):.2f}   max {np.max(compute_ms):.2f} ms")
             else:
                 print("no commands received")
-            np.savetxt("link_timing.csv", tm, delimiter=",",
-                       header="state_seq,sim_t,new_cmd,cmd_age_steps,rtt_s,compute_s,step_wall_s", comments="")
+            np.savetxt(
+                "link_timing.csv",
+                tm,
+                delimiter=",",
+                header="state_seq,sim_t,new_cmd,cmd_age_periods,rtt_s,compute_s,step_wall_s",
+                comments=""
+            )
             print("[log] link_timing.csv saved", flush=True)
 
 
 if __name__ == '__main__':
+    RUN_T = None
     main()
