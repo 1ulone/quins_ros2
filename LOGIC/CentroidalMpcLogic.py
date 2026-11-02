@@ -37,12 +37,14 @@ class CentroidalMPC:
         fz_max=400.0,
         n_nodes=N_NODES,
         node_dt=NODE_DT,
-        weights=None
+        weights=None,
+        qp_solver="qpoases",
     ):
         self.mu = mu
         self.fz_max = fz_max
         self.n = n_nodes
         self.dt = node_dt
+        self.qp_solver = qp_solver
 
         w = dict(DEFAULT_WEIGHTS)
         if weights:
@@ -62,6 +64,7 @@ class CentroidalMPC:
         self._build_solver()
         self.U = np.zeros(N_FORCE * n_nodes)
         self.ok = False
+        self.build_s = 0.0
         self.solve_s = 0.0
 
     def _composite_inertia(self, joint_q):
@@ -82,9 +85,13 @@ class CentroidalMPC:
         self.A_dm = cs.sparsify(cs.DM(np.array(rows)))
         self.lba = np.full(len(rows), -np.inf)
         self.uba = np.zeros(len(rows))
-        self.qp = cs.conic('centroidal_mpc', 'qpoases',
-                           {'h': cs.Sparsity.dense(nu, nu), 'a': self.A_dm.sparsity()},
-                           {'printLevel': 'none', 'error_on_fail': False})
+        if self.qp_solver == "osqp":
+            opts = {"osqp": {"verbose": False, "eps_abs": 1e-5, "eps_rel": 1e-5},
+                    "warm_start_primal": True, "error_on_fail": False}
+        else:
+            opts = {"printLevel": "none", "error_on_fail": False}
+        self.qp = cs.conic('centroidal_mpc', self.qp_solver,
+                           {'h': cs.Sparsity.dense(nu, nu), 'a': self.A_dm.sparsity()}, opts)
 
     def com_state(self, p, R, q, v_lin, omega_body, qd):
         q_pin = pin.neutral(self.model)
@@ -154,6 +161,7 @@ class CentroidalMPC:
         QSu = self.Q_bar @ Su
         H = 2.0 * (Su.T @ QSu + self.R_bar)
         g = 2.0 * QSu.T @ (Sx @ x0 - x_ref.reshape(-1))
+        t_built = time.perf_counter()
 
         flag = np.asarray(stance, dtype=float).reshape(-1)
         lim_xy = self.mu * self.fz_max
@@ -166,7 +174,8 @@ class CentroidalMPC:
         self.ok = bool(self.qp.stats()["success"])
         if self.ok:
             self.U = np.array(res["x"]).flatten()
-        self.solve_s = time.perf_counter() - t_start
+        self.build_s = t_built - t_start
+        self.solve_s = time.perf_counter() - t_built
 
         f0 = self.U[0:N_FORCE]
         acc_lin = f0.reshape(4, 3).sum(axis=0) / self.mass - np.array([0.0, 0.0, GRAVITY])
@@ -191,7 +200,9 @@ if __name__ == "__main__":
     N_TRIALS = 2000
 
     joints = [j for leg in LEG_NAMES for j in JOINT_NAMES[leg]]
-    mpc = CentroidalMPC(str(root / "urdf" / "quadruped.urdf"), joints, NOMINAL_STANCE)
+    qp_solver = sys.argv[1] if len(sys.argv) > 1 else "qpoases"
+    mpc = CentroidalMPC(str(root / "urdf" / "quadruped.urdf"), joints, NOMINAL_STANCE, qp_solver=qp_solver)
+    print(f"[mpc] qp solver = {qp_solver}")
     print(f"[mpc] mass = {mpc.mass:.2f} kg, composite inertia diag = {np.round(np.diag(mpc.I_body), 4)} kg m^2")
 
     # robot standing in NOMINAL_STANCE, lowest foot at z = 0
@@ -226,9 +237,11 @@ if __name__ == "__main__":
         mpc.solve(x0, x_ref, r_feet, stance)
         fails += int(not mpc.ok)
         if trial >= 10:                     # skip the first solves (memory warm-up)
-            times.append(mpc.solve_s)
+            times.append((mpc.build_s, mpc.solve_s))
 
-    t_ms = 1e3 * np.array(times)
+    build_ms, qp_ms = 1e3 * np.array(times).T
     print(f"[trot] solves = {N_TRIALS}, failed = {fails}")
-    print(f"[trot] solve time: mean {t_ms.mean():.2f}   p99 {np.percentile(t_ms, 99):.2f}   max {t_ms.max():.2f} ms")
+    print(f"[trot] condense (numpy): mean {build_ms.mean():.2f}   p99 {np.percentile(build_ms, 99):.2f} ms")
+    print(f"[trot] QP solve        : mean {qp_ms.mean():.2f}   p99 {np.percentile(qp_ms, 99):.2f}   max {qp_ms.max():.2f} ms")
+    print(f"[trot] last solver stats: {mpc.qp.stats()}")
     print(f"[trot] free time in the 8 ms tick at the WBC p99 (5.85 ms): {8.0 - 5.85:.2f} ms")
