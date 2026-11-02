@@ -23,20 +23,20 @@ from LINK.Protocol import (KIND_CMD, KIND_READY, END_PKT, CTRL_PORT, pack_hello,
 from ROS.BaseGUI import GUI
 
 LINK = "udp"                # "local" = controller in this process (Piece 1), "udp" = separate controller program
-# CTRL_HOST = "127.0.0.1"
-CTRL_HOST = "10.10.0.2"
 CTRL_DECIM = 4 #physics step per control period
 RAND = None                 # plant mismatch, same dict format as MujocoSim (RAND_EDGE / RAND_MID)
 PUSH_EVERY = 10.0
 FOOT_NAMES = ('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT')
 MAX_PKT = 4096
 
+# CTRL_HOST = "127.0.0.1"
+CTRL_HOST = "10.10.0.2"
+
 # SCRIPT = None 
 # RUN_T = None
-
+#
 SCRIPT = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "IDLE")]   # None = GUI / gamepad only
 RUN_T = 25.0
-
 
 class LocalLink:
     """Controller inside this process. Same byte packets as the network link, zero delay."""
