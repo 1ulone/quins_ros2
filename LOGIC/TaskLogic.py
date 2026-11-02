@@ -337,9 +337,9 @@ class TaskController:
         if self.mpc_active:
             f_mpc = f_mpc * np.repeat(stance, 3)
             foot_now = pf.reshape(4, 3) - np.array([0.0, 0.0, self.foot_r])
-            acc_lin, acc_ang = self.mpc.model.accelerations(f_mpc, foot_now - com, yaw_meas)
-            acc_cmd[0:3] = acc_lin
-            acc_cmd[3:6] = acc_ang
+            acc_lin, acc_ang = self.mpc.model.acceleration(f_mpc, foot_now - com, yaw_meas)
+            acc_cmd[0:3] += acc_lin
+            acc_cmd[3:6] += acc_ang
         self.last_cmd = acc_cmd.copy()
 
         # ---- Posture: weak pull toward the nominal stance ----

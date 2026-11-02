@@ -42,7 +42,7 @@ class CentroidalMPC:
         n_nodes=N_NODES,
         node_dt=NODE_DT,
         weights=None,
-        qp_solver="qpoases",
+        qp_solver="osqp",
     ):
         self.mu = mu
         self.fz_max = fz_max
