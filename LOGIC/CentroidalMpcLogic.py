@@ -188,6 +188,99 @@ class CentroidalMPC:
         acc_ang = Rz @ self.I_body_inv @ Rz.T @ torque
         return f0, acc_lin, acc_ang
 
+    def acceleration(self, forces, r_feet_now, yaw):
+        acc_lin = forces.reshape(4, 3).sum(axis=0) / self.mass - np.array([0.0, 0.0, GRAVITY])
+        Rz = yaw_rot(yaw)
+        torque = sum(np.cross(r_feet_now[i], forces[3 * i: 3 * i + 3]) for i in range(4))
+        return acc_lin, Rz @ self.I_body_inv @ Rz.T @ torque
+
+def _mpc_worker(conn, urdf_path, joints_name_list, inertia_pose, kwargs):
+    # separate process with its own solver; always answers the newest request only
+    mpc = CentroidalMPC(urdf_path, joints_name_list, inertia_pose, **kwargs)
+    conn.send("ready")
+    while True:
+        msg = conn.recv()
+        while conn.poll():
+            msg = conn.recv()
+        if msg is None:
+            break
+        t_req, x0, x_ref, r_feet, stance = msg
+        mpc.solve(x0, x_ref, r_feet, stance)
+        conn.send((t_req, mpc.U.reshape(mpc.n, 4, 3).copy(), mpc.ok, mpc.build_s + mpc.solve_s))
+    conn.close()
+
+class MpcClient:
+    """Runs the MPC in its own process at the node rate; the control loop never waits for it.
+    Between solves, the force for 'now' is read from the newest plan by the time elapsed since its request."""
+
+    def __init__(self, urdf_path, joints_name_list, inertia_pose, **kwargs):
+        import multiprocessing as mp
+        self.model = CentroidalMPC(urdf_path, joints_name_list, inertia_pose, **kwargs)   # CoM, inertia, reference only
+        self.n, self.dt = self.model.n, self.model.dt
+        ctx = mp.get_context("fork")
+        self.conn, child_conn = ctx.Pipe()
+        self.proc = ctx.Process(target=_mpc_worker, daemon=True,
+                                args=(child_conn, urdf_path, joints_name_list, inertia_pose, kwargs))
+        self.proc.start()
+        assert self.conn.recv() == "ready"
+        self.busy = False
+        self.next_req_t = 0.0
+        self.plan = None            # (request time, forces (n, 4, 3))
+        self.stats = {"sent": 0, "solved": 0, "failed": 0, "skipped": 0, "stale": 0, "solve_s": []}
+
+    def due(self, t):
+        # True once per node period; a period where the worker is still busy is skipped and counted
+        if t + 1e-9 < self.next_req_t:
+            return False
+        while self.next_req_t <= t + 1e-9:
+            self.next_req_t += self.dt
+        if self.busy:
+            self.stats["skipped"] += 1
+            return False
+        return True
+
+    def send(self, t, x0, x_ref, r_feet, stance):
+        self.conn.send((t, x0, x_ref, r_feet, stance))
+        self.busy = True
+        self.stats["sent"] += 1
+
+    def poll(self):
+        while self.conn.poll():
+            t_req, forces, ok, solve_s = self.conn.recv()
+            self.busy = False
+            self.stats["solve_s"].append(solve_s)
+            if ok:
+                self.plan = (t_req, forces)
+                self.stats["solved"] += 1
+            else:
+                self.stats["failed"] += 1
+
+    def force_now(self, t):
+        # None until the first plan arrives
+        if self.plan is None:
+            return None
+        t_req, forces = self.plan
+        k = int((t - t_req) / self.dt)
+        if k >= self.n:
+            self.stats["stale"] += 1
+            k = self.n - 1
+        return forces[max(k, 0)].reshape(-1).copy()
+
+    def summary(self):
+        s = self.stats
+        ms = 1e3 * np.array(s["solve_s"]) if s["solve_s"] else np.zeros(1)
+        print("\n===== MPC =====")
+        print(f"requests           : sent {s['sent']}   solved {s['solved']}   failed {s['failed']}   skipped (busy) {s['skipped']}")
+        print(f"stale plan reads   : {s['stale']} control ticks")
+        print(f"solve time         : mean {ms.mean():.2f}   p99 {np.percentile(ms, 99):.2f}   max {ms.max():.2f} ms "
+              f"(node period {1e3 * self.dt:.0f} ms)", flush=True)
+
+    def close(self):
+        try:
+            self.conn.send(None)
+        except (BrokenPipeError, OSError):
+            pass
+        self.proc.join(timeout=1.0)
 
 if __name__ == "__main__":
     # Standalone check: no simulation. 1) standing force split, 2) solve time over a trot horizon

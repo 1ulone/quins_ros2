@@ -117,6 +117,9 @@ class TaskController:
         self.prev_stance = np.ones(4, dtype=bool)
         self.prev_sched = np.ones(4, dtype=bool)
 
+        self.mpc = None
+        self.mpc_active = False
+
     def command_velocity(self):
         # NOTE: same formula the MPC used: stride covered during stance, body -x is forward
         # NOTE: stride covered during stance, along the robot's front (FORWARD in GaitPlanner)
@@ -280,6 +283,40 @@ class TaskController:
                 e_dot[tr] = vf[r] - vel_d
                 acc_ff[tr] = acc_d
 
+
+        # ---- MPC top layer (journal): request at the node rate, read the force for now from the newest plan ----
+        f_mpc, com, yaw_meas = None, None, None
+        if self.mpc is not None:
+            mpc, model = self.mpc, self.mpc.model
+            com, com_vel = model.com_state(p, R, q, v_base[0:3], R.T @ v_base[3:6], v_joints) # type: ignore
+            yaw_meas = lg.current_yaw + (m.atan2(R[1, 0], R[0, 0]) - lg.current_yaw + m.pi) % (2.0 * m.pi) - m.pi
+            if mpc.due(t):
+                n, dt_node = mpc.n, mpc.dt
+                use_gait = isinstance(lg.planner, GaitPlanner) and lg.state_start_time is not None
+                planner = lg.planner if use_gait else lg.stand_planner
+                t_local = t - lg.state_start_time if lg.state_start_time is not None else 0.0
+                stance_h = np.array(planner.horizon(t_local, n, dt_node, lg.robot_mass)["stance"], dtype=float)
+                stance_h[0] = stance                                    # node 0: real contact
+                x0 = model.state_vector(com, R, yaw_meas, com_vel, v_base[3:6])
+                x_ref = model.reference(com, self.yaw_d, self.z_des + (com[2] - p[2]), self.v_cmd, yaw_rate)
+                # contact point per node: a foot still on the ground stays where it is;
+                # a foot that lands inside the horizon uses the same foothold rule as the swing target
+                foot_now = pf.reshape(4, 3) - np.array([0.0, 0.0, self.foot_r])
+                feet_h = np.zeros((n, 4, 3))
+                for i in range(4):
+                    held = stance[i] > 0.5
+                    for k in range(n):
+                        held = held and stance_h[k, i] > 0.5
+                        if held:
+                            feet_h[k, i] = foot_now[i]
+                        else:
+                            xy = p[0:2] + self.v_cmd * k * dt_node + R_yaw @ self.foot_nom_xy[i] + self.k_foot * v_err
+                            feet_h[k, i] = [xy[0], xy[1], self.ground.height(xy)]
+                com_h = np.vstack([com, x_ref[:-1, 0:3]])              # CoM at nodes 0..n-1
+                mpc.send(t, x0, x_ref, feet_h - com_h[:, None, :], stance_h)
+            mpc.poll()
+            f_mpc = mpc.force_now(t)
+
         # ---- Controller: task errors -> commanded task accelerations ----
         # miss: how far the WBC's achieved accelerations were from last step's command (any mode)
         miss = np.zeros(N_TASK)
@@ -296,6 +333,13 @@ class TaskController:
             s = self.fosmc.s.copy()
         s_max = float(np.max(np.abs(s[active])))
         acc_cmd[~active] = 0.0
+        self.mpc_active = f_mpc is not None
+        if self.mpc_active:
+            f_mpc = f_mpc * np.repeat(stance, 3)
+            foot_now = pf.reshape(4, 3) - np.array([0.0, 0.0, self.foot_r])
+            acc_lin, acc_ang = self.mpc.model.accelerations(f_mpc, foot_now - com, yaw_meas)
+            acc_cmd[0:3] = acc_lin
+            acc_cmd[3:6] = acc_ang
         self.last_cmd = acc_cmd.copy()
 
         # ---- Posture: weak pull toward the nominal stance ----
@@ -307,6 +351,9 @@ class TaskController:
         n_st = float(np.sum(stance))
         if n_st > 0:
             fc_ref[2::3] = lg.robot_mass * GRAVITY / n_st * stance
+
+        if self.mpc_active:
+            fc_ref = f_mpc
         
         phase = 0.0
         if isinstance(lg.planner, GaitPlanner) and lg.state_start_time is not None:

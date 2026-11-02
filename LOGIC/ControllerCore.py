@@ -9,6 +9,7 @@ from LOGIC.TaskLogic import TaskController
 
 NOMINAL_STANCE = np.tile([0.0, -0.83, 1.113], 4)
 USE_FOSMC = False 
+USE_MPC = True
 USE_RL_TUNER = False 
 RL_DT = 0.02
 RL_TEST = None
@@ -67,6 +68,9 @@ class ControllerCore:
                 self.tuner.load(TUNER_LOAD)
                 self.tuner.actor.explore *= 0.5 # type: ignore
 
+        if USE_MPC:
+            from LOGIC.CentroidalMpcLogic import MpcClient
+            self.task.mpc = MpcClient(str(ROOT / "urdf" / "quadruped.urdf"), joints, self.task.q_walk)
 
         self.t_prev = None
         self.next_logic_t = 0.0
@@ -193,3 +197,6 @@ class ControllerCore:
     def summary(self):
         if self.tuner is not None:
             self.tuner.summary()
+        if self.task.mpc is not None:
+            self.task.mpc.summary()
+            self.task.mpc.close()
