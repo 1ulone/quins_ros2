@@ -4,6 +4,10 @@ import numpy as np
 import casadi as cs
 import pinocchio as pin
 
+import os
+os.environ.setdefault("OMP_NUM_THREADS", "1")         # small matrices: one BLAS thread is faster than many fighting
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")    # must be set before numpy is imported
+
 GRAVITY = 9.81
 N_STATE = 13
 N_FORCE = 12
@@ -50,7 +54,7 @@ class CentroidalMPC:
         if weights:
             w.update(weights)
         q_diag = np.concatenate([w["com_pos"], w["rpy"], w["com_vel"], w["omega"], [0.0]])
-        self.Q_bar = np.kron(np.eye(n_nodes), np.diag(q_diag))
+        self.q_bar = np.tile(q_diag, n_nodes)     # diagonal of Q over the whole horizon
         self.R_bar = w["force"] * np.eye(N_FORCE * n_nodes)
 
         self.model = pin.buildModelFromUrdf(urdf_path, pin.JointModelFreeFlyer())
@@ -86,7 +90,7 @@ class CentroidalMPC:
         self.lba = np.full(len(rows), -np.inf)
         self.uba = np.zeros(len(rows))
         if self.qp_solver == "osqp":
-            opts = {"osqp": {"verbose": False, "eps_abs": 1e-5, "eps_rel": 1e-5},
+            opts = {"osqp": {"verbose": False},       # OSQP default tolerances (eps_abs = eps_rel = 1e-3)
                     "warm_start_primal": True, "error_on_fail": False}
         else:
             opts = {"printLevel": "none", "error_on_fail": False}
@@ -158,7 +162,7 @@ class CentroidalMPC:
             Sx[N_STATE * k: N_STATE * (k + 1)] = row_x
             Su[N_STATE * k: N_STATE * (k + 1)] = row_u
 
-        QSu = self.Q_bar @ Su
+        QSu = self.q_bar[:, None] * Su
         H = 2.0 * (Su.T @ QSu + self.R_bar)
         g = 2.0 * QSu.T @ (Sx @ x0 - x_ref.reshape(-1))
         t_built = time.perf_counter()
