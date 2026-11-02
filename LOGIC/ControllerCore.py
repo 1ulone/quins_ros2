@@ -8,8 +8,8 @@ from LOGIC.WbcLogic import WholeBodyController
 from LOGIC.TaskLogic import TaskController
 
 NOMINAL_STANCE = np.tile([0.0, -0.83, 1.113], 4)
-USE_FOSMC = True
-USE_RL_TUNER = True
+USE_FOSMC = False 
+USE_RL_TUNER = False 
 RL_DT = 0.02
 RL_TEST = None
 WALK_DROP = 0.085
