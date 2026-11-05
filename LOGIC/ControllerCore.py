@@ -34,7 +34,7 @@ def quat_to_rot(quat):
     ])
 
 class ControllerCore:
-    def __init__(self, cfg, top_layer=TOP_LAYER, rl_policy=None):
+    def __init__(self, cfg, top_layer=TOP_LAYER, rl_policy=None, wbc=None):
         self.ctrl_dt = cfg["ctrl_dt"]
         self.z_nom = cfg["z_nom"]
         joints = [j for leg in LEG_NAMES for j in JOINT_NAMES[leg]]
@@ -42,7 +42,11 @@ class ControllerCore:
         self.logic = GaitLogic()
         self.logic.robot_mass = cfg["robot_mass"]
         self.logic_dt = 1.0 / self.logic.control_rate
-        self.wbc = WholeBodyController(str(ROOT / "urdf" / "quadruped.urdf"), joints, joint_damping=cfg["joint_damping"], ctrl_dt=self.ctrl_dt)
+        if wbc is None:
+            self.wbc = WholeBodyController(str(ROOT / "urdf" / "quadruped.urdf"), joints, joint_damping=cfg["joint_damping"], ctrl_dt=self.ctrl_dt)
+        else:
+            self.wbc = wbc
+            self.wbc.reset()
 
         self.task = TaskController(
             self.logic,

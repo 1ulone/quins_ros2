@@ -55,7 +55,9 @@ class WholeBodyController:
 
         self._build_dynamics_functions()
         self._build_qp()   # Piece 2
+        self.reset()
 
+    def reset(self):
         self.ok = False
         self.last = {
             "tau": np.zeros(self.nj),

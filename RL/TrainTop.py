@@ -35,7 +35,7 @@ PPO_KW = dict(
     vf_coef=1.0,
     max_grad_norm=1.0,
 )
-INIT_NOISE_STD = 1.0
+INIT_NOISE_STD = 0.3
 OUT_DIR = RL_DIR / "top_runs"
 
 
@@ -78,8 +78,9 @@ def main():
     parser.add_argument("--envs", type=int, default=max(1, (os.cpu_count() or 2) - 2), help="parallel env processes")
     parser.add_argument("--steps", type=int, default=10_000_000, help="total env steps (policy decisions)")
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--device", default="auto", help="auto / cpu / cuda, only for the network update")
+    parser.add_argument("--device", default="cpu", help="cpu (recommended for MLP PPO) / cuda")
     args = parser.parse_args()
+    torch.set_num_threads(2)        # the 2 cores left free from --envs run the policy and the PPO update
 
     run_name = f"seed{args.seed}_{time.strftime('%Y%m%d_%H%M%S')}"
     run_dir = OUT_DIR / run_name

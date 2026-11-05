@@ -1,6 +1,9 @@
+import os
 import sys
 import time
+import ctypes
 from pathlib import Path
+from contextlib import contextmanager
 
 import mujoco
 import numpy as np
@@ -12,25 +15,51 @@ sys.path.insert(0, str(ROOT))
 
 from LOGIC.GaitLogic import LEG_NAMES, JOINT_NAMES
 from LOGIC.GaitPlanner import FORWARD
-from LOGIC.ControllerCore import ControllerCore, NOMINAL_STANCE
+from LOGIC.ControllerCore import ControllerCore, NOMINAL_STANCE, ROOT as CORE_ROOT
+from LOGIC.WbcLogic import WholeBodyController
 from LOGIC.RLTopLogic import N_OBS, N_ACTION
+from LOGIC.CentroidalMpcLogic import DEFAULT_WEIGHTS as MPC_WEIGHTS
+
+@contextmanager
+def silence_output():
+    """Mute stdout and stderr, from Python and from C/C++ libraries: qpOASES prints its license banner
+    and Pinocchio's URDF parser warns about the xacro / mujoco tags every time the controller is rebuilt,
+    which is every reset. A Python exception still shows: its traceback prints after the streams are back."""
+    libc = ctypes.CDLL(None)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    libc.fflush(None)
+    saved_fds = (os.dup(1), os.dup(2))
+    devnull_fd = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(devnull_fd, 1)
+    os.dup2(devnull_fd, 2)
+    try:
+        yield
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        libc.fflush(None)
+        os.dup2(saved_fds[0], 1)
+        os.dup2(saved_fds[1], 2)
+        os.close(devnull_fd)
+        os.close(saved_fds[0])
+        os.close(saved_fds[1])
 
 CTRL_DECIM = 4              # physics steps per control period: 8 ms, same as SimNode and the Jetson
 EPISODE_S = 20.0
 FOOT_NAMES = ('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT')
 
-# reward weights: legged_gym defaults (LeggedRobotCfg.rewards.scales), orientation from its ANYmal C flat config;
-# every term is multiplied by the time it covers, and a negative total is clipped to 0 (only_positive_rewards)
+# reward = alive bonus - the centroidal MPC's stage cost (same Q and R as the MPC, Song et al. 2023 "same objective"),
+# every term multiplied by the time it covers. The alive bonus keeps the reward positive so that falling (ending
+# the episode) never pays: 1.0 is above the zero-action MPC cost on ~98% of ticks (randomized plant, p99 = 1.29).
+# A negative step total is still clipped to 0, legged_gym's only_positive_rewards ("avoids early termination problems").
+MPC_STATE_Q = np.concatenate([MPC_WEIGHTS["com_pos"], MPC_WEIGHTS["rpy"], MPC_WEIGHTS["com_vel"], MPC_WEIGHTS["omega"]])
+MPC_FORCE_R = MPC_WEIGHTS["force"]
 REWARD_SCALES = {
-    "tracking_lin_vel": 1.0,
-    "tracking_ang_vel": 0.5,
-    "lin_vel_z": -2.0,
-    "ang_vel_xy": -0.05,
-    "orientation": -5.0,
-    "torques": -1.0e-5,
-    "action_rate": -0.01,
+    "alive": 1.0,
+    "mpc_state_cost": -1.0,
+    "mpc_force_cost": -1.0,
 }
-TRACKING_SIGMA = 0.25
 
 # per-episode plant mismatch while training, same ranges as the thesis tuner pretraining (RL/Pretrain.py RANGES)
 RAND_RANGES = {"mass": (0.8, 1.2), "friction": (0.5, 1.25), "motor": (0.8, 1.2), "push": (0.0, 0.5)}
@@ -86,6 +115,8 @@ class RlTopEnv(gym.Env):
             "joint_damping": float(joint_damping[0]),
         }
         self.ctrl_dt = self.cfg["ctrl_dt"]
+        with silence_output():
+            self.wbc = WholeBodyController(str(CORE_ROOT / "urdf" / "quadruped.urdf"), joints,joint_damping=self.cfg["joint_damping"], ctrl_dt=self.ctrl_dt)
 
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(N_OBS,), dtype=np.float32)
         self.action_space = spaces.Box(-1.0, 1.0, shape=(N_ACTION,), dtype=np.float32)
@@ -146,7 +177,8 @@ class RlTopEnv(gym.Env):
         model.geom_friction[self.friction_geoms, 0] = self.rand["friction"] if self.randomize else self.friction_nom
 
         self._start_pose()
-        self.core = ControllerCore(self.cfg, top_layer="rl")
+        with silence_output():
+            self.core = ControllerCore(self.cfg, top_layer="rl", wbc=self.wbc)
         self.rl = self.core.task.rl
         self.script = list(self.fixed_script) if self.fixed_script is not None else self._random_script()
         self.sent = 0
@@ -158,7 +190,8 @@ class RlTopEnv(gym.Env):
         self.reward_sums = {k: 0.0 for k in REWARD_SCALES}
         self.stats = {"n": 0, "v_err2": 0.0, "wz_err2": 0.0, "z_err2": 0.0, "z_bias": 0.0, "compute_s": []}
 
-        self._run_until_decision(np.zeros(N_ACTION))
+        with silence_output():                  # the WBC's qpOASES builds (and prints) on its first solve
+            self._run_until_decision(np.zeros(N_ACTION))
         return self.rl.obs.copy(), {}
 
     def step(self, action):
@@ -210,19 +243,25 @@ class RlTopEnv(gym.Env):
         R = np.zeros(9)
         mujoco.mju_quat2Mat(R, data.qpos[3:7])
         R = R.reshape(3, 3)
-        v_body = R.T @ data.qvel[0:3]
         w_body = data.qvel[3:6]
-        wz_world = (R @ w_body)[2]
+        w_world = R @ w_body
+        wz_world = w_world[2]
         v_cmd = np.array([diag["v_cmd_x"], diag["v_cmd_y"]])
-        gravity_body = R.T @ np.array([0.0, 0.0, -1.0])
+        # MPC state layout: com_pos, rpy, com_vel, omega (world); x y and yaw have weight 0 in the MPC
+        com, com_vel = self.rl.model.com_state(data.qpos[0:3], R, data.qpos[self.qpos_idx], data.qvel[0:3],
+                                               w_body, data.qvel[self.qvel_idx])
+        roll = np.arctan2(R[2, 1], R[2, 2])
+        pitch = -np.arcsin(np.clip(R[2, 0], -1.0, 1.0))
+        x_err = np.concatenate([
+            [0.0, 0.0, com[2] - (diag["z_des"] + (com[2] - data.qpos[2]))],   # CoM height ref as in TaskLogic
+            [roll, pitch, 0.0],
+            com_vel - np.array([v_cmd[0], v_cmd[1], 0.0]),
+            w_world - np.array([0.0, 0.0, diag["wz_cmd"]]),
+        ])
         terms = {
-            "tracking_lin_vel": np.exp(-np.sum((data.qvel[0:2] - v_cmd) ** 2) / TRACKING_SIGMA),
-            "tracking_ang_vel": np.exp(-(wz_world - diag["wz_cmd"]) ** 2 / TRACKING_SIGMA),
-            "lin_vel_z": v_body[2] ** 2,
-            "ang_vel_xy": np.sum(w_body[0:2] ** 2),
-            "orientation": np.sum(gravity_body[0:2] ** 2),
-            "torques": np.sum(tau ** 2),
-            "action_rate": np.sum((action - self.prev_action) ** 2),
+            "alive": 1.0,
+            "mpc_state_cost": float(np.sum(MPC_STATE_Q * x_err ** 2)),
+            "mpc_force_cost": MPC_FORCE_R * float(np.sum(self.rl.dist.forces ** 2)),   # forces the top layer sent
         }
         reward = 0.0
         for k, scale in REWARD_SCALES.items():
