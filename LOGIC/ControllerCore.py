@@ -9,7 +9,7 @@ from LOGIC.TaskLogic import TaskController
 
 NOMINAL_STANCE = np.tile([0.0, -0.83, 1.113], 4)
 USE_FOSMC = False 
-USE_MPC = True
+TOP_LAYER = "mpc"
 USE_RL_TUNER = False 
 RL_DT = 0.02
 RL_TEST = None
@@ -34,7 +34,7 @@ def quat_to_rot(quat):
     ])
 
 class ControllerCore:
-    def __init__(self, cfg):
+    def __init__(self, cfg, top_layer=TOP_LAYER, rl_policy=None):
         self.ctrl_dt = cfg["ctrl_dt"]
         self.z_nom = cfg["z_nom"]
         joints = [j for leg in LEG_NAMES for j in JOINT_NAMES[leg]]
@@ -68,9 +68,12 @@ class ControllerCore:
                 self.tuner.load(TUNER_LOAD)
                 self.tuner.actor.explore *= 0.5 # type: ignore
 
-        if USE_MPC:
+        if top_layer == "mpc":
             from LOGIC.CentroidalMpcLogic import MpcClient
             self.task.mpc = MpcClient(str(ROOT / "urdf" / "quadruped.urdf"), joints, self.task.q_walk)
+        elif top_layer == "rl":
+            from LOGIC.RLTopLogic import RLTopClient
+            self.task.rl = RLTopClient(str(ROOT / "urdf" / "quadruped.urdf"), joints, self.task.q_walk, policy=rl_policy)
 
         self.t_prev = None
         self.next_logic_t = 0.0
@@ -197,6 +200,10 @@ class ControllerCore:
     def summary(self):
         if self.tuner is not None:
             self.tuner.summary()
+
         if self.task.mpc is not None:
             self.task.mpc.summary()
             self.task.mpc.close()
+
+        if self.task.rl is not None:
+            self.task.rl.summary()

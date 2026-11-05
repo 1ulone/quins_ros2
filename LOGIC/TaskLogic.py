@@ -119,6 +119,8 @@ class TaskController:
 
         self.mpc = None
         self.mpc_active = False
+        self.rl = None
+        self.top_active = False
 
     def command_velocity(self):
         # NOTE: same formula the MPC used: stride covered during stance, body -x is forward
@@ -285,7 +287,7 @@ class TaskController:
 
 
         # ---- MPC top layer (journal): request at the node rate, read the force for now from the newest plan ----
-        f_mpc, com, yaw_meas = None, None, None
+        f_top, com, yaw_meas = None, None, None
         if self.mpc is not None:
             mpc, model = self.mpc, self.mpc.model
             com, com_vel = model.com_state(p, R, q, v_base[0:3], R.T @ v_base[3:6], v_joints) # type: ignore
@@ -315,8 +317,19 @@ class TaskController:
                 com_h = np.vstack([com, x_ref[:-1, 0:3]])              # CoM at nodes 0..n-1
                 mpc.send(t, x0, x_ref, feet_h - com_h[:, None, :], stance_h)
             mpc.poll()
-            f_mpc = mpc.force_now(t)
+            f_top = mpc.force_now(t)
 
+        if self.rl is not None:
+            rl = self.rl
+            model = self.rl.model
+
+            com, _ = model.com_state(p, R, q, v_base[0:3], R.T @ v_base[3:6], v_joints) # type: ignore
+            yaw_meas = lg.current_yaw + (m.atan2(R[1, 0], R[0, 0]) - lg.current_yaw + m.pi) % (2.0 * m.pi) - m.pi
+
+            if rl.due(t):
+                rl.decide()
+            foot_now = pf.reshape(4, 3) - np.array([0.0, 0.0, self.foot_r])
+            f_top = rl.force_now(foot_now - com, stance, self.yaw_d, yaw_meas)
         # ---- Controller: task errors -> commanded task accelerations ----
         # miss: how far the WBC's achieved accelerations were from last step's command (any mode)
         miss = np.zeros(N_TASK)
@@ -333,11 +346,12 @@ class TaskController:
             s = self.fosmc.s.copy()
         s_max = float(np.max(np.abs(s[active])))
         acc_cmd[~active] = 0.0
-        self.mpc_active = f_mpc is not None
-        if self.mpc_active:
-            f_mpc = f_mpc * np.repeat(stance, 3)
+        top = self.mpc if self.mpc is not None else self.rl
+        self.mpc_active = f_top is not None
+        if self.top_active:
+            f_top = f_top * np.repeat(stance, 3)
             foot_now = pf.reshape(4, 3) - np.array([0.0, 0.0, self.foot_r])
-            acc_lin, acc_ang = self.mpc.model.acceleration(f_mpc, foot_now - com, yaw_meas)
+            acc_lin, acc_ang = top.model.acceleration(f_top, foot_now - com, yaw_meas)
             acc_cmd[0:3] += acc_lin
             acc_cmd[3:6] += acc_ang
         self.last_cmd = acc_cmd.copy()
@@ -352,8 +366,8 @@ class TaskController:
         if n_st > 0:
             fc_ref[2::3] = lg.robot_mass * GRAVITY / n_st * stance
 
-        if self.mpc_active:
-            fc_ref = f_mpc
+        if self.top_active:
+            fc_ref = f_top 
         
         phase = 0.0
         if isinstance(lg.planner, GaitPlanner) and lg.state_start_time is not None:
@@ -377,6 +391,11 @@ class TaskController:
             "ground_z": self.ground.height(p[0:2]),
             "slope": self.ground.slope.copy(),
         }
+
+        if self.rl is not None:
+            foot_now = pf.reshape(4, 3) - np.array([0.0, 0.0, self.foot_r])
+            self.rl.observe(e, e_dot, R, self.yaw_d, self.v_cmd, yaw_rate, foot_now - com, schedule, stance, phase)
+
         return dict(
             stance=stance,
             acc_base=acc_cmd[0:6],

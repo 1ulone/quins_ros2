@@ -9,3 +9,4 @@ matplotlib==3.8.4
 pandas
 openpyxl
 adam-robotics[casadi]
+gymnasium
