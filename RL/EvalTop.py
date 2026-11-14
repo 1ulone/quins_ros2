@@ -41,6 +41,7 @@ def main():
     parser.add_argument("--model", default="ppo_final.zip")
     parser.add_argument("--vecnorm", default="vecnormalize_final.pkl")
     parser.add_argument("--episodes", type=int, default=20, help="randomized episodes per controller")
+    parser.add_argument("--terrain", default="uneven", choices=("flat", "uneven"))
     args = parser.parse_args()
     run_dir = Path(args.run_dir)
 
@@ -49,7 +50,7 @@ def main():
 
     # 1) the journal script on the nominal plant, same summary as the zero-action test
     for name, act in (("ZERO ACTION (WBC + PD)", zero), ("TRAINED POLICY", policy)):
-        env = RlTopEnv(randomize=False, script=TEST_SCRIPT, episode_s=25.0)
+        env = RlTopEnv(randomize=False, script=TEST_SCRIPT, episode_s=25.0, terrain=args.terrain)
         total, _, _ = run_episode(env, act, seed=0)
         print(f"\n########## {name}: journal script, nominal plant, return {total:.2f} ##########")
         env.summary()
@@ -57,7 +58,7 @@ def main():
     # 2) randomized plants (mass, friction, motor, pushes, random state sequence), same seeds for both
     print(f"\n########## RANDOMIZED: {args.episodes} episodes each, same seeds ##########")
     for name, act in (("zero action", zero), ("trained policy", policy)):
-        env = RlTopEnv(randomize=True)
+        env = RlTopEnv(randomize=True, terrain=args.terrain)
         returns, falls, state_cost = [], 0, []
         for ep in range(args.episodes):
             total, fell, sums = run_episode(env, act, seed=10_000 + ep)

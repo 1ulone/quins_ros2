@@ -118,7 +118,7 @@ class TaskController:
         self.prev_sched = np.ones(4, dtype=bool)
 
         self.mpc = None
-        self.mpc_active = False
+        # self.mpc_active = False
         self.rl = None
         self.top_active = False
 
@@ -347,7 +347,7 @@ class TaskController:
         s_max = float(np.max(np.abs(s[active])))
         acc_cmd[~active] = 0.0
         top = self.mpc if self.mpc is not None else self.rl
-        self.mpc_active = f_top is not None
+        self.top_active = f_top is not None
         if self.top_active:
             f_top = f_top * np.repeat(stance, 3)
             foot_now = pf.reshape(4, 3) - np.array([0.0, 0.0, self.foot_r])

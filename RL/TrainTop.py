@@ -65,9 +65,9 @@ class RewardTermLogger(BaseCallback):
         self.terms, self.falls, self.episodes = {}, 0, 0
 
 
-def make_env(rank, seed):
+def make_env(rank, seed, terrain):
     def _init():
-        env = RlTopEnv(randomize=True)
+        env = RlTopEnv(randomize=True, terrain=terrain)
         env.reset(seed=seed + rank)
         return env
     return _init
@@ -79,6 +79,7 @@ def main():
     parser.add_argument("--steps", type=int, default=10_000_000, help="total env steps (policy decisions)")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default="cpu", help="cpu (recommended for MLP PPO) / cuda")
+    parser.add_argument("--terrain", default="uneven", choices=("flat", "uneven"))
     args = parser.parse_args()
     torch.set_num_threads(2)        # the 2 cores left free from --envs run the policy and the PPO update
 
@@ -86,7 +87,7 @@ def main():
     run_dir = OUT_DIR / run_name
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    fns = [make_env(i, 1000 * args.seed) for i in range(args.envs)]
+    fns = [make_env(i, 1000 * args.seed, args.terrain) for i in range(args.envs)]
     venv = SubprocVecEnv(fns, start_method="forkserver") if args.envs > 1 else DummyVecEnv(fns) # type: ignore
     venv = VecMonitor(venv)
     # running mean / std of the observation (exported with the policy for the Jetson); reward is left as is

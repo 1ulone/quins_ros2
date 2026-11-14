@@ -56,7 +56,7 @@ FOOT_NAMES = ('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT')
 MPC_STATE_Q = np.concatenate([MPC_WEIGHTS["com_pos"], MPC_WEIGHTS["rpy"], MPC_WEIGHTS["com_vel"], MPC_WEIGHTS["omega"]])
 MPC_FORCE_R = MPC_WEIGHTS["force"]
 REWARD_SCALES = {
-    "alive": 1.0,
+    "alive": 10.0,
     "mpc_state_cost": -1.0,
     "mpc_force_cost": -1.0,
 }
@@ -66,6 +66,27 @@ RAND_RANGES = {"mass": (0.8, 1.2), "friction": (0.5, 1.25), "motor": (0.8, 1.2),
 PUSH_EVERY = 10.0           # s between pushes while walking, same as SimNode
 GAITS = ("WALK", "WALK_BACK", "TURN", "TURN_RIGHT")
 TEST_SCRIPT = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "IDLE")]   # the journal walk / turn / idle script
+START_XY_RANGE = 15.0
+
+def load_scene(terrain):
+    scene_path = str(ROOT / 'urdf' / 'scene.xml')
+    if terrain == "flat":
+        return mujoco.MjModel.from_xml_path(scene_path)
+
+    assert terrain == "uneven", f"terrain must be 'flat' or 'uneven', got {terrain!r}"
+    spec = mujoco.MjSpec.from_file(scene_path)
+    spec.worldbody.add_geom(
+        name="uneven_floor",
+        type=mujoco.mjtGeom.mjGEOM_HFIELD,
+        hfieldname="terrain_hfield",
+        material="grid",
+        condim=4,
+        friction=[1.0, 0.005, 0.0001],
+        contype=0,
+        conaffinity=1
+    )
+    spec.delete(spec.geom("floor"))
+    return spec.compile()
 
 
 class RlTopEnv(gym.Env):
@@ -74,12 +95,13 @@ class RlTopEnv(gym.Env):
 
     metadata = {"render_modes": []}
 
-    def __init__(self, randomize=True, script=None, episode_s=EPISODE_S):
+    def __init__(self, randomize=True, script=None, episode_s=EPISODE_S, terrain="flat"):
         self.randomize = randomize
         self.fixed_script = script          # None = a random state sequence every episode
         self.episode_s = episode_s
 
-        self.model = mujoco.MjModel.from_xml_path(str(ROOT / 'urdf' / 'scene.xml'))
+        self.terrain = terrain
+        self.model = load_scene(terrain) 
         self.data = mujoco.MjData(self.model)
         model = self.model
 
@@ -122,10 +144,11 @@ class RlTopEnv(gym.Env):
         self.action_space = spaces.Box(-1.0, 1.0, shape=(N_ACTION,), dtype=np.float32)
         self.core = None
 
-    def _start_pose(self):
+    def _start_pose(self, start_shift_xy=(0.0, 0.0)):
         # same as SimNode: NOMINAL_STANCE with the feet just clear of the floor
         model, data = self.model, self.data
         mujoco.mj_resetData(model, data)
+        data.qpos[0:2] = model.qpos0[0:2] + np.asarray(start_shift_xy)
         data.qpos[self.qpos_idx] = NOMINAL_STANCE
         mujoco.mj_forward(model, data)
         data.qpos[2] -= min(data.xpos[f][2] for f in self.foot_ids)
@@ -176,7 +199,10 @@ class RlTopEnv(gym.Env):
         model.body_mass[self.base_id] = self.base_mass_nom * self.rand["mass"]
         model.geom_friction[self.friction_geoms, 0] = self.rand["friction"] if self.randomize else self.friction_nom
 
-        self._start_pose()
+        on_terrain = self.randomize and self.terrain == "uneven"
+        start_shift_xy = rng.uniform(-START_XY_RANGE, START_XY_RANGE, 2) if on_terrain else np.zeros(2)
+        self._start_pose(start_shift_xy)
+
         with silence_output():
             self.core = ControllerCore(self.cfg, top_layer="rl", wbc=self.wbc)
         self.rl = self.core.task.rl
