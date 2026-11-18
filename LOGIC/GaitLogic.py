@@ -143,4 +143,3 @@ class GaitLogic():
         if self.state_start_time is None or not isinstance(self.planner, GaitPlanner):
             return self.stand_planner.instant(0.0, self.robot_mass)
         return self.planner.instant(sim_time - self.state_start_time, self.robot_mass)
-

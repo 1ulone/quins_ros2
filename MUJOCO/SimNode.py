@@ -29,8 +29,8 @@ PUSH_EVERY = 10.0
 FOOT_NAMES = ('LF_FOOT', 'RF_FOOT', 'LH_FOOT', 'RH_FOOT')
 MAX_PKT = 4096
 
-# CTRL_HOST = "127.0.0.1"
-CTRL_HOST = "10.10.0.2"
+CTRL_HOST = "127.0.0.1"
+# CTRL_HOST = "10.10.0.2"
 
 SCRIPT = None 
 RUN_T = None
@@ -290,12 +290,13 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                     if not headless and step % graph_dec == 0:
                         graph_queue.put([float(data.time), diag["fl_z_des"], float(data.xpos[foot_ids[0]][2])])
 
-                    if not headless and step % print_dec == 0:
-                        st_str = ''.join('S' if diag[f"st_{leg}"] > 0.5 else '-' for leg in LEG_NAMES)
-                        print(f"t={data.time:.2f} {ctrl_state:<10} ok={diag['wbc_ok'] > 0.5} st={st_str} "
-                              f"v=({data.qvel[0]:+.3f},{data.qvel[1]:+.3f}) cmd=({diag['v_cmd_x']:+.3f},{diag['v_cmd_y']:+.3f}) "
-                              f"z={data.qpos[2]:.3f} yaw={diag['yaw']:+.3f}/{diag['target_yaw']:+.3f} "
-                              f"|s|={diag['s_max']:.3f} frz={int(diag['frozen'])} age={cmd_age}", flush=True)
+                    # if not headless and step % print_dec == 0:
+                    #     st_str = ''.join('S' if diag[f"st_{leg}"] > 0.5 else '-' for leg in LEG_NAMES)
+                        # print(f"rad : {st["q"]}")
+                        # print(
+                        #     f"t={data.time:.2f} {ctrl_state:<10} ok={diag['wbc_ok'] > 0.5} st={st_str} "f"v=({data.qvel[0]:+.3f},{data.qvel[1]:+.3f}) cmd=({diag['v_cmd_x']:+.3f},{diag['v_cmd_y']:+.3f}) " f"z={data.qpos[2]:.3f} yaw={diag['yaw']:+.3f}/{diag['target_yaw']:+.3f} "f"|s|={diag['s_max']:.3f} frz={int(diag['frozen'])} age={cmd_age}",
+                        #     flush=True
+                        # )
 
                 mujoco.mj_step(model, data)
 
@@ -315,6 +316,7 @@ def main(rand=RAND, script=SCRIPT, run_t=RUN_T, headless=False):
                     time.sleep(-lag)
                 elif lag > 0.02:
                     next_wall = time.perf_counter()     # fell behind: drop the debt instead of bursting steps
+
     finally:
         link.close()
         n = max(stats["n"], 1)

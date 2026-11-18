@@ -87,6 +87,7 @@ class TaskController:
         self.leash = leash          # max distance the body target may run ahead (m)
         self.k_foot = k_foot        # foot placement correction, ~ sqrt(height / g)
         self.g = dict(DEFAULT_PD)
+
         if gains:
             self.g.update(gains)
         self.kp, self.kd = _pd_rows(self.g)
@@ -277,6 +278,14 @@ class TaskController:
             vel_d = np.concatenate([vel_xy, [vz_g + vel[2] + vz_search]])
             acc_d = np.concatenate([R_yaw @ acc[0:2] + spin_a, [az_g + acc[2]]])
             pf_d[r] = pos_d
+
+            kin = self.logic.kinematics
+            leg = LEG_NAMES[i]
+            foot_home = kin.fk(leg, *np.degrees(self.q_walk[3 * i: 3 * i + 3]))[0:3, 3]   # foot under the body in the walk pose (body frame, m)
+            foot_body = foot_home + off                                                   # plus the planner's step offset and swing lift
+            knee_dir = -int(np.sign(self.q_nom[3 * i + 2]))                               # same knee side as the nominal pose
+            q_leg = kin.ik(leg, *foot_body, knee_dir=knee_dir)                            # joint angles (rad)
+            print(f"{leg}: shoulder={q_leg[0]:.4f}, hip={q_leg[1]:.4f}, knee={q_leg[2]:.4f}")
 
             if stance[i] > 0.5:
                 active[tr] = False

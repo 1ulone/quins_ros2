@@ -116,17 +116,23 @@ class GaitParams:
 
 GAIT_TABLE = {
     "WALK": GaitParams(
-        freq=2.6,
-        duty=0.5,
-        offsets= {
-            'FL': 0.0,
-            'BR': 0.0,
-            'FR': 0.5,
-            'BL': 0.5,
-        },
+        freq=1.3,
+        duty=0.75,
+        offsets= {'FL': 0.0, 'BR': 0.0, 'FR': 0.5, 'BL': 0.5,},
+        # offsets= {'FL': 0.0, 'BR': 0.25, 'FR': 0.5, 'BL': 0.75,},
         path="WALK",
         step_len=0.073,
-        step_h=0.08,
+        step_h=0.04,
+        x_off=0.0,
+        z_off=0.365,
+    ),
+    "TILT_4BEAT": GaitParams(
+        freq=1.3,
+        duty=0.75,
+        offsets={"FL": 0.0, "BR": 0.25, "FR": 0.5, "BL": 0.75},
+        path="WALK",
+        step_len=0.073,
+        step_h=0.04,
         x_off=0.0,
         z_off=0.365,
     ),
@@ -208,7 +214,7 @@ class GaitPlanner(BasePlanner):
         if self.p.path == "RUN":
             x, y, z = self._run_path(leg, is_stance, s)
         else:
-            x, y, z = self._walk_path(is_stance, s)
+            x, y, z = self._walk_path(is_stance, s, leg, t)
         # NOTE: the paths are written for a front at -x (stance foot sweeps toward +x);
         # mirror x so the stance foot always sweeps away from the front
         return -FORWARD * x, y, z
@@ -217,15 +223,17 @@ class GaitPlanner(BasePlanner):
         # NOTE: Swing polynomial trajectory
         return 64.0 * self.p.step_h * (s**3) * ((1.0 - s)**3)
 
-    def _walk_path(self, is_stance, s):
-        l = self.p.step_len * self.stride_scale
-        if is_stance:
-            return -(l / 2.0) + s * l, 0.0, 0.0
+    def _walk_path(self, is_stance, s, leg, t):
+        # if is_stance:
+        #     return -(l / 2.0) + s * l, 0.0, 0.0
 
-        v = l * ((1.0 - self.p.duty) / self.p.duty)
-        c = l + v
-        d = (l / 2.0) + v * s - 10.0 * c * s**3 + 15.0 * c * s**4 - 6.0 * c * s**5
-        return d, 0.0, self._lift(s)
+        l = self.p.step_len * self.stride_scale
+        swings_done = m.floor(t * self.p.freq + self.p.offsets[leg])
+        x = -swings_done * l                                     # path frame: front is -x
+        if is_stance:
+            return x, 0.0, 0.0
+        x -= l * (10.0 * s**3 - 15.0 * s**4 + 6.0 * s**5)
+        return x, 0.0, self._lift(s)
 
     def _run_path(self, leg, is_stance, s):
         l = self.p.step_len * self.stride_scale

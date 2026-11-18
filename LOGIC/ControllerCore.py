@@ -8,8 +8,8 @@ from LOGIC.WbcLogic import WholeBodyController
 from LOGIC.TaskLogic import TaskController
 
 NOMINAL_STANCE = np.tile([0.0, -0.83, 1.113], 4)
+TOP_LAYER = "None"
 USE_FOSMC = False 
-TOP_LAYER = "mpc"
 USE_RL_TUNER = False 
 RL_DT = 0.02
 RL_TEST = None
@@ -89,6 +89,7 @@ class ControllerCore:
         marks = [time.perf_counter()]
         lg, task, wbc = self.logic, self.task, self.wbc
         p, q, qd = st["p"], st["q"], st["qd"]
+
         R = quat_to_rot(st["quat"])
         v_base = np.concatenate([st["v_lin"], R @ st["omega"]])
         

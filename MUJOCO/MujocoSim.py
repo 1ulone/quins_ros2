@@ -27,7 +27,7 @@ from RL.MainTuner import RLTuner
 
 NOMINAL_STANCE = np.tile([0.0, -0.83, 1.113], 4)
 WBC_DEC = 1     # run the WBC every N physics steps (1 = every step)
-USE_FOSMC = True 
+USE_FOSMC = False 
 FOSMC_TEST_A = False 
 AUTO_WALK_T = 2.0
 AUTO_STATE = None
@@ -35,7 +35,7 @@ RUN_T = None
 GROUP_ROWS = {"lin": slice(0, 3), "ang": slice(3, 6), "swing": slice(6, 18)}
 WALK_DROP = 0.085
 IDLE_DROP = 0.05
-USE_RL_TUNER = True 
+USE_RL_TUNER = False 
 RL_DT = 0.02
 RL_TEST = None 
 RAND_EDGE = {"mass": 1.2, "friction": 0.5, "motor": 0.8, "push": 0.5, "seed": 0}   # hardest corner of the ranges
