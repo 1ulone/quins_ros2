@@ -75,14 +75,14 @@
       <material name="dark_gray" />
     </visual>
     <inertial>
-      <origin xyz="0.020 0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
+      <origin xyz="-0.020 0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
       <inertia ixx="0.001345" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.000045" />
     </inertial>
   </link>
 
   <joint name="LH_SHANK_TO_FOOT" type="fixed">
     <parent link="LH_SHANK" /><child link="LH_FOOT" />
-    <origin xyz="0.040 0.0245 -0.23015" rpy="0 0 0" />
+    <origin xyz="-0.040 0.0245 -0.23015" rpy="0 0 0" />
   </joint>
   <link name="LH_FOOT">
     <inertial>
@@ -148,14 +148,14 @@
       <material name="dark_gray" />
     </visual>
     <inertial>
-      <origin xyz="0.020 -0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
+      <origin xyz="-0.020 -0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
       <inertia ixx="0.001345" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.000045" />
     </inertial>
   </link>
 
   <joint name="RH_SHANK_TO_FOOT" type="fixed">
     <parent link="RH_SHANK" /><child link="RH_FOOT" />
-    <origin xyz="0.040 -0.0245 -0.23015" rpy="0 0 0" />
+    <origin xyz="-0.040 -0.0245 -0.23015" rpy="0 0 0" />
   </joint>
   <link name="RH_FOOT">
     <inertial>

@@ -38,8 +38,9 @@ class WholeBodyController:
         self.fz_max = fz_max
         self.joint_damping = joint_damping
         q_max = q_limit - limit_margin
-        self.q_lo = np.array([knee_min if "KFE" in j else -np.inf for j in joints_name_list])
-        self.q_hi = np.array([knee_max if "KFE" in j else q_max for j in joints_name_list])
+        is_hind = lambda j: j.startswith(("LH", "RH"))   # hind knees bend forward (negative angle)
+        self.q_lo = np.array([(-knee_max if is_hind(j) else knee_min) if "KFE" in j else -np.inf for j in joints_name_list])
+        self.q_hi = np.array([(-knee_min if is_hind(j) else knee_max) if "KFE" in j else q_max for j in joints_name_list])
         self.ddq_max = ddq_max
         self.dt = ctrl_dt
         self.bound_dt = bound_dt

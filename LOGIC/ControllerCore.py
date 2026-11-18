@@ -7,7 +7,12 @@ from LOGIC.GaitLogic import GaitLogic, LEG_NAMES, JOINT_NAMES
 from LOGIC.WbcLogic import WholeBodyController
 from LOGIC.TaskLogic import TaskController
 
-NOMINAL_STANCE = np.tile([0.0, -0.83, 1.113], 4)
+NOMINAL_STANCE = np.array([
+    0.0, -0.675, 1.113,      # FL  knee points back
+    0.0, -0.675, 1.113,      # FR  knee points back
+    0.0, 0.675, -1.113,   # BL  knee points forward, same foot position as before
+    0.0, 0.675, -1.113,   # BR  knee points forward, same foot position as before
+])
 TOP_LAYER = "None"
 USE_FOSMC = False 
 USE_RL_TUNER = False 

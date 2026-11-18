@@ -5,7 +5,6 @@ import queue
 import threading
 import contextlib
 import math as m
-from matplotlib.transforms import interval_contains
 import pandas as pd
 from pathlib import Path
 
@@ -25,17 +24,22 @@ from LOGIC.GaitPlanner import FORWARD
 from ROS.BaseGUI import GUI
 from RL.MainTuner import RLTuner
 
-NOMINAL_STANCE = np.tile([0.0, -0.83, 1.113], 4)
+NOMINAL_STANCE = np.array([
+    0.0, -0.675, 1.113,      # FL  knee points back
+    0.0, -0.675, 1.113,      # FR  knee points back
+    0.0, 0.675, -1.113,   # BL  knee points forward, same foot position as before
+    0.0, 0.675, -1.113,   # BR  knee points forward, same foot position as before
+])
 WBC_DEC = 1     # run the WBC every N physics steps (1 = every step)
-USE_FOSMC = False 
+USE_FOSMC = True 
 FOSMC_TEST_A = False 
 AUTO_WALK_T = 2.0
 AUTO_STATE = None
 RUN_T = None 
 GROUP_ROWS = {"lin": slice(0, 3), "ang": slice(3, 6), "swing": slice(6, 18)}
-WALK_DROP = 0.085
+WALK_DROP = 0.075
 IDLE_DROP = 0.05
-USE_RL_TUNER = False 
+USE_RL_TUNER = True 
 RL_DT = 0.02
 RL_TEST = None 
 RAND_EDGE = {"mass": 1.2, "friction": 0.5, "motor": 0.8, "push": 0.5, "seed": 0}   # hardest corner of the ranges
@@ -46,7 +50,7 @@ DAMP_KD = 1.0
 SAFE_TILT = 0.82
 # TUNER_LOAD = None
 TUNER_LOAD = os.path.join(os.path.dirname(current_dir), "RL", "tuner_pretrained.npz")   # None = start from scratch
-SEQ_MIXED = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "WALK_BACK"), (30.0, "IDLE"), (34.0, "WALK"), (44.0, "TURN_RIGHT"), (25.0, "IDLE")]
+SEQ_MIXED = [(2.0, "WALK"), (12.0, "TURN"), (20.0, "WALK_BACK"), (30.0, "IDLE"), (34.0, "WALK"), (44.0, "TURN_RIGHT"), (45.0, "IDLE")]
 SCRIPT = None 
 GROUND_TAU = 0.2
 
