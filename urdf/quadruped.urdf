@@ -56,14 +56,14 @@
       <material name="gray" />
     </visual>
     <inertial>
-      <origin xyz="0 0.086 -0.0899" rpy="0 0 0" /><mass value="0.8" />
-      <inertia ixx="0.004087" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.002093" />
+      <origin xyz="0.0899 0.086 0" rpy="0 0 0" /><mass value="0.8" />
+      <inertia ixx="0.002093" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.004087" />
     </inertial>
   </link>
 
   <joint name="LH_KFE" type="revolute">
     <parent link="LH_THIGH" /><child link="LH_SHANK" />
-    <origin xyz="0 0.172 -0.17985" rpy="0 0 0" />
+    <origin xyz="0.17985 0.172 0" rpy="0 0 0" />
     <axis xyz="0 -1 0" />
     <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
     <dynamics damping="0.5" friction="0.05" />
@@ -75,14 +75,14 @@
       <material name="dark_gray" />
     </visual>
     <inertial>
-      <origin xyz="-0.020 0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
-      <inertia ixx="0.001345" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.000045" />
+      <origin xyz="-0.11508 0.01225 0.020" rpy="0 0 0" /><mass value="0.3" />
+      <inertia ixx="0.000045" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.001345" />
     </inertial>
   </link>
 
   <joint name="LH_SHANK_TO_FOOT" type="fixed">
     <parent link="LH_SHANK" /><child link="LH_FOOT" />
-    <origin xyz="-0.040 0.0245 -0.23015" rpy="0 0 0" />
+    <origin xyz="-0.23015 0.0245 0.040" rpy="0 0 0" />
   </joint>
   <link name="LH_FOOT">
     <inertial>
@@ -129,14 +129,14 @@
       <material name="gray" />
     </visual>
     <inertial>
-      <origin xyz="0 -0.086 -0.0899" rpy="0 0 0" /><mass value="0.8" />
-      <inertia ixx="0.004087" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.002093" />
+      <origin xyz="0.0899 -0.086 0" rpy="0 0 0" /><mass value="0.8" />
+      <inertia ixx="0.002093" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.004087" />
     </inertial>
   </link>
 
   <joint name="RH_KFE" type="revolute">
     <parent link="RH_THIGH" /><child link="RH_SHANK" />
-    <origin xyz="0 -0.172 -0.17985" rpy="0 0 0" />
+    <origin xyz="0.17985 -0.172 0" rpy="0 0 0" />
     <axis xyz="0 -1 0" />
     <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
     <dynamics damping="0.5" friction="0.05" />
@@ -148,14 +148,14 @@
       <material name="dark_gray" />
     </visual>
     <inertial>
-      <origin xyz="-0.020 -0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
-      <inertia ixx="0.001345" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.000045" />
+      <origin xyz="-0.11508 -0.01225 0.020" rpy="0 0 0" /><mass value="0.3" />
+      <inertia ixx="0.000045" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.001345" />
     </inertial>
   </link>
 
   <joint name="RH_SHANK_TO_FOOT" type="fixed">
     <parent link="RH_SHANK" /><child link="RH_FOOT" />
-    <origin xyz="-0.040 -0.0245 -0.23015" rpy="0 0 0" />
+    <origin xyz="-0.23015 -0.0245 0.040" rpy="0 0 0" />
   </joint>
   <link name="RH_FOOT">
     <inertial>
@@ -202,14 +202,14 @@
       <material name="gray" />
     </visual>
     <inertial>
-      <origin xyz="0 0.086 -0.0899" rpy="0 0 0" /><mass value="0.8" />
-      <inertia ixx="0.004087" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.002093" />
+      <origin xyz="-0.0899 0.086 0" rpy="0 0 0" /><mass value="0.8" />
+      <inertia ixx="0.002093" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.004087" />
     </inertial>
   </link>
 
   <joint name="LF_KFE" type="revolute">
     <parent link="LF_THIGH" /><child link="LF_SHANK" />
-    <origin xyz="0 0.172 -0.17985" rpy="0 0 0" />
+    <origin xyz="-0.17985 0.172 0" rpy="0 0 0" />
     <axis xyz="0 -1 0" />
     <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
     <dynamics damping="0.5" friction="0.05" />
@@ -221,14 +221,14 @@
       <material name="dark_gray" />
     </visual>
     <inertial>
-      <origin xyz="0.020 0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
-      <inertia ixx="0.001345" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.000045" />
+      <origin xyz="0.11508 0.01225 0.020" rpy="0 0 0" /><mass value="0.3" />
+      <inertia ixx="0.000045" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.001345" />
     </inertial>
   </link>
 
   <joint name="LF_SHANK_TO_FOOT" type="fixed">
     <parent link="LF_SHANK" /><child link="LF_FOOT" />
-    <origin xyz="0.040 0.0245 -0.23015" rpy="0 0 0" />
+    <origin xyz="0.23015 0.0245 0.040" rpy="0 0 0" />
   </joint>
   <link name="LF_FOOT">
     <inertial>
@@ -275,14 +275,14 @@
       <material name="gray" />
     </visual>
     <inertial>
-      <origin xyz="0 -0.086 -0.0899" rpy="0 0 0" /><mass value="0.8" />
-      <inertia ixx="0.004087" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.002093" />
+      <origin xyz="-0.0899 -0.086 0" rpy="0 0 0" /><mass value="0.8" />
+      <inertia ixx="0.002093" ixy="0" ixz="0" iyy="0.002327" iyz="0" izz="0.004087" />
     </inertial>
   </link>
 
   <joint name="RF_KFE" type="revolute">
     <parent link="RF_THIGH" /><child link="RF_SHANK" />
-    <origin xyz="0 -0.172 -0.17985" rpy="0 0 0" />
+    <origin xyz="-0.17985 -0.172 0" rpy="0 0 0" />
     <axis xyz="0 -1 0" />
     <limit lower="-3.14" upper="3.14" effort="100" velocity="10" />
     <dynamics damping="0.5" friction="0.05" />
@@ -294,14 +294,14 @@
       <material name="dark_gray" />
     </visual>
     <inertial>
-      <origin xyz="0.020 -0.01225 -0.11508" rpy="0 0 0" /><mass value="0.3" />
-      <inertia ixx="0.001345" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.000045" />
+      <origin xyz="0.11508 -0.01225 0.020" rpy="0 0 0" /><mass value="0.3" />
+      <inertia ixx="0.000045" ixy="0" ixz="0" iyy="0.001345" iyz="0" izz="0.001345" />
     </inertial>
   </link>
 
   <joint name="RF_SHANK_TO_FOOT" type="fixed">
     <parent link="RF_SHANK" /><child link="RF_FOOT" />
-    <origin xyz="0.040 -0.0245 -0.23015" rpy="0 0 0" />
+    <origin xyz="0.23015 -0.0245 0.040" rpy="0 0 0" />
   </joint>
   <link name="RF_FOOT">
     <inertial>

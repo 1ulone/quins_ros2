@@ -80,14 +80,14 @@
           <joint name="LH_HAA" class="HAA"/>
           <geom class="visual" mesh="LH_HIP" rgba="1 0.45 0 1"/>
           <body name="LH_THIGH" pos="-0.053 0.030 0">
-            <inertial pos="0 0.086 -0.0899" mass="0.8" diaginertia="0.004087 0.002327 0.002093"/>
+            <inertial pos="0.0899 0.086 0" mass="0.8" diaginertia="0.002093 0.002327 0.004087"/>
             <joint name="LH_HFE" class="pitch"/>
             <geom class="visual" mesh="LH_THIGH" rgba="1 0.45 0 1"/>
-            <body name="LH_SHANK" pos="0 0.172 -0.17985">
-              <inertial pos="-0.020 0.01225 -0.11508" mass="0.3" diaginertia="0.001345 0.001345 0.000045"/>
+            <body name="LH_SHANK" pos="0.17985 0.172 0">
+              <inertial pos="-0.11508 0.01225 0.020" mass="0.3" diaginertia="0.000045 0.001345 0.001345"/>
               <joint name="LH_KFE" class="pitch"/>
               <geom class="visual" mesh="LH_SHANK" rgba="1 0.45 0 1"/>
-              <body name="LH_FOOT" pos="-0.040 0.0245 -0.23015">
+              <body name="LH_FOOT" pos="-0.23015 0.0245 0.040">
                 <geom name="LH_FOOT_collision" class="foot"/>
                 <site name="LH_FOOT_site" pos="0 0 0" size="0.01"/>
               </body>
@@ -101,14 +101,14 @@
           <joint name="RH_HAA" class="HAA"/>
           <geom class="visual" mesh="RH_HIP" rgba="1 0.45 0 1"/>
           <body name="RH_THIGH" pos="-0.053 -0.030 0">
-            <inertial pos="0 -0.086 -0.0899" mass="0.8" diaginertia="0.004087 0.002327 0.002093"/>
+            <inertial pos="0.0899 -0.086 0" mass="0.8" diaginertia="0.002093 0.002327 0.004087"/>
             <joint name="RH_HFE" class="pitch"/>
             <geom class="visual" mesh="RH_THIGH" rgba="1 0.45 0 1"/>
-            <body name="RH_SHANK" pos="0 -0.172 -0.17985">
-              <inertial pos="-0.020 -0.01225 -0.11508" mass="0.3" diaginertia="0.001345 0.001345 0.000045"/>
+            <body name="RH_SHANK" pos="0.17985 -0.172 0">
+              <inertial pos="-0.11508 -0.01225 0.020" mass="0.3" diaginertia="0.000045 0.001345 0.001345"/>
               <joint name="RH_KFE" class="pitch"/>
               <geom class="visual" mesh="RH_SHANK" rgba="1 0.45 0 1"/>
-              <body name="RH_FOOT" pos="-0.040 -0.0245 -0.23015">
+              <body name="RH_FOOT" pos="-0.23015 -0.0245 0.040">
                 <geom name="RH_FOOT_collision" class="foot"/>
                 <site name="RH_FOOT_site" pos="0 0 0" size="0.01"/>
               </body>
@@ -122,14 +122,14 @@
           <joint name="LF_HAA" class="HAA"/>
           <geom class="visual" mesh="LF_HIP" rgba="1 0.45 0 1"/>
           <body name="LF_THIGH" pos="0.053 0.030 0">
-            <inertial pos="0 0.086 -0.0899" mass="0.8" diaginertia="0.004087 0.002327 0.002093"/>
+            <inertial pos="-0.0899 0.086 0" mass="0.8" diaginertia="0.002093 0.002327 0.004087"/>
             <joint name="LF_HFE" class="pitch"/>
             <geom class="visual" mesh="LF_THIGH" rgba="1 0.45 0 1"/>
-            <body name="LF_SHANK" pos="0 0.172 -0.17985">
-              <inertial pos="0.020 0.01225 -0.11508" mass="0.3" diaginertia="0.001345 0.001345 0.000045"/>
+            <body name="LF_SHANK" pos="-0.17985 0.172 0">
+              <inertial pos="0.11508 0.01225 0.020" mass="0.3" diaginertia="0.000045 0.001345 0.001345"/>
               <joint name="LF_KFE" class="pitch"/>
               <geom class="visual" mesh="LF_SHANK" rgba="1 0.45 0 1"/>
-              <body name="LF_FOOT" pos="0.040 0.0245 -0.23015">
+              <body name="LF_FOOT" pos="0.23015 0.0245 0.040">
                 <geom name="LF_FOOT_collision" class="foot"/>
                 <site name="LF_FOOT_site" pos="0 0 0" size="0.01"/>
               </body>
@@ -143,14 +143,14 @@
           <joint name="RF_HAA" class="HAA"/>
           <geom class="visual" mesh="RF_HIP" rgba="1 0.45 0 1"/>
           <body name="RF_THIGH" pos="0.053 -0.030 0">
-            <inertial pos="0 -0.086 -0.0899" mass="0.8" diaginertia="0.004087 0.002327 0.002093"/>
+            <inertial pos="-0.0899 -0.086 0" mass="0.8" diaginertia="0.002093 0.002327 0.004087"/>
             <joint name="RF_HFE" class="pitch"/>
             <geom class="visual" mesh="RF_THIGH" rgba="1 0.45 0 1"/>
-            <body name="RF_SHANK" pos="0 -0.172 -0.17985">
-              <inertial pos="0.020 -0.01225 -0.11508" mass="0.3" diaginertia="0.001345 0.001345 0.000045"/>
+            <body name="RF_SHANK" pos="-0.17985 -0.172 0">
+              <inertial pos="0.11508 -0.01225 0.020" mass="0.3" diaginertia="0.000045 0.001345 0.001345"/>
               <joint name="RF_KFE" class="pitch"/>
               <geom class="visual" mesh="RF_SHANK" rgba="1 0.45 0 1"/>
-              <body name="RF_FOOT" pos="0.040 -0.0245 -0.23015">
+              <body name="RF_FOOT" pos="0.23015 -0.0245 0.040">
                 <geom name="RF_FOOT_collision" class="foot"/>
                 <site name="RF_FOOT_site" pos="0 0 0" size="0.01"/>
               </body>

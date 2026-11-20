@@ -16,7 +16,7 @@ from LOGIC.KinematicsLogic import KinematicsLogic
 
 LEG_NAMES = ("FL", "FR", "BL", "BR")         # names GaitPlanner and KinematicsLogic use
 JOINT_NAMES = ("HAA", "HFE", "KFE")
-GAIT = "TILT_4BEAT"
+GAIT = "WALK_4BEAT"
 
 # 4-beat walk: one leg in the air at a time, order FL -> BR -> FR -> BL, each a quarter cycle after the last.
 # Step length and height as WALK; freq 1.3 keeps each swing as long as a WALK swing (0.25 / 1.3 = 0.5 / 2.6 = 0.19 s)
@@ -37,8 +37,18 @@ HARDWARE_GAITS = {
         duty=0.75,
         offsets={"FL": 0.0, "BR": 0.25, "FR": 0.5, "BL": 0.75},
         path="WALK",
+        step_len=0.1,
+        step_h=0.1,
+        x_off=0.0,
+        z_off=0.365,
+    ),
+    "WALK": GaitParams(
+        freq=2.6,
+        duty=0.75,
+        offsets= {'FL': 0.0, 'BR': 0.0, 'FR': 0.5, 'BL': 0.5,},
+        path="WALK",
         step_len=0.073,
-        step_h=0.05,
+        step_h=0.04,
         x_off=0.0,
         z_off=0.365,
     ),
@@ -53,11 +63,11 @@ LEG_SETUP = {
 }
 
 # stand pose per leg, URDF rad (HAA, HFE, KFE): Stand goes here and the gait moves around it (measured on the robot)
-STANCE_RAD = {
-    "FL": np.array([0.0, -0.675, 1.0]),
-    "FR": np.array([0.0, -0.675, 1.0]),
-    "BL": np.array([0.0, -0.675, 0.825]),
-    "BR": np.array([0.0, -0.675, 0.825]),
+URDF_REST_RAD = {
+    "FL": np.array([0.0, 0.1708, -0.4916]),
+    "FR": np.array([0.0, 0.1708, -0.4916]),
+    "BL": np.array([0.0, -0.1708, 0.4916]),
+    "BR": np.array([0.0, -0.1708, 0.4916]),
 }
 
 WALK_DROP_M = 0.01
@@ -68,10 +78,10 @@ WALK_DROP_M = 0.01
 # stand pose in motor rad, counted from the start-up zero (the robot lying at rest): taught on the robot,
 # read from the GUI. Rest itself is motor 0, so it needs no numbers
 STAND_MOTOR_RAD = {
-    "FL": np.array([0.0, 0.725, -1.650]),
-    "FR": np.array([0.0, -0.725, 1.650]),
-    "BL": np.array([0.0, 0.725, -1.825]),
-    "BR": np.array([0.0, -0.725, 1.825]),
+    "FL": np.array([0.0, 0.350, -1.15]),
+    "FR": np.array([0.0, -0.350, 1.15]),
+    "BL": np.array([0.0, -0.350, 1.15]),
+    "BR": np.array([0.0, 0.350, -1.15]),
 }
 
 # motor = sign * q_urdf + offset, per joint
@@ -81,7 +91,8 @@ MOTOR_SIGN = {
     "BL": np.array([-1.0, 1.0, 1.0]),        # HFE, KFE confirmed by the rest / stand readings; HAA not checked yet
     "BR": np.array([1.0, -1.0, -1.0]),       # HFE, KFE confirmed by the rest / stand readings; HAA not checked yet
 }
-MOTOR_OFFSET = {leg: STAND_MOTOR_RAD[leg] - MOTOR_SIGN[leg] * STANCE_RAD[leg] for leg in LEG_NAMES}   # motor = stand keyframe + sign * (q_urdf - stand q_urdf)
+MOTOR_OFFSET = {leg: -MOTOR_SIGN[leg] * URDF_REST_RAD[leg] for leg in LEG_NAMES}     # fixed by the rest pose: motor 0 = URDF_REST_RAD
+URDF_INIT_RAD = {leg: (STAND_MOTOR_RAD[leg] - MOTOR_OFFSET[leg]) / MOTOR_SIGN[leg] for leg in LEG_NAMES}   # stand pose in URDF rad, follows STAND_MOTOR_RAD
 
 # URDF joint limits (rad) for the gait, same as WholeBodyController. The back stand knee (0.825) is under Q_LO[2]
 Q_LO = np.array([-np.pi + 0.05, -np.pi + 0.05, -2.967])
@@ -104,8 +115,8 @@ TURN_WINDOW_CENTRE_RAD = 0.5 * (Q_LO + Q_HI)   # URDF rad: a joint's true angle 
 # TILT_ADJACENT_DROP_M + TILT_DIAGONAL_EXTRA_M (m, foot closer to the body), full at mid-swing, 0 at lift-off and touchdown
 TILT_GAITS = ("TILT_4BEAT",)
 DIAGONAL_LEG = {"FL": "BR", "FR": "BL", "BL": "FR", "BR": "FL"}
-TILT_ADJACENT_DROP_M = 0.00001       # default in the GUI
-TILT_DIAGONAL_EXTRA_M = 0.000015     # default in the GUI
+TILT_ADJACENT_DROP_M = 0.0000       # default in the GUI
+TILT_DIAGONAL_EXTRA_M = 0.0000     # default in the GUI
 TILT_DROP_MAX_M = 1.0
 
 
@@ -130,12 +141,12 @@ class GaitPlayer:
         # turn on: stand angles -> foot xyz (FK), then check that IK of that xyz gives the stand pose back
         self.knee_dir, self.foot_home = {}, {}
         for leg in self.legs:
-            stance = STANCE_RAD[leg]
+            stance = URDF_INIT_RAD[leg]
         # turn on: stand angles -> foot xyz (FK), check that IK of that xyz gives the stand pose back,
         # then the walk pose: same foot x, y, WALK_DROP_M closer to the body (same as TaskController._lowered_pose)
         self.knee_dir, self.foot_home, self.walk_rad = {}, {}, {}
         for leg in self.legs:
-            stance = STANCE_RAD[leg]
+            stance = URDF_INIT_RAD[leg]
             self.knee_dir[leg] = -int(np.sign(stance[2]))                    # IK seed on the stand knee side
             foot_stand = self.kin.fk(leg, *np.degrees(stance))[0:3, 3]       # fk takes degrees
             q_check = np.array(self.kin.ik(leg, *foot_stand, knee_dir=self.knee_dir[leg]))
@@ -150,7 +161,7 @@ class GaitPlayer:
         self.planner = GaitPlanner(replace(gait_params), {leg: self.foot_home[leg][0:2] for leg in self.legs})
         self.tilt_adjacent_m = TILT_ADJACENT_DROP_M        # set from the GUI with set_tilt
         self.tilt_diagonal_extra_m = TILT_DIAGONAL_EXTRA_M
-        self.motor_start = {leg: urdf_to_motor(leg, STANCE_RAD[leg]) for leg in self.legs}
+        self.motor_start = {leg: urdf_to_motor(leg, URDF_INIT_RAD[leg]) for leg in self.legs}
         self.motor_walk = {leg: urdf_to_motor(leg, self.walk_rad[leg]) for leg in self.legs}
         self.motor_rest = {leg: np.zeros(3) for leg in self.legs}                       # rest = the start-up zero
 
@@ -172,7 +183,7 @@ class GaitPlayer:
         self.state = "IDLE"                     # IDLE, MOVING_TO_START, MOVING_TO_REST, PLAYING, RETURNING, HOLDING
         self.message = "press Enable, then Stand, Start gait or Rest"
         self.t_gait = 0.0
-        self.q_sim = {leg: STANCE_RAD[leg].copy() for leg in self.legs}
+        self.q_sim = {leg: URDF_INIT_RAD[leg].copy() for leg in self.legs}
         self.motor_target = {leg: self.motor_start[leg].copy() for leg in self.legs}
         self.ik_rejects = 0
         self.speed_limited_ticks = 0
